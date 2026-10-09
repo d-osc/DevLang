@@ -1,1 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="12" fill="#182d28"/><path d="M30 10v27h-7c-8 0-12-4-12-10s4-10 11-10h3v-7zm-5 12h-3c-4 0-6 2-6 5s2 5 6 5h3z" fill="#b8f2be"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>DevLang</title>
+  <defs>
+    <linearGradient id="tile" x1="8" y1="2" x2="55" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#274C3D"/>
+      <stop offset="1" stop-color="#10271F"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="18" y1="14" x2="47" y2="49" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DBFFD0"/>
+      <stop offset="1" stop-color="#91DB9B"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="14" y1="0" x2="49" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#709882" stop-opacity=".65"/>
+      <stop offset="1" stop-color="#10271F" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x=".75" y=".75" width="62.5" height="62.5" rx="16" fill="url(#tile)"/>
+  <rect x="1.25" y="1.25" width="61.5" height="61.5" rx="15.5" stroke="url(#edge)"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M17 14H31C43 14 50 21 50 32S43 50 31 50H17V14ZM27 24V40H31C37 40 40 37 40 32S37 24 31 24H27Z" fill="url(#mark)"/>
+  <path d="M17 14H27V24H17V14Z" fill="#E5FFDC"/>
+  <path d="M17 34L27 24V29L17 39V34Z" fill="#10271F"/>
+</svg>
