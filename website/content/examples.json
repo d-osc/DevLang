@@ -530,5 +530,21 @@
       "# Linux: ./target/release/d examples/json/main.dev"
     ],
     "notes": "API ใหม่ของ runtime จาก source ล่าสุด ตัวติดตั้ง v0.4.0 เดิมยังไม่มี JSON; ZIP มีเฉพาะตัวอย่าง ต้อง build runtime จาก repository เต็มก่อน สร้างหรือเขียนทับ devlang-json-example.json ใน cwd; native compiler ยังไม่รองรับ std/json"
+  },
+  {
+    "id": "json-literals",
+    "title": "JSON object literal: user.name และ nested objects",
+    "category": "Runtime APIs",
+    "path": "examples/json/literals.dev",
+    "description": "สร้าง object โดยตรง อ่านและแก้ผ่าน dot/bracket, array ชนิดผสม และสำเนาที่ไม่เปลี่ยนตาม",
+    "doc": "json",
+    "mode": "runtime",
+    "commands": [
+      "# จาก repository DevLang เต็มชุด:",
+      "cargo build --release -p dev-runtime -p dev-cli",
+      "./target/release/d.exe examples/json/literals.dev",
+      "# Linux: ./target/release/d examples/json/literals.dev"
+    ],
+    "notes": "ใช้ source runtime ล่าสุดเท่านั้น ตัวติดตั้ง v0.4.0 เดิมยังไม่รองรับ; native compiler ยังไม่รองรับ JSON object literals"
   }
 ]

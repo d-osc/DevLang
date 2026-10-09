@@ -41,7 +41,8 @@ impl Expand {
                 };
                 t
             }
-            ExprKind::Record(t, _)
+            ExprKind::Object(t, _)
+            | ExprKind::Record(t, _)
             | ExprKind::Enum(t, _, _)
             | ExprKind::Vector(t, _)
             | ExprKind::Map(t)

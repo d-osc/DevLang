@@ -108,6 +108,7 @@ pub struct Expr {
 
 #[derive(Clone, Debug)]
 pub enum ExprKind {
+    Object(Type, Vec<(String, Expr)>),
     SizeOf(Type),
     Closure(Vec<(String, Type)>, Type, Vec<Stmt>),
     Callable(Vec<String>, Option<Box<Expr>>, Type),

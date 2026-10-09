@@ -1,0 +1,24 @@
+use "std/json"
+
+fn main() {
+    let user = {
+        name: "Dev",
+        age: 18,
+        address: { city: "Bangkok" },
+        tags: ["developer", 42, true, null],
+        "display-name": "DevLang user",
+    }
+    let before = user
+    user.age += 1
+    user.address.city = "Chiang Mai"
+    user.active = true
+    user.tags[1] = 100
+    print(user.name)
+    print(user.age)
+    print(user.address.city)
+    print(user["display-name"])
+    print(before.age)
+    print(json.stringify(user))
+}
+
+main()

@@ -97,6 +97,11 @@ fn expression(
                 expression(ms, aliases, id, e, permitted)?;
             }
         }
+        ExprKind::Object(_, fields) => {
+            for (_, value) in fields {
+                expression(ms, aliases, id, value, permitted)?;
+            }
+        }
         _ => {}
     }
     Ok(())

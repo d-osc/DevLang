@@ -181,7 +181,12 @@
   },
   "json": {
     "source_sha256": "0753e40874d02718b988aa2ff104fb79a2ff4c2e2acfb343c16c9848b2a31e51",
-    "validation_sha256": "faf48790284794329be4ab3c2c2c296b3ba5b74a63584c3dd7e4822a22128c6c",
+    "validation_sha256": "7b73b8e194550e72f61d207915bad24d24870a673d0574d6f721976218e13cd6",
     "output": "true\nDev\n18\ntrue\n19\n23\ntrue\nfalse\n18\n21\n{\"empty\":null,\"items\":[42],\"user\":{\"age\":21,\"name\":\"Dev\"}}\nobject\nempty\nitems\nuser\n2\n1.5\n18446744073709551615\n{\"items\":[42],\"user\":{\"age\":21,\"name\":\"Dev\"}}\n"
+  },
+  "json-literals": {
+    "source_sha256": "88c12206ff07f927ffbf406292df7bc7b5281bc52e1454c0017d9c194cfe6634",
+    "validation_sha256": "24d9249b31ad23b17abb4b765c6627aa3f10e48bb951880d592916ab0f65f9ce",
+    "output": "Dev\n19\nChiang Mai\nDevLang user\n18\n{\"active\":true,\"address\":{\"city\":\"Chiang Mai\"},\"age\":19,\"display-name\":\"DevLang user\",\"name\":\"Dev\",\"tags\":[\"developer\",100,true,null]}\n"
   }
 }

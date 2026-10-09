@@ -14,10 +14,10 @@ def main():
     with tempfile.TemporaryDirectory(prefix='dev-json-') as temporary:
         root = Path(temporary)
         env = dict(os.environ, PATH='', DEV_CC='missing-compiler')
-        def run(code, expected=None, error=None):
+        def run(code, expected=None, error=None, imports=True):
             nonlocal count
             source = root / 'case.dev'
-            source.write_text('use "std/json"\n'+code, encoding='utf-8')
+            source.write_text(('use "std/json"\n' if imports else '')+code, encoding='utf-8')
             for engine in ('auto', 'ast'):
                 result = subprocess.run([binary, str(source), '--engine', engine], cwd=root, env=env,
                                         capture_output=True, text=True, encoding='utf-8', timeout=10)
@@ -28,6 +28,30 @@ def main():
                     assert result.returncode == 0 and result.stdout == expected, (result.stdout,result.stderr,expected)
                 count += 1
         def literal(text): return json.dumps(text, ensure_ascii=False)
+        run('let user={name:"Dev"}; print(user.name)', 'Dev\n', imports=False)
+        run('fn main() { let user={name:"Dev"}; let job=spawn(fn() str { return user.name }); print(await(job)) }; main()', 'Dev\n')
+        run('fn index() i64 { print("index"); return 0 }; let x={a:[1]}; x.a[index()]+=2; print(x.a[0])', 'index\n3\n')
+        run('let user={name:"Dev", age:18, address:{city:"Bangkok"}, scores:[1,"two",true,null,{}], empty:[]}; '
+            'let saved=user; user.age+=1; user.address.city="Chiang Mai"; user.scores[0]=42; '
+            'user["active"]=true; user.name=23; print(saved.age); print(saved.address.city); '
+            'print(user.age); print(user.address.city); print(user.scores[0]); print(user.active); '
+            'print(user.name); print(user.scores[3]==null); print(json.stringify(user.empty))',
+            '18\nBangkok\n19\nChiang Mai\n42\ntrue\n23\ntrue\n[]\n')
+        run('let x={"first-name":"Dev",\n nested:{},\n}; x.nested.list=[1,"hello",null]; '
+            'print(x["first-name"]); print(json.stringify(x.nested.list)); print(json.stringify({}))',
+            'Dev\n[1,"hello",null]\n{}\n')
+        run('let x=json.parse("{\\"n\\":2,\\"a\\":[true]}"); x.n*=3; print(x.n); print(x.a[0])','6\ntrue\n')
+        run('fn make() json.Value { return {n:42} }; print(make().n)','42\n')
+        for code,error in [
+            ('let x={n:1}; print(x.missing)','missing JSON key'),
+            ('let x={a:[]}; x.a[0]=1','JSON index out of bounds'),
+            ('let x={}; x.missing.n=1','missing JSON key'),
+            ('let x={a:[1]}; print(x.a[-1])','invalid JSON index'),
+            ('let x={a:1}; print(x.a.n)','field access requires'),
+            ('let x={a:1,a:2}','duplicate object literal key'),
+            ('let x={a 1}','expected'),
+            ('let x={a:1 b:2}','expected'),
+        ]: run(code,error=error)
         run('fn read(v json.Value) i64 { return json.int(json.get(v,"n")) }\n'
             'let v=json.parse("{\\"n\\":42}"); print(read(v))','42\n')
         for text in ('null','true','false','42','-9223372036854775808','18446744073709551615',

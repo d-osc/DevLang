@@ -932,6 +932,9 @@ impl Emitter<'_> {
                     lvalue: false,
                 }));
             }
+            ExprKind::Object(..) => {
+                return Err("JSON object literals currently require the source runtime".into())
+            }
             ExprKind::Map(t) => return self.map_constructor(t, expr.span),
             ExprKind::Vector(t, args) => return self.vector(t, args, expr.span),
             ExprKind::Collection(base, op, args) => {

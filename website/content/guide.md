@@ -823,6 +823,35 @@ Skill เน้น syntax จริง, explicit main invocation, การแ�
 
 **API ใหม่จาก source ล่าสุด**: ต้อง build ด้วย `cargo build --release -p dev-runtime -p dev-cli` ตัวติดตั้ง v0.4.0 เดิมยังไม่มี API นี้ Native compiler ยังไม่รองรับ module นี้
 
+## Object literal และ user.name
+
+```dev-runtime
+use "std/json"
+fn main() {
+    let user = {
+        name: "Dev",
+        age: 18,
+        address: { city: "Bangkok" },
+        tags: ["developer", 42, true, null],
+    }
+    let original = user
+    user.age += 1
+    user.address.city = "Chiang Mai"
+    user.active = true
+    print(user.name)
+    print(user["age"])
+    print(json.stringify(user))
+    print(original.age)
+}
+main()
+```
+
+สร้าง object ได้โดยไม่ต้อง import; `use "std/json"` จำเป็นเมื่อเรียก JSON API หรือระบุ `json.Value` รองรับ key แบบ `name:` และ `"display-name":` โดย key ที่มีเครื่องหมายใช้ `user["display-name"]` รองรับ `{}`, comma ท้ายรายการ และ object/array ซ้อนกัน array ภายใน literal หรือที่กำหนดให้ JSON member ใช้ชนิดผสมและ `[]` ได้ ส่วน array ปกติใช้กฎเดิม key ซ้ำใน literal เป็น error
+
+อ่านผ่าน dot/bracket จะได้ scalar ของ Dev โดยตรง เช่น str, bool, i64/u64, f64 และ `null` ส่วน object/array ยังคงเป็น JSON ตัวเลขที่เกินช่วงเก็บเป็น JSON เพื่อรักษาความแม่นยำ `json.get`/`json.at` ยังคงคืน JSON เสมอ การเข้าถึงแบบนี้ใช้กับผล `json.parse` ได้ด้วย
+
+`user.newKey = value` เพิ่ม key หรือเปลี่ยนชนิดได้ `+=` ต้องมีค่า scalar ที่เหมาะสมอยู่แล้ว parent ซ้อนกันต้องมีอยู่ และ index ต้องอยู่ในขอบเขต index expression ประเมินครั้งเดียว สำเนา `original` ไม่เปลี่ยนตาม การแก้ค่าคัดลอกต้นไม้ JSON จึงมีต้นทุนตามขนาดข้อมูล การกำหนดค่าต้องมี local JSON เป็น root; ถ้าเก็บใน struct/Vec ให้ดึงออกมาแก้แล้วใส่กลับ
+
 ## Parse และอ่านค่า
 
 ```dev-runtime

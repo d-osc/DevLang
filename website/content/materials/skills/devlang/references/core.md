@@ -2,6 +2,15 @@
 
 ## JSON (current source runtime)
 
+Object literals `{ name: "Dev", age: 18 }` produce JSON, even without imports.
+Read/write `user.name`, `user["name"]`, `user.address.city`, `user.tags[0]`.
+Reads unwrap scalars; nested containers remain JSON. Member `=` inserts keys or
+changes types; `+=` requires an existing compatible scalar. Copies retain their
+old content. Nested parents must exist. Arrays inside literals/member assignments
+can be heterogeneous/empty. Duplicate literal keys are errors. Native unsupported.
+JSON assignments require a local JSON root; extract JSON in struct/Vec before
+updating, then assign it back. Import std/json for API calls and json.Value types.
+
 `use "std/json"` supplies managed `json.Value` values. This module is runtime-only;
 build the latest repository runtime, because v0.4.0 installers do not include it.
 Use parse/valid, get/has, at/len/keys, kind/is_null, string/bool/int/uint/float,

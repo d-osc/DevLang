@@ -22,6 +22,43 @@ Run `target/release/d.exe examples/json/main.dev` after
 built sibling `devrun`; older installed copies cannot supply the new module.
 The complete example creates/overwrites `devlang-json-example.json` in cwd.
 
+## Object literals and member access
+
+```dev
+use "std/json"
+let user = { name: "Dev", age: 18, address: { city: "Bangkok" }, tags: [1, "two", null] }
+let original = user
+user.age += 1
+user.address.city = "Chiang Mai"
+user.active = true
+print(user.name)
+print(user["age"])
+print(json.stringify(user))
+print(original.age)
+```
+
+Object literals work without an import; import `std/json` to call its API or
+name the `json.Value` type. Bare and quoted keys, empty objects, trailing commas,
+and nested objects are supported. Arrays inside literals or assigned JSON members
+may be empty or heterogeneous. Ordinary Dev arrays keep their existing rules.
+Duplicate literal keys are errors. Keys containing punctuation require brackets.
+
+Dot/bracket reads unwrap strings, booleans, i64/u64 integers and finite floating
+numbers into Dev scalars; null becomes `null`. Nested objects/arrays remain JSON.
+Numbers beyond these ranges stay JSON to preserve precision. `get`/`at` always
+return JSON values, so use them with strict accessors such as `json.int`.
+These reads also work on parsed JSON. Missing keys and invalid indices are errors.
+
+Member assignment can insert keys or change their type; compound assignment
+requires an existing compatible scalar. Nested parents must already exist and
+array indices must be in bounds. Index expressions run once per assignment.
+Updates preserve other copies of the original object and clone the JSON tree;
+this is not an in-place shared mutable object or a constant-time update.
+Assignment currently requires a local JSON root (for example `user.address.city`);
+extract JSON held inside a struct/Vec, update it, then assign it back.
+Object syntax currently runs in the source runtime; native compilation is unsupported.
+See `examples/json/literals.dev` for a complete program.
+
 ## API
 
 | Function | Result / behavior |

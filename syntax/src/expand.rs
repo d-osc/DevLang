@@ -707,6 +707,12 @@ impl Expand {
                     self.expr(id, a, env)?;
                 }
             }
+            ExprKind::Object(t, fields) => {
+                *t = self.ty(id, t, env, span)?;
+                for (_, value) in fields {
+                    self.expr(id, value, env)?;
+                }
+            }
             ExprKind::Vector(_, items) | ExprKind::Array(items) | ExprKind::Record(_, items) => {
                 for a in items {
                     self.expr(id, a, env)?;

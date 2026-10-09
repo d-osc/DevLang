@@ -142,6 +142,11 @@ fn free_expr(e: &Expr, bound: &HashSet<String>, free: &mut HashSet<String>) {
         | ExprKind::Cast(a, _)
         | ExprKind::Reference(a)
         | ExprKind::Dereference(a) => free_expr(a, bound, free),
+        ExprKind::Object(_, fields) => {
+            for (_, value) in fields {
+                free_expr(value, bound, free);
+            }
+        }
         ExprKind::Array(args)
         | ExprKind::Record(_, args)
         | ExprKind::Vector(_, args)

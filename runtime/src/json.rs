@@ -16,7 +16,7 @@ fn null_value() Value { return Value() }
 fn remove(value Value, key str) Value { return Value() }
 "#;
 
-fn check_depth(value: &Json, initial: usize) -> Result<(), String> {
+pub(crate) fn check_depth(value: &Json, initial: usize) -> Result<(), String> {
     let mut pending = vec![(value, initial)];
     while let Some((value, depth)) = pending.pop() {
         if depth > 128 {
@@ -31,7 +31,7 @@ fn check_depth(value: &Json, initial: usize) -> Result<(), String> {
     Ok(())
 }
 
-fn encode(value: &Value, depth: usize) -> Result<Json, String> {
+pub(crate) fn encode(value: &Value, depth: usize) -> Result<Json, String> {
     if depth > 128 {
         return Err("JSON nesting limit exceeded".into());
     }
@@ -88,6 +88,94 @@ fn encode(value: &Value, depth: usize) -> Result<Json, String> {
                 .into(),
         ),
     })
+}
+pub(crate) enum Access {
+    Key(String),
+    Index(usize),
+}
+pub(crate) fn access(value: Value) -> Result<Access, String> {
+    match value {
+        Value::Str(key) => Ok(Access::Key(key)),
+        Value::Int(index, _) => Ok(Access::Index(
+            usize::try_from(index).map_err(|_| "invalid JSON index")?,
+        )),
+        _ => Err("JSON index must be str or integer".into()),
+    }
+}
+pub(crate) fn read<'a>(value: &'a Json, path: &[Access]) -> Result<&'a Json, String> {
+    let mut value = value;
+    for step in path {
+        value = match step {
+            Access::Key(key) => value
+                .as_object()
+                .ok_or("JSON field access requires object")?
+                .get(key)
+                .ok_or_else(|| format!("missing JSON key '{key}'"))?,
+            Access::Index(index) => value
+                .as_array()
+                .ok_or("JSON integer index requires array")?
+                .get(*index)
+                .ok_or("JSON index out of bounds")?,
+        };
+    }
+    Ok(value)
+}
+pub(crate) fn write(value: &mut Json, path: &[Access], replacement: Json) -> Result<(), String> {
+    let (last, parents) = path.split_last().ok_or("empty JSON assignment path")?;
+    let mut dest = &mut *value;
+    for step in parents {
+        dest = match step {
+            Access::Key(key) => dest
+                .as_object_mut()
+                .ok_or("JSON field access requires object")?
+                .get_mut(key)
+                .ok_or_else(|| format!("missing JSON key '{key}'"))?,
+            Access::Index(index) => dest
+                .as_array_mut()
+                .ok_or("JSON integer index requires array")?
+                .get_mut(*index)
+                .ok_or("JSON index out of bounds")?,
+        };
+    }
+    match last {
+        Access::Key(key) => {
+            dest.as_object_mut()
+                .ok_or("JSON field access requires object")?
+                .insert(key.clone(), replacement);
+        }
+        Access::Index(index) => {
+            *dest
+                .as_array_mut()
+                .ok_or("JSON integer index requires array")?
+                .get_mut(*index)
+                .ok_or("JSON index out of bounds")? = replacement;
+        }
+    }
+    check_depth(value, 0)
+}
+pub(crate) fn unwrap(value: Json, ty: Type) -> Value {
+    match value {
+        Json::Null => Value::Ptr(0, Type::Ptr(Box::new(Type::Void))),
+        Json::Bool(v) => Value::Bool(v),
+        Json::String(v) => Value::Str(v),
+        Json::Number(ref n) if n.as_i64().is_some() => {
+            Value::Int(n.as_i64().unwrap() as i128, Type::i64())
+        }
+        Json::Number(ref n) if n.as_u64().is_some() => Value::Int(
+            n.as_u64().unwrap() as i128,
+            Type::Int {
+                bits: 64,
+                signed: false,
+            },
+        ),
+        Json::Number(ref n)
+            if n.to_string().contains(['.', 'e', 'E'])
+                && n.as_f64().is_some_and(|v| v.is_finite()) =>
+        {
+            Value::Float(n.as_f64().unwrap(), Type::Float(64))
+        }
+        value => Value::Json(Arc::new(value), ty),
+    }
 }
 fn node(value: &Value) -> Result<&Json, String> {
     if let Value::Json(value, _) = value {

@@ -9,11 +9,13 @@ pub fn parse(path: PathBuf, source: &str) -> Result<Module, String> {
         at: 0,
         path,
         constraints: vec![],
+        object_literals: false,
     }
     .module()
 }
 
 struct Parser {
+    object_literals: bool,
     constraints: Vec<(String, Vec<String>)>,
     tokens: Vec<Token>,
     at: usize,
@@ -323,6 +325,13 @@ impl Parser {
                 statements.push(self.stmt()?);
             }
             self.separators();
+        }
+        if self.object_literals {
+            imports.push(Import {
+                path: "std/json".into(),
+                alias: "$json".into(),
+                span: Span { line: 1, col: 1 },
+            });
         }
         Ok(Module {
             traits,
@@ -786,6 +795,36 @@ impl Parser {
                 let e = self.expr(0)?;
                 self.expect(")")?;
                 e
+            }
+            Kind::Symbol(s) if s == "{" => {
+                self.object_literals = true;
+                self.separators();
+                let mut fields = vec![];
+                while !self.eat("}") {
+                    let key = match self.bump().kind {
+                        Kind::Word(key) | Kind::String(key) => key,
+                        _ => return self.fail("expected object key"),
+                    };
+                    if fields.iter().any(|(name, _)| name == &key) {
+                        return self.fail("duplicate object literal key");
+                    }
+                    self.expect(":")?;
+                    self.separators();
+                    fields.push((key, self.expr(0)?));
+                    self.separators();
+                    if !self.eat(",") {
+                        self.expect("}")?;
+                        break;
+                    }
+                    self.separators();
+                }
+                Expr {
+                    kind: ExprKind::Object(
+                        Type::Named(vec!["$json".into(), "Value".into()], vec![]),
+                        fields,
+                    ),
+                    span,
+                }
             }
             Kind::Symbol(s) if s == "[" => {
                 let mut values = Vec::new();

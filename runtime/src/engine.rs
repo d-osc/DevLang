@@ -942,6 +942,9 @@ impl Engine {
                     return Ok(Flow::Return(v));
                 }
                 Stmt::Assign { target, op, value } => {
+                    if self.json_assign(f, target, op, value)? {
+                        continue;
+                    }
                     let old = self.eval(f, target, None)?;
                     let rhs = self.eval(f, value, Some(&old.ty()))?;
                     let v = if op == "=" {
@@ -1360,9 +1363,104 @@ impl Engine {
             _ => unreachable!(),
         }
     }
+    fn json_expr(
+        &mut self,
+        f: &mut Frame,
+        e: &Expr,
+        depth: usize,
+    ) -> Result<serde_json::Value, String> {
+        if depth > 128 {
+            return Err("JSON nesting limit exceeded".into());
+        }
+        match &e.kind {
+            ExprKind::Object(_, fields) => {
+                let mut result = serde_json::Map::new();
+                for (key, value) in fields {
+                    result.insert(key.clone(), self.json_expr(f, value, depth + 1)?);
+                }
+                Ok(serde_json::Value::Object(result))
+            }
+            ExprKind::Array(values) => {
+                let mut result = Vec::new();
+                for value in values {
+                    result.push(self.json_expr(f, value, depth + 1)?);
+                }
+                Ok(serde_json::Value::Array(result))
+            }
+            _ => crate::json::encode(&self.eval(f, e, None)?, depth),
+        }
+    }
+    fn json_assign(
+        &mut self,
+        f: &mut Frame,
+        target: &Expr,
+        op: &str,
+        rhs: &Expr,
+    ) -> Result<bool, String> {
+        fn root(e: &Expr) -> Option<&str> {
+            match &e.kind {
+                ExprKind::Name(n) if n.len() == 1 => Some(&n[0]),
+                ExprKind::Field(base, _) | ExprKind::Index(base, _) => root(base),
+                _ => None,
+            }
+        }
+        if !matches!(target.kind, ExprKind::Field(..) | ExprKind::Index(..)) {
+            return Ok(false);
+        }
+        let Some(name) = root(target) else {
+            return Ok(false);
+        };
+        let Some(Value::Json(node, ty)) = f.scopes.iter().rev().find_map(|s| s.get(name)).cloned()
+        else {
+            return Ok(false);
+        };
+        fn path(
+            engine: &mut Engine,
+            f: &mut Frame,
+            e: &Expr,
+            steps: &mut Vec<crate::json::Access>,
+        ) -> Result<(), String> {
+            match &e.kind {
+                ExprKind::Field(base, key) => {
+                    path(engine, f, base, steps)?;
+                    steps.push(crate::json::Access::Key(key.clone()));
+                }
+                ExprKind::Index(base, index) => {
+                    path(engine, f, base, steps)?;
+                    steps.push(crate::json::access(engine.eval(f, index, None)?)?);
+                }
+                _ => {}
+            }
+            Ok(())
+        }
+        let result = (|| {
+            let mut steps = Vec::new();
+            path(self, f, target, &mut steps)?;
+            let replacement = if op == "=" {
+                self.json_expr(f, rhs, 0)?
+            } else {
+                let old =
+                    crate::json::unwrap(crate::json::read(&node, &steps)?.clone(), ty.clone());
+                let value = self.eval(f, rhs, Some(&old.ty()))?;
+                crate::json::encode(&self.binary(op.trim_end_matches('='), old, value)?, 0)?
+            };
+            let mut updated = (*node).clone();
+            crate::json::write(&mut updated, &steps, replacement)?;
+            *f.scopes
+                .iter_mut()
+                .rev()
+                .find_map(|s| s.get_mut(name))
+                .unwrap() = Value::Json(Arc::new(updated), ty);
+            Ok(true)
+        })();
+        result.map_err(|e: String| self.located(&f.module, target.span, e))
+    }
     fn eval(&mut self, f: &mut Frame, e: &Expr, hint: Option<&Type>) -> Result<Value, String> {
         let result = (|| {
             let v = match &e.kind {
+                ExprKind::Object(ty, _) => {
+                    Value::Json(Arc::new(self.json_expr(f, e, 0)?), ty.clone())
+                }
                 ExprKind::SizeOf(t) => Value::Int(
                     crate::memory::object_layout(t)?.0 as i128,
                     Type::Size { signed: false },
@@ -1482,6 +1580,14 @@ impl Engine {
                         unsafe { crate::memory::read(p, &t) }?
                     } else {
                         match self.eval(f, base, None)? {
+                            Value::Json(node, ty) => crate::json::unwrap(
+                                crate::json::read(
+                                    &node,
+                                    &[crate::json::Access::Key(name.clone())],
+                                )?
+                                .clone(),
+                                ty,
+                            ),
                             Value::Record(fields, _) => fields
                                 .into_iter()
                                 .find(|(n, _)| n == name)
@@ -1705,7 +1811,19 @@ impl Engine {
                         }
                     }
                     let a = self.eval(f, a, None)?;
-                    let i = self.eval(f, i, None)?.integer()?;
+                    let index = self.eval(f, i, None)?;
+                    if let Value::Json(node, ty) = a {
+                        let value = crate::json::unwrap(
+                            crate::json::read(&node, &[crate::json::access(index)?])?.clone(),
+                            ty,
+                        );
+                        return if let Some(t) = hint {
+                            convert(value, t, false)
+                        } else {
+                            Ok(value)
+                        };
+                    }
+                    let i = index.integer()?;
                     let i = usize::try_from(i).map_err(|_| "negative or excessive index")?;
                     match a {
                         Value::Ptr(p, Type::Ptr(t)) => {
@@ -1881,8 +1999,12 @@ impl Engine {
     }
     fn builtin(&mut self, module: &str, name: &str, args: Vec<Value>) -> Result<Value, String> {
         if module == "std/json" {
-            let ty = self.modules[module].module.concrete_types.first()
-                .ok_or("JSON value type unavailable")?.clone();
+            let ty = self.modules[module]
+                .module
+                .concrete_types
+                .first()
+                .ok_or("JSON value type unavailable")?
+                .clone();
             return crate::json::call(name, args, ty);
         }
         let a = |i: usize| args.get(i).ok_or_else(|| "missing argument".to_string());
