@@ -6,6 +6,9 @@ pub(crate) struct MapStorage {
     buckets: Vec<usize>,
 }
 impl MapStorage {
+    pub(crate) fn entries(&self) -> &[(Value, Value)] {
+        &self.entries
+    }
     fn hash(key: &Value) -> usize {
         let mut h = match key {
             Value::Int(n, _) => *n as u64,

@@ -12,6 +12,7 @@ python3 stdlib/build.py
 python3 scripts/smoke.py --compiler target/release/devc
 python3 scripts/smoke_fast.py --compiler target/release/devc
 python3 scripts/smoke_runtime.py --runtime target/release/devrun
+python3 scripts/smoke_json.py --runtime target/release/devrun
 python3 scripts/smoke_numeric.py --runtime target/release/devrun
 python3 scripts/smoke_features.py --bin-dir target/release
 python3 scripts/smoke_safety.py --bin-dir target/release

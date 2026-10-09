@@ -178,5 +178,10 @@
     "source_sha256": "7afdb98da2365b9b3d41cc7c70108e6127e51449c09334de7f0d421c7900a624",
     "validation_sha256": "b30d5f70c788bb5c4ab160ee588962c905eaa68bd23788575df6027ec7b07b75",
     "output": "Hello Dev runtime ภาษาไทย\n39\ntrue\n"
+  },
+  "json": {
+    "source_sha256": "0753e40874d02718b988aa2ff104fb79a2ff4c2e2acfb343c16c9848b2a31e51",
+    "validation_sha256": "faf48790284794329be4ab3c2c2c296b3ba5b74a63584c3dd7e4822a22128c6c",
+    "output": "true\nDev\n18\ntrue\n19\n23\ntrue\nfalse\n18\n21\n{\"empty\":null,\"items\":[42],\"user\":{\"age\":21,\"name\":\"Dev\"}}\nobject\nempty\nitems\nuser\n2\n1.5\n18446744073709551615\n{\"items\":[42],\"user\":{\"age\":21,\"name\":\"Dev\"}}\n"
   }
 }

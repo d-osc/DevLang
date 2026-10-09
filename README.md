@@ -4,7 +4,12 @@
 
 เว็บไซต์คู่มือภาษาไทยและ reference: [เปิดเว็บไซต์ DevLang](https://d-osc.github.io/DevLang/) ([Sites mirror](https://devlang-docs.pineapplestudio7.chatgpt.site), [source](website/README.md)) · Skill สำหรับ AI coding agents: [devlang](skills/devlang/SKILL.md)
 
-[ตัวอย่างพร้อมคำสั่งรันและ ZIP 36 ชุด](https://d-osc.github.io/DevLang/#/examples) ครอบคลุมเงื่อนไข/operators, loops, types, modules, collections, generics, closures, tasks, C FFI และ runtime/native APIs ดู source แยกเรื่องใน [examples/howto](examples/howto/README.md)
+[ตัวอย่างพร้อมคำสั่งรันและ ZIP 37 ชุด](https://d-osc.github.io/DevLang/#/examples) ครอบคลุมเงื่อนไข/operators, loops, types, modules, collections, generics, closures, tasks, C FFI และ runtime/native APIs ดู source แยกเรื่องใน [examples/howto](examples/howto/README.md)
+
+Source runtime ล่าสุดรองรับ `use "std/json"`: parse/stringify, objects/arrays,
+typed access และแปลง struct/Map/Vec เป็น JSON ดู [JSON API](docs/json.md)
+และ [ตัวอย่าง](examples/json/main.dev) ต้อง build runtime จาก source ล่าสุด
+เพราะตัวติดตั้ง v0.4.0 เดิมยังไม่รวม API นี้
 
 ใช้คำสั่ง `d` ได้จาก bundle ใน `dist/d/<platform>/` หรือ `target/release/` หลัง `cargo build --release`:
 

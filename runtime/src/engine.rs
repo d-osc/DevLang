@@ -10,6 +10,7 @@ use std::{
 
 #[derive(Clone, Debug)]
 pub(crate) enum Value {
+    Json(Arc<serde_json::Value>, Type),
     Task(Arc<TaskState>, Type),
     Callable(String, String, Option<Arc<Value>>, Type),
     Int(i128, Type),
@@ -31,7 +32,8 @@ include!("map.rs");
 impl Value {
     pub(crate) fn ty(&self) -> Type {
         match self {
-            Self::Task(_, t)
+            Self::Json(_, t)
+            | Self::Task(_, t)
             | Self::Callable(_, _, _, t)
             | Self::Int(_, t)
             | Self::Float(_, t)
@@ -50,6 +52,7 @@ impl Value {
     }
     fn display(&self) -> String {
         match self {
+            Self::Json(value, _) => value.to_string(),
             Self::Int(n, _) => n.to_string(),
             Self::Float(n, _) => n.to_string(),
             Self::Bool(b) => b.to_string(),
@@ -377,7 +380,9 @@ impl Engine {
             },
         );
         for import in imports {
-            let target = if ["std/io", "std/strings", "std/time", "std/args"]
+            let target = if import.path == "std/json" {
+                self.load_module(Path::new("std/json"), Some(crate::json::MODULE))?
+            } else if ["std/io", "std/strings", "std/time", "std/args"]
                 .contains(&import.path.as_str())
             {
                 import.path.clone()
@@ -1875,6 +1880,11 @@ impl Engine {
         }
     }
     fn builtin(&mut self, module: &str, name: &str, args: Vec<Value>) -> Result<Value, String> {
+        if module == "std/json" {
+            let ty = self.modules[module].module.concrete_types.first()
+                .ok_or("JSON value type unavailable")?.clone();
+            return crate::json::call(name, args, ty);
+        }
         let a = |i: usize| args.get(i).ok_or_else(|| "missing argument".to_string());
         let count = match (module, name) {
             ("std/io", "read_line") | ("std/time", "now_ns" | "now_ms") | ("std/args", "len") => 0,

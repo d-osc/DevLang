@@ -816,3 +816,58 @@ Compiler/runtime มี implementation limits เช่น module/file sizes แ
 Skill เน้น syntax จริง, explicit main invocation, การแยก runtime/compiler, value/COW semantics, unsafe C lifetimes และตรวจโค้ดก่อนสรุป ไม่ใช่ compiler และไม่ได้เพิ่ม feature ที่ภาษาไม่รองรับ
 
 มีไฟล์ `llms.txt` และคู่มือ Markdown ให้ AI อ่านโดยไม่ต้อง scrape หน้าจอ เว็บนี้แสดงตัวอย่างพร้อมผลลัพธ์ที่ตรวจไว้ **ไม่ได้รัน DevLang ใน browser** ให้ดาวน์โหลดไฟล์และรันด้วย `d` ในเครื่อง
+
+# [json] JSON: อ่าน สร้าง และแก้ไขข้อมูล
+
+`use "std/json"` ให้ source runtime อ่านและสร้าง JSON ได้โดยไม่ต้องใช้ C library รองรับ object, array, string, number, bool และ null รวมข้อมูลซ้อนกัน
+
+**API ใหม่จาก source ล่าสุด**: ต้อง build ด้วย `cargo build --release -p dev-runtime -p dev-cli` ตัวติดตั้ง v0.4.0 เดิมยังไม่มี API นี้ Native compiler ยังไม่รองรับ module นี้
+
+## Parse และอ่านค่า
+
+```dev-runtime
+use "std/json"
+fn main() {
+    let data = json.parse("{\"name\":\"Dev\",\"age\":18}")
+    print(json.string(json.get(data, "name")))
+    print(json.int(json.get(data, "age")))
+    data = json.set(data, "age", 21)
+    print(json.stringify(data))
+}
+main()
+```
+
+รันด้วย `./target/release/d.exe main.dev` บน Windows หรือ `./target/release/d main.dev` บน Linux ฟังก์ชันอ่านชนิดข้อมูลจะตรวจชนิดจริง ไม่แปลง string เป็น number ให้อัตโนมัติ
+
+## Object, array และข้อมูลซ้อนกัน
+
+| งาน | API |
+| --- | --- |
+| ตรวจข้อความก่อน parse | `json.valid(text)` |
+| สร้าง object / array / null | `json.object()`, `json.array()`, `json.null_value()` |
+| อ่าน member / ตรวจว่ามี key | `json.get(value,key)`, `json.has(value,key)` |
+| อ่าน array / จำนวนสมาชิก | `json.at(value,index)`, `json.len(value)` |
+| ตรวจชนิด / null | `json.kind(value)`, `json.is_null(value)` |
+| อ่าน scalar | `json.string`, `json.bool`, `json.int`, `json.uint`, `json.float` |
+| เพิ่มหรือแก้ member / ลบ member | `json.set(value,key,item)`, `json.remove(value,key)` |
+| เพิ่ม array element | `json.push(value,item)` |
+| ดึงชื่อ keys เป็น Vec | `json.keys(value)` |
+| แปลงข้อมูล Dev เป็น JSON | `json.value(value)` |
+| สร้างข้อความ compact / จัดย่อหน้า | `json.stringify(value)`, `json.pretty(value)` |
+
+ค่าที่คืนจาก parse/get/at เป็น `json.Value` ใช้เป็น parameter, return type และ element ของ Vec ได้ การแก้ไขคืนค่าใหม่เสมอ ต้องเขียน `data = json.set(...)` หรือ `items = json.push(...)` สำเนาเดิมไม่เปลี่ยน หากแก้ child object ต้องนำ child ที่แก้แล้ว set กลับเข้า parent
+
+`value`, `stringify`, `pretty`, `set` และ `push` รับ scalar, array/Vec/Slice, struct, Ref และ Map ที่ใช้ str key ได้ ไม่มีการแปลง JSON กลับเป็น struct อัตโนมัติ ให้อ่านและตรวจ fields ก่อนสร้าง struct เอง
+
+## อ่านและเขียนไฟล์
+
+ใช้ `io.read_file(path)` แล้ว `json.parse(text)` สำหรับอ่าน และ `io.write_file(path,json.pretty(data))` สำหรับเขียน JSON การเขียนไฟล์อาจเขียนทับไฟล์เดิม
+
+JSON ที่ผิดรูปแบบ, key ที่ไม่มี, index เกินขอบเขต และชนิดข้อมูลผิดเป็น runtime error ที่ระบุ source location ไม่มี try/catch ใช้ `valid`, `has`, `kind`, `len` ตรวจตามความต้องการก่อนเข้าถึง
+
+Unicode/escapes รองรับ UTF-8 และ surrogate pairs ตัวเลข JSON ที่ใหญ่มากคงความแม่นยำใน parse/stringify ส่วน `int/uint/float` จำกัดตาม i64/u64/f64 ตามลำดับ ไม่ serialize NaN/Infinity การซ้อนข้อมูลมีขีดจำกัด และการแก้ไข/ดึง subtree อาจต้อง copy ข้อมูล
+
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [JSON แบบครบชุด](#/examples/json) — nested data, struct, null, keys, immutable update และ file round-trip
+- [JSON API reference](#/docs/json-reference) — signatures, conversion rules, ownership และข้อจำกัด

@@ -1,5 +1,10 @@
 # Interpreter API
 
+JSON is available in the current source runtime through `use "std/json"`.
+See [JSON API and contracts](json.md) and `examples/json/main.dev` for parsing,
+serialization, typed access, objects/arrays and file I/O. Build the updated runtime
+from source; the existing v0.4.0 release binaries do not contain this addition.
+
 Run `devrun FILE.dev [-- arguments]` or `devrun -e 'statements'`.
 `--eval` is an alias for `-e`; `--timings` prints load/execution times to stderr.
 `--engine auto` (default) uses numeric plans where supported; `--engine ast`

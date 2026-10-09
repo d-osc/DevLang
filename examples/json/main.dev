@@ -1,0 +1,40 @@
+use "std/json"
+use "std/io"
+
+struct User { name str; age i64 }
+fn age_of(value json.Value) i64 { return json.int(json.get(value, "age")) }
+fn main() {
+    let text = "{\"name\":\"Dev\",\"age\":18,\"active\":true,\"scores\":[19,23],\"extra\":null}"
+    print(json.valid(text))
+    let user = json.parse(text)
+    print(json.string(json.get(user, "name")))
+    print(age_of(user))
+    print(json.bool(json.get(user, "active")))
+    let scores = json.get(user, "scores")
+    for i in 0..(json.len(scores) as i64) { print(json.int(json.at(scores, i))) }
+    print(json.is_null(json.get(user, "extra")))
+    print(json.has(user, "missing"))
+    let original = user
+    user = json.set(user, "age", 21)
+    print(age_of(original)) // Copy stays unchanged.
+    print(age_of(user))
+    let generated = json.object()
+    generated = json.set(generated, "user", json.value(User("Dev", 21)))
+    let items = json.array()
+    items = json.push(items, 42)
+    generated = json.set(generated, "items", items)
+    generated = json.set(generated, "empty", json.null_value())
+    print(json.stringify(generated))
+    print(json.kind(generated))
+    let keys = json.keys(generated)
+    for i in 0..(keys.len() as i64) { print(keys[i]) }
+    generated = json.remove(generated, "empty")
+    print(json.len(generated))
+    print(json.float(json.parse("1.5")))
+    print(json.uint(json.parse("18446744073709551615")))
+    let serialized = json.pretty(generated)
+    io.write_file("devlang-json-example.json", serialized)
+    let loaded = json.parse(io.read_file("devlang-json-example.json"))
+    print(json.stringify(loaded))
+}
+main()

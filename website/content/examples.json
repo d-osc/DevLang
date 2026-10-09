@@ -514,5 +514,21 @@
       "stdlib/lib/libdevruntime.a"
     ],
     "notes": "ZIP รวม source ของ stdlib ต้อง build archive ก่อน แล้วส่ง module-dir และ link เอง ไม่ใช้ runtime intrinsics"
+  },
+  {
+    "id": "json",
+    "title": "JSON: parse, stringify, objects และ arrays",
+    "category": "Runtime APIs",
+    "path": "examples/json/main.dev",
+    "description": "อ่าน JSON ซ้อนกัน, typed access, struct serialization, immutable updates และอ่าน/เขียนไฟล์",
+    "doc": "json",
+    "mode": "runtime",
+    "commands": [
+      "# จาก repository DevLang เต็มชุด:",
+      "cargo build --release -p dev-runtime -p dev-cli",
+      "./target/release/d.exe examples/json/main.dev",
+      "# Linux: ./target/release/d examples/json/main.dev"
+    ],
+    "notes": "API ใหม่ของ runtime จาก source ล่าสุด ตัวติดตั้ง v0.4.0 เดิมยังไม่มี JSON; ZIP มีเฉพาะตัวอย่าง ต้อง build runtime จาก repository เต็มก่อน สร้างหรือเขียนทับ devlang-json-example.json ใน cwd; native compiler ยังไม่รองรับ std/json"
   }
 ]

@@ -1,4 +1,5 @@
 mod engine;
+mod json;
 mod memory;
 mod native;
 mod numeric;

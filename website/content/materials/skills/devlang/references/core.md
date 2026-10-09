@@ -1,5 +1,18 @@
 # Core syntax and contracts
 
+## JSON (current source runtime)
+
+`use "std/json"` supplies managed `json.Value` values. This module is runtime-only;
+build the latest repository runtime, because v0.4.0 installers do not include it.
+Use parse/valid, get/has, at/len/keys, kind/is_null, string/bool/int/uint/float,
+object/array/null_value, set/remove/push, value/stringify/pretty. Updates return a
+new value: `data = json.set(data, "age", 21)`. Copies keep their previous content.
+Missing keys, bad indices/types and malformed JSON stop execution; no try/catch.
+Stringify accepts scalars, finite floats, structs, Ref, array/Vec/Slice and Map
+with string keys. JSON-to-struct conversion is explicit. Parsed number text can
+retain arbitrary precision; scalar conversion enforces i64/u64/f64 ranges.
+See repository `docs/json.md` and `examples/json/main.dev` for full contracts.
+
 ## Script and modules
 
 ```dev

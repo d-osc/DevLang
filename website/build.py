@@ -20,9 +20,10 @@ GROUPS = {
     'เริ่มต้น': ['intro', 'install', 'layout', 'cli'],
     'พื้นฐานภาษา': ['variables', 'types', 'operators', 'loops', 'functions', 'strings-arrays', 'modules'],
     'ข้อมูลและ abstraction': ['structs', 'enums-match', 'references', 'collections', 'generics', 'closures'],
-    'ระบบและ interoperability': ['tasks', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'limitations', 'ai'],
+    'ระบบและ interoperability': ['tasks', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'json', 'limitations', 'ai'],
 }
 REFERENCES = {
+    'json-reference': ('JSON API', 'docs/json.md'),
     'language-reference': ('Language specification', 'docs/language.md'),
     'advanced-reference': ('Advanced contracts', 'docs/advanced.md'),
     'runtime-reference': ('Runtime API', 'docs/runtime.md'),
@@ -110,15 +111,16 @@ def main():
         with tempfile.TemporaryDirectory(prefix='devlang-guide-') as temporary:
             validated = 0
             for token in markdown.parse(guide):
-                if token.type == 'fence' and token.info.strip() == 'dev':
+                if token.type == 'fence' and token.info.strip() in ('dev', 'dev-runtime'):
                     file = Path(temporary) / f'guide-{validated}.dev'
                     file.write_text(token.content, encoding='utf-8')
-                    subprocess.run([args.d, 'check', str(file)], capture_output=True, check=True, timeout=20)
+                    if token.info.strip() == 'dev':
+                        subprocess.run([args.d, 'check', str(file)], capture_output=True, check=True, timeout=20)
                     results = [subprocess.run([args.d, str(file), '--engine', engine], capture_output=True, check=True, timeout=20) for engine in ('auto', 'ast')]
                     if results[0].stdout != results[1].stdout:
                         raise ValueError(f'Guide source engines differ: {file}')
                     validated += 1
-            print(f'Validated {validated} guide programs in frontend + both source engines')
+            print(f'Validated {validated} guide programs in both source engines; native frontend for dev fences')
     examples = []
     captured_file = HERE / 'content/example-outputs.json'
     captured = json.loads(captured_file.read_text(encoding='utf-8')) if args.skip_validation and captured_file.is_file() else {}
