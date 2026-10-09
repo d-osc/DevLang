@@ -4,9 +4,17 @@ Offline installers include `d`, the compiler, source runtime, standard library a
 
 ## Windows x86_64
 
-Download `devlang-setup-v0.4.0-windows-x86_64.zip`, extract all files, and double-click `install.cmd`. Open a new terminal and run `d --help`. The default directory is `%LOCALAPPDATA%\Programs\DevLang`; the installer adds it to your user PATH and registers DevLang in Windows Installed apps.
+Download `devlang-setup-v0.4.0-windows-x86_64.exe`, double-click it, and click **Install**. Everything is embedded in this single file; no extraction or additional downloads are needed. Open a new terminal and run `d --help`. The default directory is `%LOCALAPPDATA%\Programs\DevLang`; the installer adds it to your user PATH and registers DevLang in Windows Installed apps. Windows 10/11 x86_64 with the built-in .NET Framework and Windows PowerShell is supported.
+
+The ZIP installer remains available: extract all files and open `install.cmd`.
 
 Custom or unattended installation:
+
+```powershell
+.\devlang-setup-v0.4.0-windows-x86_64.exe --silent --prefix "C:\Tools\DevLang" --log "install.log"
+```
+
+The EXE also accepts `--no-path` and `--no-registration`. For the ZIP installer:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Prefix "C:\Tools\DevLang"
@@ -46,4 +54,5 @@ Build release installers from the repository's prepared `dist` packages:
 
 ```sh
 python scripts/build_installers.py --version v0.4.0
+python scripts/build_installers.py --version v0.4.0 --windows-exe
 ```

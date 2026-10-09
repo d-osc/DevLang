@@ -26,10 +26,21 @@ if (Test-Path -LiteralPath $markerPath) {
     if ($previous.product -ne 'DevLang' -or $previous.prefix -ne $Prefix) { throw 'Invalid installation marker' }
 }
 function Remove-OwnedFiles($record) {
+    $directories = @{}
     foreach ($name in $record.files) {
         $file = [IO.Path]::GetFullPath((Join-Path $Prefix $name))
         if (-not $file.StartsWith($Prefix + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Invalid manifest path' }
         if (Test-Path -LiteralPath $file -PathType Leaf) { Remove-Item -LiteralPath $file -Force }
+        $directory = [IO.Path]::GetDirectoryName($file)
+        while ($directory -and $directory.StartsWith($Prefix + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+            $directories[$directory] = $true
+            $directory = [IO.Path]::GetDirectoryName($directory)
+        }
+    }
+    foreach ($directory in @($directories.Keys | Sort-Object -Property Length -Descending)) {
+        if ((Test-Path -LiteralPath $directory -PathType Container) -and @(Get-ChildItem -LiteralPath $directory -Force).Count -eq 0) {
+            Remove-Item -LiteralPath $directory -Force
+        }
     }
 }
 if ($Uninstall) {
@@ -44,6 +55,7 @@ if ($Uninstall) {
     }
     Remove-OwnedFiles $previous
     Remove-Item -LiteralPath $markerPath -Force
+    if (@(Get-ChildItem -LiteralPath $Prefix -Force).Count -eq 0) { Remove-Item -LiteralPath $Prefix -Force }
     Write-Host "DevLang removed. Other files in $Prefix were preserved. Open a new terminal."
     exit 0
 }
