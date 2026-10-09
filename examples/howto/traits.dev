@@ -1,0 +1,6 @@
+trait HasValue { fn value(self Self) i64 }
+struct Score { points i64 }
+fn Score.value(self Score) i64 { return self.points }
+fn read<T:HasValue>(item T) i64 { return item.value() }
+fn main() { print(read(Score(42))) }
+main()

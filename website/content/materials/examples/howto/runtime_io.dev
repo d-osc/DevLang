@@ -1,0 +1,16 @@
+use "std/io"
+use "std/strings"
+use "std/time"
+use "std/args"
+fn main() {
+    let message = strings.concat("Hello ", "Dev")
+    io.write("message: ")
+    io.writeln(message)
+    print(strings.len(message))
+    print(strings.equal(message, "Hello Dev"))
+    let start = time.now_ns()
+    time.sleep_ms(1)
+    print(time.now_ns() >= start)
+    if args.len() > 0 { print(args.get(0)) }
+}
+main()

@@ -1,0 +1,12 @@
+struct Pair { x i32; y i32 }
+extern fn pair_add(value Pair, extra i32) Pair
+extern fn call_twice(op callback(i32) i32, value i32) i32
+fn increment(value i32) i32 { return value + 1 }
+fn main() {
+    unsafe {
+        let result = pair_add(Pair(19, 23), 1)
+        print(result.x + result.y)
+        print(call_twice(callback(increment), 40))
+    }
+}
+main()

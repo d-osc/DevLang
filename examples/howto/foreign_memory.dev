@@ -1,0 +1,17 @@
+extern fn malloc(bytes usize) *void
+extern fn free(memory *void)
+fn main() {
+    unsafe {
+        let data = malloc(16) as *u32
+        if data == null { return 1 }
+        data[0] = 19
+        *(data + 1) = 23
+        print(data[0] + data[1])
+        volatile_store(data + 2, 42)
+        print(volatile_load(data + 2))
+        free(data as *void)
+        // No access to data is permitted after free.
+    }
+    return 0
+}
+return main()

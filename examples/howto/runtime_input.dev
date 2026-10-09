@@ -1,0 +1,7 @@
+use "std/io"
+fn main() {
+    io.writeln("What is your name?")
+    let name = io.read_line()
+    io.writeln("Hello " + name)
+}
+main()

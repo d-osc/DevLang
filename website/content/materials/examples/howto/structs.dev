@@ -1,0 +1,16 @@
+struct Point { x i64; y i64 }
+fn Point.sum(self Point) i64 { return self.x + self.y }
+fn Point.move(self Point, dx i64) Point { return Point(self.x + dx, self.y) }
+struct Line { start Point; end Point }
+fn main() {
+    let p = Point(19, 23)
+    let copy = p
+    copy.x = 99
+    print(p.sum())
+    print(copy.x)
+    let moved = p.move(1)
+    print(moved.sum())
+    let line = Line(p, moved)
+    print(line.end.x)
+}
+main()

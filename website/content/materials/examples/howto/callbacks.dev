@@ -1,0 +1,16 @@
+fn increment(value i64) i64 { return value + 1 }
+fn make(offset i64) fn(i64) i64 {
+    return fn(value i64) i64 { return offset + value }
+}
+fn main() {
+    unsafe {
+        let simple = callback(increment)
+        print(simple(41))
+        let captured = callback(make(19))
+        print(captured(23))
+        let owned = callback_context(make(19))
+        print(owned.call(23, owned.data))
+        // Retain owned until the foreign library unregisters and finishes calls.
+    }
+}
+main()

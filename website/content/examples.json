@@ -1,0 +1,518 @@
+[
+  {
+    "id": "hello",
+    "title": "Hello Dev",
+    "category": "เริ่มต้น",
+    "path": "examples/hello.dev",
+    "description": "ประกาศ main และเรียกใช้งานอย่างชัดเจน",
+    "doc": "intro",
+    "commands": [
+      "d examples/hello.dev",
+      "d check examples/hello.dev",
+      "d build examples/hello.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "modules",
+    "title": "หลายไฟล์ หนึ่งโปรแกรม",
+    "category": "Modules",
+    "path": "examples/modules/main.dev",
+    "description": "use แบบชื่อ module, relative path และ alias พร้อมไฟล์ประกอบ",
+    "doc": "modules",
+    "commands": [
+      "d examples/modules/main.dev",
+      "d check examples/modules/main.dev",
+      "d build examples/modules/main.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "features",
+    "title": "Structs & generics",
+    "category": "Types",
+    "path": "examples/features/main.dev",
+    "description": "หลายชนิดข้อมูลร่วมกับ imported module",
+    "doc": "structs",
+    "commands": [
+      "d examples/features/main.dev",
+      "d check examples/features/main.dev",
+      "d build examples/features/main.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "payload",
+    "title": "Recursive list",
+    "category": "Types",
+    "path": "examples/features/payload.dev",
+    "description": "Payload enums, Ref และ recursive list",
+    "doc": "references",
+    "commands": [
+      "d examples/features/payload.dev",
+      "d check examples/features/payload.dev",
+      "d build examples/features/payload.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "advanced",
+    "title": "Managed collections",
+    "category": "Collections",
+    "path": "examples/features/advanced.dev",
+    "description": "รวม COW, traits, closures, match และ async",
+    "doc": "collections",
+    "commands": [
+      "d examples/features/advanced.dev",
+      "d check examples/features/advanced.dev",
+      "d build examples/features/advanced.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "continuations",
+    "title": "Tasks & callbacks",
+    "category": "Systems",
+    "path": "examples/features/continuations.dev",
+    "description": "then, ready และ callback_context ที่เก็บ ownership",
+    "doc": "callbacks",
+    "commands": [
+      "d examples/features/continuations.dev",
+      "d check examples/features/continuations.dev",
+      "d build examples/features/continuations.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "variables",
+    "title": "ตัวแปร ชนิดข้อมูล และ cast",
+    "category": "พื้นฐาน",
+    "path": "examples/howto/variables.dev",
+    "description": "let, mutation, shadowing, typed literals, as และ comments",
+    "doc": "variables",
+    "commands": [
+      "d examples/howto/variables.dev",
+      "d check examples/howto/variables.dev",
+      "d build examples/howto/variables.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "conditions",
+    "title": "if / else if / else",
+    "category": "พื้นฐาน",
+    "path": "examples/howto/conditions.dev",
+    "description": "ทุกแขนงของเงื่อนไข รวม nested if และ early return",
+    "doc": "operators",
+    "commands": [
+      "d examples/howto/conditions.dev",
+      "d check examples/howto/conditions.dev",
+      "d build examples/howto/conditions.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "logical",
+    "title": "&& / || / and / or / ! / not",
+    "category": "พื้นฐาน",
+    "path": "examples/howto/logical.dev",
+    "description": "เปรียบเทียบสองรูปแบบ จัดกลุ่ม และพิสูจน์ short-circuit ด้วยฟังก์ชันที่พิมพ์ข้อความ",
+    "doc": "operators",
+    "commands": [
+      "d examples/howto/logical.dev",
+      "d check examples/howto/logical.dev",
+      "d build examples/howto/logical.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "operators",
+    "title": "คำนวณ เปรียบเทียบ และ bitwise",
+    "category": "พื้นฐาน",
+    "path": "examples/howto/operators.dev",
+    "description": "Arithmetic, comparisons, shifts, bitwise, compound assignment และ sizeof",
+    "doc": "operators",
+    "commands": [
+      "d examples/howto/operators.dev",
+      "d check examples/howto/operators.dev",
+      "d build examples/howto/operators.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "loops",
+    "title": "for / while / break / continue",
+    "category": "พื้นฐาน",
+    "path": "examples/howto/loops.dev",
+    "description": "End-exclusive range, nested loops และวน Vec ด้วย index",
+    "doc": "loops",
+    "commands": [
+      "d examples/howto/loops.dev",
+      "d check examples/howto/loops.dev",
+      "d build examples/howto/loops.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "functions",
+    "title": "ฟังก์ชัน recursion และ exit status",
+    "category": "พื้นฐาน",
+    "path": "examples/howto/functions.dev",
+    "description": "Typed parameters, return, factorial, optional :/-> และ return main()",
+    "doc": "functions",
+    "commands": [
+      "d examples/howto/functions.dev",
+      "d check examples/howto/functions.dev",
+      "d build examples/howto/functions.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "arrays",
+    "title": "Arrays และ UTF-8 bytes",
+    "category": "พื้นฐาน",
+    "path": "examples/howto/arrays.dev",
+    "description": "Fixed arrays, index mutation, sizeof, escapes และ string byte indexing",
+    "doc": "strings-arrays",
+    "commands": [
+      "d examples/howto/arrays.dev",
+      "d check examples/howto/arrays.dev",
+      "d build examples/howto/arrays.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "structs",
+    "title": "Structs และ methods",
+    "category": "Types",
+    "path": "examples/howto/structs.dev",
+    "description": "Positional constructors, nested structs, value copies และ methods ที่คืนค่าใหม่",
+    "doc": "structs",
+    "commands": [
+      "d examples/howto/structs.dev",
+      "d check examples/howto/structs.dev",
+      "d build examples/howto/structs.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "enums",
+    "title": "Enums และ payload",
+    "category": "Types",
+    "path": "examples/howto/enums.dev",
+    "description": "Payload-free equality/cast และ generic Ok/Err แบบ exhaustive match",
+    "doc": "enums-match",
+    "commands": [
+      "d examples/howto/enums.dev",
+      "d check examples/howto/enums.dev",
+      "d build examples/howto/enums.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "matching",
+    "title": "Match: guard, wildcard, nested",
+    "category": "Types",
+    "path": "examples/howto/matching.dev",
+    "description": "Nested destructuring พร้อม guard และ fallback สำหรับทุกกรณี",
+    "doc": "enums-match",
+    "commands": [
+      "d examples/howto/matching.dev",
+      "d check examples/howto/matching.dev",
+      "d build examples/howto/matching.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "references",
+    "title": "Ref และ recursive struct",
+    "category": "Types",
+    "path": "examples/howto/references.dev",
+    "description": "Immutable snapshot, deref และ struct/enum ที่ recursive ผ่าน Ref",
+    "doc": "references",
+    "commands": [
+      "d examples/howto/references.dev",
+      "d check examples/howto/references.dev",
+      "d build examples/howto/references.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "vector",
+    "title": "Vec ทุก method และ COW",
+    "category": "Collections",
+    "path": "examples/howto/vector.dev",
+    "description": "push, pop, len, clear, index read/write และสำเนาที่ไม่เปลี่ยนตาม",
+    "doc": "collections",
+    "commands": [
+      "d examples/howto/vector.dev",
+      "d check examples/howto/vector.dev",
+      "d build examples/howto/vector.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "slices",
+    "title": "Slice และ snapshot",
+    "category": "Collections",
+    "path": "examples/howto/slices.dev",
+    "description": "slice(start,end), len, nested slice และผลหลังแก้ Vec ต้นทาง",
+    "doc": "collections",
+    "commands": [
+      "d examples/howto/slices.dev",
+      "d check examples/howto/slices.dev",
+      "d build examples/howto/slices.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "maps",
+    "title": "Map ทุก method และ COW",
+    "category": "Collections",
+    "path": "examples/howto/maps.dev",
+    "description": "set, get, contains, remove, len, clear และ snapshot",
+    "doc": "collections",
+    "commands": [
+      "d examples/howto/maps.dev",
+      "d check examples/howto/maps.dev",
+      "d build examples/howto/maps.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "generics",
+    "title": "Generics, inference, constraints, const",
+    "category": "Abstraction",
+    "path": "examples/howto/generics.dev",
+    "description": "Function/struct generics, Number, Equatable และ Buffer<T,const N>",
+    "doc": "generics",
+    "commands": [
+      "d examples/howto/generics.dev",
+      "d check examples/howto/generics.dev",
+      "d build examples/howto/generics.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "traits",
+    "title": "User traits และ generic bounds",
+    "category": "Abstraction",
+    "path": "examples/howto/traits.dev",
+    "description": "กำหนด method contract แล้วเรียกผ่าน T:HasValue",
+    "doc": "generics",
+    "commands": [
+      "d examples/howto/traits.dev",
+      "d check examples/howto/traits.dev",
+      "d build examples/howto/traits.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "closures",
+    "title": "Function values และ closures",
+    "category": "Abstraction",
+    "path": "examples/howto/closures.dev",
+    "description": "ส่งฟังก์ชันเป็น parameter, คืน closure และ capture-by-value ที่ไม่สะสมการแก้ไข",
+    "doc": "closures",
+    "commands": [
+      "d examples/howto/closures.dev",
+      "d check examples/howto/closures.dev",
+      "d build examples/howto/closures.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "tasks",
+    "title": "async / spawn / await / ready / then",
+    "category": "Systems",
+    "path": "examples/howto/tasks.dev",
+    "description": "รันงานบน thread, รอซ้ำ, ต่อ continuation และ Task<void>",
+    "doc": "tasks",
+    "commands": [
+      "d examples/howto/tasks.dev",
+      "d check examples/howto/tasks.dev",
+      "d build examples/howto/tasks.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "callbacks",
+    "title": "Raw / captured / context callbacks",
+    "category": "Systems",
+    "path": "examples/howto/callbacks.dev",
+    "description": "callback(fn), capturing callback และ call/data/owner ใน unsafe",
+    "doc": "callbacks",
+    "commands": [
+      "d examples/howto/callbacks.dev",
+      "d check examples/howto/callbacks.dev",
+      "d build examples/howto/callbacks.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "foreign_memory",
+    "title": "C allocation, pointers และ volatile",
+    "category": "FFI",
+    "path": "examples/howto/foreign_memory.dev",
+    "description": "malloc/free, null guard, indexing, pointer arithmetic และ volatile บน allocation ที่ยังมีชีวิต",
+    "doc": "safety",
+    "commands": [
+      "d examples/howto/foreign_memory.dev",
+      "d check examples/howto/foreign_memory.dev",
+      "d build examples/howto/foreign_memory.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "variadic",
+    "title": "Variadic C calls",
+    "category": "FFI",
+    "path": "examples/howto/variadic.dev",
+    "description": "printf พร้อม format และชนิด argument ที่ตรงกับ C ABI",
+    "doc": "ffi",
+    "commands": [
+      "d examples/howto/variadic.dev",
+      "d check examples/howto/variadic.dev",
+      "d build examples/howto/variadic.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "exports",
+    "title": "export และ C symbol",
+    "category": "FFI",
+    "path": "examples/howto/exports.dev",
+    "description": "export fn ใช้รักษาชื่อ C symbol และเรียกจาก Dev ได้ตามปกติ",
+    "doc": "modules",
+    "commands": [
+      "d examples/howto/exports.dev",
+      "d check examples/howto/exports.dev",
+      "d build examples/howto/exports.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "safe_checks",
+    "title": "ตรวจขอบเขตและค่าก่อนใช้งาน",
+    "category": "Systems",
+    "path": "examples/howto/safe_checks.dev",
+    "description": "ป้องกัน index ผิด, หารศูนย์ และ Map key ที่ไม่มี",
+    "doc": "safety",
+    "commands": [
+      "d examples/howto/safe_checks.dev",
+      "d check examples/howto/safe_checks.dev",
+      "d build examples/howto/safe_checks.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ]
+  },
+  {
+    "id": "runtime_io",
+    "title": "Runtime: console, strings, time, args",
+    "category": "Runtime APIs",
+    "path": "examples/howto/runtime_io.dev",
+    "description": "write/writeln, concat/equal/len, monotonic time, sleep และ arguments หลัง --",
+    "doc": "stdlib",
+    "commands": [
+      "d examples/howto/runtime_io.dev -- DevLang"
+    ],
+    "mode": "runtime",
+    "runtime_args": [
+      "--",
+      "DevLang"
+    ],
+    "notes": "Runtime intrinsics เท่านั้น ใช้ d ... -- DevLang เพื่อส่ง argument; native stdlib ใช้ API ต่างกัน"
+  },
+  {
+    "id": "runtime_files",
+    "title": "Runtime: อ่านและเขียนไฟล์",
+    "category": "Runtime APIs",
+    "path": "examples/howto/runtime_files.dev",
+    "description": "write_file/read_file สำหรับ UTF-8 และตรวจข้อความที่อ่านกลับ",
+    "doc": "stdlib",
+    "commands": [
+      "d examples/howto/runtime_files.dev"
+    ],
+    "mode": "runtime",
+    "notes": "สร้างหรือเขียนทับ devlang-example.txt ใน working directory; การตรวจตัวอย่างใช้ temporary directory"
+  },
+  {
+    "id": "runtime_input",
+    "title": "Runtime: รับข้อมูลจาก keyboard",
+    "category": "Runtime APIs",
+    "path": "examples/howto/runtime_input.dev",
+    "description": "read_line รับหนึ่งบรรทัดแล้วทักทายผู้ใช้",
+    "doc": "stdlib",
+    "commands": [
+      "d examples/howto/runtime_input.dev"
+    ],
+    "mode": "runtime",
+    "stdin": "DevLang\n",
+    "notes": "เมื่อรันเอง ให้พิมพ์ DevLang แล้วกด Enter; ผลที่แสดงใช้ input บรรทัดนี้"
+  },
+  {
+    "id": "ffi",
+    "title": "C source FFI แบบรันทันที",
+    "category": "FFI",
+    "path": "examples/ffi/main.dev",
+    "description": "เรียก puts และ device_add จาก C source ข้างไฟล์ Dev",
+    "doc": "ffi",
+    "commands": [
+      "d examples/ffi/main.dev",
+      "d build examples/ffi/main.dev --link examples/ffi/device.c --release -o out/ffi",
+      "# Windows: out/ffi.exe | Linux: ./out/ffi"
+    ],
+    "notes": "ครั้งแรกต้องมี devc และ Clang/GCC เพื่อเตรียม C library; Dev source ยังรันผ่าน interpreter หลังจากนั้นใช้ cache ได้"
+  },
+  {
+    "id": "aggregate",
+    "title": "Struct ABI และส่ง callback ให้ C",
+    "category": "FFI",
+    "path": "examples/aggregate/main.dev",
+    "description": "รับส่ง C-compatible Pair แบบ by-value และให้ C เรียก scalar callback",
+    "doc": "ffi",
+    "commands": [
+      "d examples/aggregate/main.dev",
+      "d build examples/aggregate/main.dev --link examples/aggregate/device.c --release -o out/aggregate",
+      "# Windows: out/aggregate.exe | Linux: ./out/aggregate"
+    ],
+    "notes": "ZIP รวม device.c ครั้งแรกต้องมี C backend; signature และ struct layout ต้องตรงกับ C"
+  },
+  {
+    "id": "native-memory",
+    "title": "Native: address-of และ volatile register",
+    "category": "Native / hardware",
+    "path": "examples/memory.dev",
+    "description": "ใช้ &local, raw pointers, pointer arithmetic และ volatile กับ local memory",
+    "doc": "hardware",
+    "commands": [
+      "d build examples/memory.dev --release -o out/example",
+      "# Windows: out/example.exe | Linux: ./out/example"
+    ],
+    "mode": "native",
+    "notes": "ต้อง build native เพราะ runtime ไม่รองรับ &local ตัวอย่างใช้ RAM ของโปรแกรม ไม่ได้เข้าถึง physical device; hardware จริงต้องมี mapped address และสิทธิ์ OS/board"
+  },
+  {
+    "id": "native-stdlib",
+    "title": "Native stdlib: string ownership และ I/O",
+    "category": "Native / hardware",
+    "path": "examples/stdlib/main.dev",
+    "description": "สร้าง/append/view/free string, I/O, time และจัดการ allocation failure",
+    "doc": "stdlib",
+    "commands": [
+      "python stdlib/build.py",
+      "d build examples/stdlib/main.dev --module-dir std=stdlib/modules --link stdlib/lib/libdevruntime.a --release -o out/stdlib",
+      "# Windows: out/stdlib.exe | Linux: ./out/stdlib"
+    ],
+    "mode": "native",
+    "package_roots": [
+      "stdlib"
+    ],
+    "native_args": [
+      "--module-dir",
+      "std=stdlib/modules",
+      "--link",
+      "stdlib/lib/libdevruntime.a"
+    ],
+    "notes": "ZIP รวม source ของ stdlib ต้อง build archive ก่อน แล้วส่ง module-dir และ link เอง ไม่ใช้ runtime intrinsics"
+  }
+]

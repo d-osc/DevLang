@@ -1,0 +1,33 @@
+fn main() {
+    print(19 + 23)
+    print(50 - 8)
+    print(6 * 7)
+    print(84 / 2)
+    print(43 % 2)
+    print(-7)
+    print(1 == 1)
+    print(1 != 2)
+    print(1 < 2)
+    print(2 <= 2)
+    print(3 > 2)
+    print(3 >= 3)
+    let bits u32 = 10
+    print(bits & 3)
+    print(bits | 1)
+    print(bits ^ 3)
+    print(bits << 1)
+    print(bits >> 1)
+    print(~bits)
+    let value = 10
+    value += 2
+    value -= 1
+    value *= 3
+    value /= 3
+    value %= 5
+    value |= 8
+    value &= 9
+    value ^= 1
+    print(value)
+    print(sizeof(bits))
+}
+main()

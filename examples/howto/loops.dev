@@ -1,0 +1,19 @@
+fn main() {
+    let total = 0
+    for i in 0..6 {
+        if i == 2 { continue }
+        if i == 5 { break }
+        total += i
+    }
+    print(total)
+    let n = 3
+    while n > 0 { print(n); n -= 1 }
+    let pairs = 0
+    for row in 0..2 {
+        for col in 0..3 { pairs += 1 }
+    }
+    print(pairs)
+    let values = Vec<i64>(19, 23)
+    for i in 0..(values.len() as i64) { print(values[i]) }
+}
+main()

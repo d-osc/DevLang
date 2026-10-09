@@ -28,6 +28,10 @@ main()
 
 DevLang ยังเป็นภาษาในช่วงพัฒนา ไม่ควรสมมติว่าเร็วกว่า C/Rust/Go ทุกงาน หรือมีความปลอดภัยเท่าภาษาที่มี borrow checker
 
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [Hello Dev](#/examples/hello) — ประกาศ main และเรียกใช้งานอย่างชัดเจน
+
 # [install] ติดตั้งและเริ่มต้น
 
 ## Windows
@@ -125,6 +129,12 @@ print(value)
 
 ผลคือ 42 แล้ว 19 ชื่อซ้ำใน scope เดียวกันเป็น error แต่ scope ด้านใน shadow ชื่อด้านนอกได้ Assignment เช่น `+=`, `-=`, `*=`, `/=`, `%=` ใช้กับชนิดที่รองรับ
 
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [ตัวแปร ชนิดข้อมูล และ cast](#/examples/variables) — let, mutation, shadowing, typed literals, as และ comments
+
+เรื่องเงื่อนไข: [if / else if / else](#/examples/conditions) และ [&& / || / and / or](#/examples/logical)
+
 # [types] ชนิดข้อมูลและการแปลงค่า
 
 | Type | การใช้งาน |
@@ -187,6 +197,12 @@ if score > 0 and score < 100 {
 
 `and/or` short-circuit ไม่ประมวลผล operand ที่ไม่จำเป็น ระวัง C evaluation order ใน native: ถ้าหลาย function calls มี side effects และต้องเรียงลำดับ ให้แยกเป็น statements
 
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [if / else if / else](#/examples/conditions) — ทุกแขนงของเงื่อนไข รวม nested if และ early return
+- [&& / || / and / or / ! / not](#/examples/logical) — เปรียบเทียบสองรูปแบบ จัดกลุ่ม และพิสูจน์ short-circuit ด้วยฟังก์ชันที่พิมพ์ข้อความ
+- [คำนวณ เปรียบเทียบ และ bitwise](#/examples/operators) — Arithmetic, comparisons, shifts, bitwise, compound assignment และ sizeof
+
 # [loops] while, for, break และ continue
 
 ## while
@@ -217,6 +233,10 @@ print(total)
 
 `continue` ข้ามส่วนที่เหลือในรอบนั้น `break` ออกจาก loop ชั้นปัจจุบัน รองรับ nested loops และ return ภายใน loop ยังไม่มี inclusive range, custom step หรือ `for item in collection` ให้ใช้ index กับ `.len()`
 
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [for / while / break / continue](#/examples/loops) — End-exclusive range, nested loops และวน Vec ด้วย index
+
 # [functions] Functions และ return
 
 ## ประกาศและเรียก
@@ -246,6 +266,10 @@ print(factorial(5))
 
 รองรับ forward declaration และ recursion แต่ runtime มี call-depth limit อย่าใช้ recursion ลึกโดยไม่จำเป็น ยังไม่มี default parameters หรือ overload dispatch
 
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [ฟังก์ชัน recursion และ exit status](#/examples/functions) — Typed parameters, return, factorial, optional :/-> และ return main()
+
 # [strings-arrays] Strings และ fixed arrays
 
 ## String อ่านเป็น bytes
@@ -267,6 +291,10 @@ Runtime เป็นเจ้าของ string bytes ส่วน native `str`
 ## ข้อจำกัดของ array
 
 Fixed array ใช้ literal initializer; native ไม่รองรับ array ทั้งก้อนเป็น parameter/return/value copy ไม่รองรับ nested local arrays ถ้าต้องส่งเป็นค่าให้ห่อด้วย struct หรือใช้ `Vec<T>` ถ้าจะใช้ pointer + length ต้องมี unsafe และรักษา bounds/lifetime เอง
+
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [Arrays และ UTF-8 bytes](#/examples/arrays) — Fixed arrays, index mutation, sizeof, escapes และ string byte indexing
 
 # [modules] Modules และ export
 
@@ -299,6 +327,11 @@ print(device_add(19, 23))
 
 `export fn` รักษาชื่อ C symbol ที่ประกาศ เพื่อให้ C/linker เรียกได้ ชื่อ export ต้องไม่ชนกันทั้งโปรแกรม ใช้เมื่อต้องเปิด C API ไม่ต้องใส่ทุก function
 
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [หลายไฟล์ หนึ่งโปรแกรม](#/examples/modules) — use แบบชื่อ module, relative path และ alias พร้อมไฟล์ประกอบ
+- [export และ C symbol](#/examples/exports) — export fn ใช้รักษาชื่อ C symbol และเรียกจาก Dev ได้ตามปกติ
+
 # [structs] Structs และ methods
 
 ## ข้อมูลแบบมี fields
@@ -319,6 +352,11 @@ Struct assignment/parameter/return เป็น value semantics Managed fields �
 ## Receiver ของ method
 
 `fn Type.method(self Type, ...) R` รับ receiver เป็น **value copy** การแก้ self ไม่แก้ object ต้นทางโดยอัตโนมัติ ให้คืนค่าที่แก้แล้วและ assign กลับ ไม่มี implicit mutable-self borrowing, inheritance หรือ method overloading
+
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [Structs & generics](#/examples/features) — หลายชนิดข้อมูลร่วมกับ imported module
+- [Structs และ methods](#/examples/structs) — Positional constructors, nested structs, value copies และ methods ที่คืนค่าใหม่
 
 # [enums-match] Enums, payload และ match
 
@@ -360,6 +398,11 @@ match Outer.Some(Inner.Value(42)) {
 
 Guard ใช้ `if` หลัง pattern Pattern bindings อยู่ใน arm scope และเป็น value copies Nested pattern ที่ match ไม่ครบต้องมี fallback ยังไม่มี literal/struct/slice patterns
 
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [Enums และ payload](#/examples/enums) — Payload-free equality/cast และ generic Ok/Err แบบ exhaustive match
+- [Match: guard, wildcard, nested](#/examples/matching) — Nested destructuring พร้อม guard และ fallback สำหรับทุกกรณี
+
 # [references] Ref และ recursive data
 
 ## Immutable managed reference
@@ -386,6 +429,11 @@ match list {
 Recursive type ต้องผ่าน `Ref<T>`, raw pointer หรือ managed collection เพราะ layout แบบ `struct Node { next Node }` มีขนาดไม่สิ้นสุด จึงเป็น error รองรับ mutual recursion ที่มี indirect edge
 
 Reference counting ไม่ใช่ tracing GC หรือ borrow checker การห่อ native `str`/foreign pointer ใน Ref ไม่ได้ยืด lifetime ของ C memory นั้น
+
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [Recursive list](#/examples/payload) — Payload enums, Ref และ recursive list
+- [Ref และ recursive struct](#/examples/references) — Immutable snapshot, deref และ struct/enum ที่ recursive ผ่าน Ref
 
 # [collections] Vec, Slice และ Map
 
@@ -415,6 +463,13 @@ print(scores.remove("answer"))
 Methods คือ `set/get/contains/remove/len/clear` ถ้า get key ที่ไม่มีจะเกิด error Keys เป็น numeric/bool/str หรือ payload-free enum Values เป็น non-array values ไม่มี collection iterator ในปัจจุบัน
 
 Hash lookup/update/remove คาดหวัง O(1) แต่ collision อาจเป็น O(n) และ mutation ของ shared COW storage ต้อง copy O(n) Hash deterministic และไม่ป้องกัน adversarial keys Native string keys ต้องคง bytes และ lifetime ตลอดที่อยู่ใน Map
+
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [Managed collections](#/examples/advanced) — รวม COW, traits, closures, match และ async
+- [Vec ทุก method และ COW](#/examples/vector) — push, pop, len, clear, index read/write และสำเนาที่ไม่เปลี่ยนตาม
+- [Slice และ snapshot](#/examples/slices) — slice(start,end), len, nested slice และผลหลังแก้ Vec ต้นทาง
+- [Map ทุก method และ COW](#/examples/maps) — set, get, contains, remove, len, clear และ snapshot
 
 # [generics] Generics และ inference
 
@@ -457,6 +512,11 @@ print(buffer.data[0] + buffer.data[1])
 
 Const argument เป็น nonnegative integer ใช้เป็น array length/numeric value ได้ Array length ต้อง 1..1,000,000 ยังไม่มี const expressions, type-level arithmetic หรือ default generic arguments Generic function ไม่เป็น extern/export ต้องสร้าง concrete wrapper
 
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [Generics, inference, constraints, const](#/examples/generics) — Function/struct generics, Number, Equatable และ Buffer<T,const N>
+- [User traits และ generic bounds](#/examples/traits) — กำหนด method contract แล้วเรียกผ่าน T:HasValue
+
 # [closures] Function values และ closures
 
 ```dev
@@ -472,6 +532,10 @@ Function type คือ `fn(T1, T2) R` และ `fn() R` ฟังก์ชั�
 Closure capture ตัวแปรที่ใช้จาก outer scope **โดย value ณ ตอนสร้าง** Managed values retain storage การแก้ capture local เปลี่ยนแค่ copy ของ invocation ไม่แก้ outer และไม่ค้างไป invocation ถัดไป
 
 Fixed arrays ให้ capture ผ่าน struct/Vec แทน Closure/function body ต้องมี unsafe ของตัวเอง ไม่ได้สิทธิ์ unsafe จากตำแหน่งที่สร้างหรือเรียก
+
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [Function values และ closures](#/examples/closures) — ส่งฟังก์ชันเป็น parameter, คืน closure และ capture-by-value ที่ไม่สะสมการแก้ไข
 
 # [tasks] Threads, async และ continuations
 
@@ -502,6 +566,10 @@ print(deref(await(next)))
 
 Await งานที่จำเป็นก่อน process จบ Dropping last handle จะ detach งาน แต่ detached threads ไม่ทำให้โปรแกรมอยู่ต่อ Runtime task errors ต้อง observe ด้วย await ไม่มี cancellation, channels, user mutex API หรือ automatic parallel loops ใช้งานเป็น coarse tasks เพื่อลด thread setup overhead
 
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [async / spawn / await / ready / then](#/examples/tasks) — รันงานบน thread, รอซ้ำ, ต่อ continuation และ Task<void>
+
 # [safety] unsafe และความปลอดภัย
 
 ## เมื่อใดต้องใช้ unsafe
@@ -525,6 +593,11 @@ unsafe {
 ไม่มี borrow checker และพิสูจน์ allocation bounds/lifetime ของ arbitrary foreign pointer ไม่ได้ ต้องรักษา C ABI, buffer sizes, ownership และ synchronization เอง Unsafe ไม่ใช่ sandbox ผิด ABI หรือใช้ pointer หมดอายุทำให้ process crash ได้
 
 Native managed storage ใช้ reference counting แต่ native `str`/raw pointers เป็น borrowed C memory การ copy struct/Ref ที่มี pointer ไม่ได้เป็นเจ้าของ memory นั้น
+
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [C allocation, pointers และ volatile](#/examples/foreign_memory) — malloc/free, null guard, indexing, pointer arithmetic และ volatile บน allocation ที่ยังมีชีวิต
+- [ตรวจขอบเขตและค่าก่อนใช้งาน](#/examples/safe_checks) — ป้องกัน index ผิด, หารศูนย์ และ Map key ที่ไม่มี
 
 # [ffi] เชื่อมต่อ C และ native libraries
 
@@ -556,6 +629,12 @@ unsafe { printf("value=%d\n", 42 as i32) }
 
 Variadic ต้องมี fixed parameter อย่างน้อยหนึ่งตัว Extra bool/small integers promote เป็น i32, f32 เป็น f64 ต้องให้ format string ตรง widths รองรับ C-compatible scalar/struct ABI ไม่รองรับ managed aggregates, payload unions, packed structs, bitfields หรือ custom convention ให้ใช้ C wrapper
 
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [Variadic C calls](#/examples/variadic) — printf พร้อม format และชนิด argument ที่ตรงกับ C ABI
+- [C source FFI แบบรันทันที](#/examples/ffi) — เรียก puts และ device_add จาก C source ข้างไฟล์ Dev
+- [Struct ABI และส่ง callback ให้ C](#/examples/aggregate) — รับส่ง C-compatible Pair แบบ by-value และให้ C เรียก scalar callback
+
 # [callbacks] C callbacks และ userdata
 
 ## Raw callback
@@ -586,6 +665,11 @@ unsafe {
 
 Native path นี้ไม่จำกัด 64 instances เพราะ userdata เลือก environment และคืน managed captures เมื่อ last owner หาย Runtime เก็บ trampoline code/weak control blocks จน engine จบ แต่ปล่อย captures ได้ก่อน Runtime diagnose owner หมดอายุ แต่ native userdata ยังต้องรักษา unsafe lifetime contract
 
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [Tasks & callbacks](#/examples/continuations) — then, ready และ callback_context ที่เก็บ ownership
+- [Raw / captured / context callbacks](#/examples/callbacks) — callback(fn), capturing callback และ call/data/owner ใน unsafe
+
 # [hardware] Raw pointers และ hardware
 
 ## Native memory access
@@ -610,6 +694,10 @@ d build firmware.dev --freestanding --lib --cc clang
 ```
 
 Target ต้องเตรียม startup, linker script, memory/compiler support routines และ drivers เอง `print` และ managed allocation ใช้ hosted environment ไม่ใช่ทุก feature จะเหมาะกับ firmware ตัวอย่าง ARM ถูกตรวจรูปแบบ ELF แต่ไม่ได้ยืนยันบนอุปกรณ์จริง
+
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [Native: address-of และ volatile register](#/examples/native-memory) — ใช้ &local, raw pointers, pointer arithmetic และ volatile กับ local memory
 
 # [stdlib] Standard library แบบแยกส่วน
 
@@ -641,6 +729,13 @@ d build examples/stdlib/main.dev --module-dir std=stdlib/modules --link stdlib/l
 | `time` | monotonic clock และ sleep |
 
 Bindings มี unsafe อยู่ใน function ที่เรียก C ผู้ใช้ยังต้องตรวจ null/byte counts และคืน opaque handles ตาม API ระวัง borrowed string view หลัง free/resize อ่าน contracts ฉบับเต็มใน Stdlib reference
+
+## ตัวอย่างที่รันและดาวน์โหลดได้
+
+- [Runtime: console, strings, time, args](#/examples/runtime_io) — write/writeln, concat/equal/len, monotonic time, sleep และ arguments หลัง --
+- [Runtime: อ่านและเขียนไฟล์](#/examples/runtime_files) — write_file/read_file สำหรับ UTF-8 และตรวจข้อความที่อ่านกลับ
+- [Runtime: รับข้อมูลจาก keyboard](#/examples/runtime_input) — read_line รับหนึ่งบรรทัดแล้วทักทายผู้ใช้
+- [Native stdlib: string ownership และ I/O](#/examples/native-stdlib) — สร้าง/append/view/free string, I/O, time และจัดการ allocation failure
 
 # [cli] CLI และ options
 

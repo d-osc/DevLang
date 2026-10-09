@@ -1,0 +1,15 @@
+fn classify(score i64) str {
+    if score >= 80 { return "excellent" }
+    else if score >= 50 { return "pass" }
+    else { return "retry" }
+}
+fn main() {
+    print(classify(90))
+    print(classify(60))
+    print(classify(20))
+    let member = true
+    if member {
+        if 90 >= 80 { print("member reward") }
+    }
+}
+main()

@@ -1,0 +1,36 @@
+extern fn dvr_file_open(path str, mode str) *void
+
+extern fn dvr_file_read(file *void, data *u8, bytes usize) usize
+
+extern fn dvr_file_write(file *void, data *u8, bytes usize) usize
+
+extern fn dvr_file_write_text(file *void, text str) usize
+
+extern fn dvr_file_flush(file *void) i32
+
+extern fn dvr_file_close(file *void) i32
+
+extern fn dvr_file_error(file *void) i32
+
+extern fn dvr_file_eof(file *void) i32
+
+extern fn dvr_write(text str) i32
+
+extern fn dvr_writeln(text str) i32
+
+extern fn dvr_stdout_flush() i32
+
+extern fn dvr_read_line(data *u8, capacity usize) isize
+
+fn open(path str, mode str) *void { unsafe {  return dvr_file_open(path, mode)  } }
+fn read(file *void, data *u8, bytes usize) usize { unsafe {  return dvr_file_read(file, data, bytes)  } }
+fn write_bytes(file *void, data *u8, bytes usize) usize { unsafe {  return dvr_file_write(file, data, bytes)  } }
+fn write_file(file *void, text str) usize { unsafe {  return dvr_file_write_text(file, text)  } }
+fn flush_file(file *void) bool { unsafe {  return dvr_file_flush(file) == 0  } }
+fn close(file *void) bool { unsafe {  return dvr_file_close(file) == 0  } }
+fn error(file *void) bool { unsafe {  return dvr_file_error(file) != 0  } }
+fn eof(file *void) bool { unsafe {  return dvr_file_eof(file) != 0  } }
+fn write(text str) bool { unsafe {  return dvr_write(text) != 0  } }
+fn writeln(text str) bool { unsafe {  return dvr_writeln(text) != 0  } }
+fn flush() bool { unsafe {  return dvr_stdout_flush() == 0  } }
+fn read_line(data *u8, capacity usize) isize { unsafe {  return dvr_read_line(data, capacity)  } }

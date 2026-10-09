@@ -1,0 +1,13 @@
+fn main() {
+    let values = Vec<i64>(42)
+    let index = 0
+    if index >= 0 && index < (values.len() as i64) { print(values[index]) }
+    let denominator = 0
+    if denominator != 0 { print(42 / denominator) }
+    else { print("division avoided") }
+    let table = Map<str, i64>()
+    if table.contains("missing") { print(table.get("missing")) }
+    else { print("missing key handled") }
+    // Bounds/zero checks still apply if the guards are omitted; errors stop execution.
+}
+main()

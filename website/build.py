@@ -32,14 +32,7 @@ REFERENCES = {
     'map-performance': ('Map benchmarks', 'docs/map-performance.md'),
     'runtime-performance': ('Runtime benchmarks', 'docs/runtime-compute.md'),
 }
-EXAMPLES = [
-    ('hello', 'Hello Dev', 'เริ่มต้น', 'examples/hello.dev', 'ประกาศ main และเรียกใช้งานอย่างชัดเจน'),
-    ('modules', 'หลายไฟล์ หนึ่งโปรแกรม', 'Modules', 'examples/modules/main.dev', 'import module และเรียกฟังก์ชันข้ามไฟล์'),
-    ('features', 'Structs & generics', 'Types', 'examples/features/main.dev', 'range for, struct, enum และ generic functions'),
-    ('payload', 'Recursive list', 'Types', 'examples/features/payload.dev', 'payload enums, Ref และ nested match'),
-    ('advanced', 'Managed collections', 'Collections', 'examples/features/advanced.dev', 'COW snapshots, Map, traits, closures และ tasks'),
-    ('continuations', 'Tasks & callbacks', 'Systems', 'examples/features/continuations.dev', 'then continuations และ managed callback contexts'),
-]
+EXAMPLES = json.loads((HERE / 'content/examples.json').read_text(encoding='utf-8'))
 
 
 def bundle(source, output, root):
@@ -61,8 +54,12 @@ def main():
             target = materials / path
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(REPO / path, target)
-        for path in ('examples', 'skills/devlang'):
-            shutil.copytree(REPO / path, materials / path, dirs_exist_ok=True, ignore=shutil.ignore_patterns('.dev-cache', '__pycache__', '*.exe', '*.dll', '*.so'))
+        for path in ('examples', 'skills/devlang', 'stdlib'):
+            ignored = ['.dev-cache', '__pycache__', '*.exe', '*.dll', '*.so', '*.a', '*.o']
+            if path == 'stdlib':
+                ignored.append('lib')
+            shutil.copytree(REPO / path, materials / path, dirs_exist_ok=True,
+                            ignore=shutil.ignore_patterns(*ignored))
     else:
         REPO = materials
     dist = HERE / 'dist'
@@ -125,18 +122,58 @@ def main():
     examples = []
     captured_file = HERE / 'content/example-outputs.json'
     captured = json.loads(captured_file.read_text(encoding='utf-8')) if args.skip_validation and captured_file.is_file() else {}
-    for slug, title, category, path, description in EXAMPLES:
+    for item in EXAMPLES:
+        slug, path = item['id'], item['path']
         file = REPO / path
+        folder = file.parent
+        # Include imported sources and C dependencies in snapshot freshness checks.
+        package = [file] if folder.name == 'howto' or folder == REPO / 'examples' else sorted(
+            p for p in folder.rglob('*') if p.is_file() and p.suffix in ('.dev', '.c', '.h'))
+        for root in item.get('package_roots', []):
+            package.extend(sorted(p for p in (REPO / root).rglob('*') if p.is_file()
+                                  and p.suffix in ('.dev', '.c', '.h', '.py')))
         source_hash = hashlib.sha256(file.read_text(encoding='utf-8').encode('utf-8')).hexdigest()
+        package_hash = hashlib.sha256()
+        for p in package:
+            package_hash.update(p.relative_to(REPO).as_posix().encode())
+            package_hash.update(p.read_text(encoding='utf-8').encode())
+        package_hash.update(json.dumps(item, sort_keys=True, ensure_ascii=False).encode())
+        validation_hash = package_hash.hexdigest()
         if args.skip_validation:
-            if captured.get(slug, {}).get('source_sha256') != source_hash:
+            if captured.get(slug, {}).get('validation_sha256') != validation_hash:
                 raise ValueError(f'Missing or stale captured output for {slug}; run build with --d to validate')
             output = captured[slug]['output']
         else:
-            result = subprocess.run([args.d, str(file)], capture_output=True, check=True, timeout=30)
-            output = result.stdout.decode('utf-8')
-            captured[slug] = dict(source_sha256=source_hash, output=output)
-        examples.append(dict(id=slug, title=title, category=category, path=path, description=description, code=file.read_text(encoding='utf-8'), output=output, download='downloads/' + slug + '.zip'))
+            launcher = str(Path(args.d).resolve())
+            mode = item.get('mode', 'both')
+            check_args = item.get('native_args', [])
+            if mode != 'runtime':
+                subprocess.run([launcher, 'check', str(file), *check_args], cwd=REPO,
+                               capture_output=True, check=True, timeout=30)
+            with tempfile.TemporaryDirectory(prefix='devlang-example-') as work:
+                if mode == 'native':
+                    binary = str(Path(work) / 'example.exe')
+                    subprocess.run([launcher, 'build', str(file), '--release', '-o', binary, *check_args],
+                                   cwd=REPO, capture_output=True, check=True, timeout=90)
+                    result = subprocess.run([binary], cwd=work, capture_output=True, check=True, timeout=30)
+                    output = result.stdout.decode('utf-8').replace('\r\n', '\n')
+                else:
+                    results = [subprocess.run([launcher, str(file), '--engine', engine, *item.get('runtime_args', [])],
+                                              input=item.get('stdin', '').encode(), cwd=work,
+                                              capture_output=True, check=True, timeout=30)
+                               for engine in ('auto', 'ast')]
+                    if results[0].stdout != results[1].stdout:
+                        raise ValueError(f'Example source engines differ: {path}')
+                    output = results[0].stdout.decode('utf-8').replace('\r\n', '\n')
+            captured[slug] = dict(source_sha256=source_hash, validation_sha256=validation_hash, output=output)
+            print(f'Validated {slug} ({mode})')
+        validation = 'native frontend + compiled executable' if item.get('mode') == 'native' else (
+            'runtime auto + AST' if item.get('mode') == 'runtime' else 'native frontend + runtime auto + AST')
+        dependencies = [dict(path=p.relative_to(REPO).as_posix(), code=p.read_text(encoding='utf-8'))
+                        for p in package if p != file and p.suffix in ('.dev', '.c', '.h')
+                        and not item.get('package_roots')]
+        examples.append(dict(item, code=file.read_text(encoding='utf-8'), output=output,
+                             validation=validation, files=dependencies, download='downloads/' + slug + '.zip'))
     if not args.skip_validation:
         captured_file.write_text(json.dumps(captured, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     downloads = dist / 'downloads'
@@ -146,9 +183,13 @@ def main():
     for example in examples:
         folder = (REPO / example['path']).parent
         with zipfile.ZipFile(downloads / (example['id'] + '.zip'), 'w', zipfile.ZIP_DEFLATED) as archive:
-            files = folder.rglob('*.dev') if example['id'] in ('modules', 'features', 'payload', 'advanced', 'continuations') else [REPO / example['path']]
+            files = [REPO / example['path']] if folder.name == 'howto' or folder == REPO / 'examples' else [
+                p for p in folder.rglob('*') if p.is_file() and p.suffix in ('.dev', '.c', '.h', '.md')]
+            for root in example.get('package_roots', []):
+                files.extend(p for p in (REPO / root).rglob('*') if p.is_file()
+                             and p.suffix in ('.dev', '.c', '.h', '.py', '.md'))
             for file in files:
-                archive.write(file, file.relative_to(folder).as_posix())
+                archive.write(file, file.relative_to(REPO).as_posix())
     docs_dir = dist / 'markdown'
     docs_dir.mkdir(exist_ok=True)
     for page in raw:

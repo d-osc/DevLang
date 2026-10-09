@@ -1,0 +1,17 @@
+enum Inner { None, Value(i64) }
+enum Result { Ok(Inner), Err(str) }
+fn show(result Result) {
+    match result {
+        Ok(Value(n)) if n > 0 => { print(n) }
+        Ok(Value(n)) => { print("non-positive") }
+        Ok(None) => { print("empty") }
+        _ => { print("error") }
+    }
+}
+fn main() {
+    show(Result.Ok(Inner.Value(42)))
+    show(Result.Ok(Inner.Value(-1)))
+    show(Result.Ok(Inner.None()))
+    show(Result.Err("bad"))
+}
+main()

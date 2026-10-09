@@ -1,0 +1,21 @@
+fn double(value i64) i64 { return value * 2 }
+fn apply(op fn(i64) i64, value i64) i64 { return op(value) }
+fn make(offset i64) fn(i64) i64 {
+    return fn(value i64) i64 { return offset + value }
+}
+fn main() {
+    let op fn(i64) i64 = double
+    print(apply(op, 21))
+    let add = make(19)
+    print(add(23))
+    let offset = 19
+    let saved = fn(value i64) i64 { return offset + value }
+    offset = 99
+    print(saved(23)) // Captures preserve the value at creation.
+    let count = 0
+    let tick = fn() i64 { count += 1; return count }
+    print(tick())
+    print(tick()) // Captured mutations do not persist across calls.
+    print(count)
+}
+main()

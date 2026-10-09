@@ -1,0 +1,16 @@
+enum Color { Red, Green, Blue }
+enum Result<T> { Ok(T), Err(str) }
+fn show(result Result<i64>) {
+    match result {
+        Ok(value) => { print(value) }
+        Err(message) => { print(message) }
+    }
+}
+fn main() {
+    let color = Color.Green
+    print(color == Color.Green)
+    print(color as i64)
+    show(Result<i64>.Ok(42))
+    show(Result<i64>.Err("invalid input"))
+}
+main()

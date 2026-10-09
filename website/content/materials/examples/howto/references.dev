@@ -1,0 +1,16 @@
+struct Point { x i64; y i64 }
+struct Node { value i64; next Ref<Link> }
+enum Link { End, More(Node) }
+fn main() {
+    let p = Point(19, 23)
+    let saved = ref(p)
+    p.x = 99
+    let restored = deref(saved)
+    print(restored.x + restored.y)
+    let list = Node(42, ref(Link.End()))
+    match deref(list.next) {
+        End => { print(list.value) }
+        More(node) => { print(node.value) }
+    }
+}
+main()

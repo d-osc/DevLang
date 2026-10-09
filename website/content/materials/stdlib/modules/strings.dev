@@ -1,0 +1,27 @@
+extern fn dvr_string_new(text str) *void
+
+extern fn dvr_string_clone(handle *void) *void
+
+extern fn dvr_string_len(handle *void) usize
+
+extern fn dvr_string_view(handle *void) str
+
+extern fn dvr_string_append(handle *void, text str) i32
+
+extern fn dvr_string_append_bytes(handle *void, data *u8, bytes usize) i32
+
+extern fn dvr_string_equal(a *void, b *void) i32
+
+extern fn dvr_string_clear(handle *void)
+
+extern fn dvr_string_free(handle *void)
+
+fn new(text str) *void { unsafe {  return dvr_string_new(text)  } }
+fn clone(handle *void) *void { unsafe {  return dvr_string_clone(handle)  } }
+fn len(handle *void) usize { unsafe {  return dvr_string_len(handle)  } }
+fn view(handle *void) str { unsafe {  return dvr_string_view(handle)  } }
+fn append(handle *void, text str) bool { unsafe {  return dvr_string_append(handle, text) != 0  } }
+fn append_bytes(handle *void, data *u8, bytes usize) bool { unsafe {  return dvr_string_append_bytes(handle, data, bytes) != 0  } }
+fn equal(a *void, b *void) bool { unsafe {  return dvr_string_equal(a, b) != 0  } }
+fn clear(handle *void) { unsafe {  dvr_string_clear(handle)  } }
+fn free(handle *void) { unsafe {  dvr_string_free(handle)  } }

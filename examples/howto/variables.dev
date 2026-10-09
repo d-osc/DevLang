@@ -1,0 +1,21 @@
+fn main() {
+    let count = 1
+    count += 2
+    let small i32 = 42
+    let wide = small as i64
+    let real = wide as f64
+    let bits u32 = 0xFF
+    let enabled bool = true
+    let text str = "DevLang"
+    print(count)
+    print(real)
+    print(bits)
+    print(enabled)
+    print(text)
+    if enabled {
+        let count = 99 // A new variable in this scope.
+        print(count)
+    }
+    print(count)
+}
+main()

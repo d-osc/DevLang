@@ -1,0 +1,7 @@
+extern fn printf(format str, ...) i32
+fn main() {
+    unsafe {
+        printf("value=%d real=%.1f\n", 42 as i32, 1.5 as f64)
+    }
+}
+main()

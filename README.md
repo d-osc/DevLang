@@ -4,6 +4,8 @@
 
 เว็บไซต์คู่มือภาษาไทยและ reference: [เปิดเว็บไซต์ DevLang](https://d-osc.github.io/DevLang/) ([Sites mirror](https://devlang-docs.pineapplestudio7.chatgpt.site), [source](website/README.md)) · Skill สำหรับ AI coding agents: [devlang](skills/devlang/SKILL.md)
 
+[ตัวอย่างพร้อมคำสั่งรันและ ZIP 36 ชุด](https://d-osc.github.io/DevLang/#/examples) ครอบคลุมเงื่อนไข/operators, loops, types, modules, collections, generics, closures, tasks, C FFI และ runtime/native APIs ดู source แยกเรื่องใน [examples/howto](examples/howto/README.md)
+
 ใช้คำสั่ง `d` ได้จาก bundle ใน `dist/d/<platform>/` หรือ `target/release/` หลัง `cargo build --release`:
 
 ```sh

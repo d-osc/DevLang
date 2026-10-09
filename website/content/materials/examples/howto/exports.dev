@@ -1,0 +1,4 @@
+// export preserves the function name as a C ABI symbol.
+export fn example_add(a i32, b i32) i32 { return a + b }
+fn main() { print(example_add(19, 23)) }
+main()

@@ -17,3 +17,27 @@ Edit `content/guide.md` for the Thai guide. Reference pages are generated from r
 Assets and downloads use relative URLs, and documentation navigation uses hash routes, so the site works under the `/DevLang/` project path. The Sites hosting manifest retains the separate hosted Site identity; use the Sites source workflow for that host.
 
 Standalone Site clones use the tracked snapshots in `content/materials` and `content/example-outputs.json`. Run `python build.py --skip-validation` to rebuild with those outputs, or supply `--d /path/to/d` for fresh runtime validation. In the DevLang checkout, builds refresh the snapshots from the current repository docs/examples/skill.
+
+## Example catalog
+
+`content/examples.json` defines 36 focused and integrated examples, their topic,
+mode, commands, prerequisites, input and related documentation page. It covers
+conditions/logical aliases, operators, types/casts, loops, functions/recursion,
+modules, structs/methods, enums/matching, Ref/recursive layouts, Vec/Map/Slice,
+generic inference/constraints/const parameters, traits, closures, threaded tasks,
+callbacks, raw memory, volatile access, variadic/aggregate C ABI, export, runtime
+I/O/files/input/arguments/time and native stdlib.
+
+A full build validates common programs with native frontend checking and both
+runtime engines; runtime API programs use both engines; native-only examples
+are compiled and executed. File I/O runs in temporary directories and console
+input receives the catalog's recorded stdin. Build the native stdlib first with
+`python stdlib/build.py` when refreshing its example output. C-source FFI examples
+require the sibling compiler and a C backend. Diagnostics/outputs do not claim
+that physical hardware was exercised.
+
+Captured-output freshness hashes include the catalog entry, imported Dev sources,
+C/header dependencies and bundled stdlib source. CI uses these snapshots without
+requiring a Windows executable. Example ZIPs preserve paths from the repository
+root and include imports/C dependencies; the native stdlib example also includes
+its buildable source. Every example page lists the exact validation mode.

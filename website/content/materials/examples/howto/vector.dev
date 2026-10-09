@@ -1,0 +1,14 @@
+fn main() {
+    let values = Vec<i64>(19, 23)
+    values.push(7)
+    let copy = values
+    values[0] = 99
+    print(copy[0])
+    print(values[0])
+    print(values.len())
+    if values.len() > 0 { print(values.pop()) }
+    values.clear()
+    print(values.len())
+    print(copy.len())
+}
+main()

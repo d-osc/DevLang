@@ -1,0 +1,16 @@
+fn add(a i64, b i64) i64 { return a + b }
+fn factorial(n i64) i64 {
+    if n <= 1 { return 1 }
+    return n * factorial(n - 1)
+}
+fn greet(message str) { print(message) }
+fn optional_spelling(value: i64) -> i64 { return value * 2 }
+fn main() {
+    greet("explicit main call")
+    print(add(19, 23))
+    print(factorial(5))
+    print(optional_spelling(21))
+    return 0
+}
+// Forward main's result as the program exit code.
+return main()

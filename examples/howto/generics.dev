@@ -1,0 +1,18 @@
+fn identity<T>(value T) T { return value }
+fn sum<T:Number>(a T, b T) T { return a + b }
+fn same<T:Equatable>(a T, b T) bool { return a == b }
+struct Box<T> { value T }
+struct Buffer<T, const N> { data [T; N] }
+fn main() {
+    print(identity(42))
+    let narrow i32 = identity(42)
+    print(narrow)
+    print(sum<i64>(19, 23))
+    print(sum<f64>(1.5, 2.5))
+    print(same(true, true))
+    let box = Box(42)
+    print(box.value)
+    let buffer = Buffer<i64, 2>([19, 23])
+    print(buffer.data[0] + buffer.data[1])
+}
+main()

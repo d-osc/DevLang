@@ -1,0 +1,15 @@
+fn main() {
+    let values [i64; 3] = [19, 23, 7]
+    values[2] = 0
+    let total = 0
+    for i in 0..3 { total += values[i] }
+    print(total)
+    print(values[1])
+    print(sizeof(values))
+    // Indexing a string returns a UTF-8 byte (u8), not a character.
+    let text = "Dev"
+    print(text)
+    print(text[0])
+    print("line one\nline two")
+}
+main()

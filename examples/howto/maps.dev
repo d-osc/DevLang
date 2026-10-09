@@ -1,0 +1,16 @@
+fn main() {
+    let scores = Map<str, i64>()
+    scores.set("answer", 42)
+    scores.set("bonus", 7)
+    let saved = scores
+    scores.set("answer", 99)
+    if scores.contains("answer") { print(scores.get("answer")) }
+    print(saved.get("answer"))
+    scores.remove("bonus")
+    print(scores.contains("bonus"))
+    print(scores.len())
+    scores.clear()
+    print(scores.len())
+    print(saved.len())
+}
+main()

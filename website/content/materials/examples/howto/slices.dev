@@ -1,0 +1,11 @@
+fn main() {
+    let values = Vec<i64>(10, 19, 23, 40)
+    let snapshot = values.slice(1, 3)
+    values[1] = 99
+    print(snapshot.len())
+    print(snapshot[0] + snapshot[1])
+    let tail = snapshot.slice(1, 2)
+    print(tail[0])
+    for i in 0..(snapshot.len() as i64) { print(snapshot[i]) }
+}
+main()

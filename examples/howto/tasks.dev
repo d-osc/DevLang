@@ -1,0 +1,16 @@
+async fn compute(value i64) i64 { return value * 2 }
+fn main() {
+    let first = compute(21)
+    let second = spawn(fn() i64 { return 19 + 23 })
+    // Independent work may run here. await blocks until the worker finishes.
+    print(await(first))
+    print(ready(first))
+    print(await(second))
+    print(await(first)) // Repeated await returns the result again.
+    let chained = then(second, fn(n i64) i64 { return n + 1 })
+    print(await(chained))
+    let empty = spawn(fn() {})
+    let after = then(empty, fn() i64 { return 7 })
+    print(await(after))
+}
+main()

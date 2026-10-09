@@ -1,0 +1,11 @@
+use "std/io"
+use "std/strings"
+fn main() {
+    // Creates or overwrites this file in the working directory.
+    if io.write_file("devlang-example.txt", "Hello file\n") {
+        let text = io.read_file("devlang-example.txt")
+        print(strings.equal(text, "Hello file\n"))
+        io.write(text)
+    }
+}
+main()

@@ -1,0 +1,19 @@
+fn probe() bool { print("right side evaluated"); return true }
+fn main() {
+    let age = 20
+    let ticket = true
+    let admin = false
+    let owner = true
+    print(age >= 18 && ticket)
+    print(age >= 18 and ticket)
+    print(admin || owner)
+    print(admin or owner)
+    print(!admin)
+    print(not admin)
+    print((admin || owner) && ticket)
+    // These two expressions skip probe(): no extra message is printed.
+    print(false && probe())
+    print(true or probe())
+    print(true && probe())
+}
+main()

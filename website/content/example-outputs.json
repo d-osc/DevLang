@@ -1,26 +1,182 @@
 {
   "hello": {
     "source_sha256": "89ba44bbab73c5e1107f01689e335b1209b81199c9bc8e79c0bc28cd0cb29409",
+    "validation_sha256": "53a8c7e7923a67b3d744c2efbb74229f684e957b979fdfcab54933764d3dcc24",
     "output": "Hello from Dev Lang\n42\n"
   },
   "modules": {
     "source_sha256": "d7137a407ef33173ec52447e2454081fa3e57cf06b08f23d7b796ac83a0eeae3",
+    "validation_sha256": "3542682c9cc6586e469f4fcb7e22d5f2ddb5cb5cef0d391acdbd879634c73472",
     "output": "Three files, one native program\n42\n55\n"
   },
   "features": {
     "source_sha256": "3d93e4796d712fc41f95d75cbd1faf90d2ec8e088d4db8d0b5a987cc54b47de5",
+    "validation_sha256": "ee56c1eb2a8b38ced3e5aed0fc14a9f9ca8df025a374c25e9313b279f11d1457",
     "output": "42\n43\nGreen\ntrue\n42\n4\n23\n"
   },
   "payload": {
     "source_sha256": "0bed160700fde68396623d16784f6482f2c4ea4961c94c734763bd36e276875d",
+    "validation_sha256": "67819b0c8f757d8e7473adb14923e87b19cde7bf42df5c43c1729249698e5368",
     "output": "42\n19\nend\n"
   },
   "advanced": {
     "source_sha256": "002eb3d966310271a7f3526b34bf9cabc5e03162906550f2f20fd7cff79f42a1",
+    "validation_sha256": "8271bea4191a40927040692d9c7cffa74dafca5b4c9a8392e89533b9e06be266",
     "output": "42\n42\n42\n42\n42\n42\n42\n42\n"
   },
   "continuations": {
     "source_sha256": "cabaace86c622b54b259df56666c943708b5d05deccdc546061fad293b2e670c",
+    "validation_sha256": "d533d36432b889bf35dd3326e4ff02abcdfb55fc329b6de6d352fe6db4017f30",
     "output": "42\n42\n"
+  },
+  "variables": {
+    "source_sha256": "543009243f75a688ee539facc448681ac860e75df9a575e79dc1b83b6e53abac",
+    "validation_sha256": "7eca18539a1b7278828cac0d45ea09619ab3a50571025b5c6e18efd6f110a694",
+    "output": "3\n42\n255\ntrue\nDevLang\n99\n3\n"
+  },
+  "conditions": {
+    "source_sha256": "17e390921dba0a6e5191ff63426c0c6dd2eacf62b0aeb81262ee8ef9d5ff5aa8",
+    "validation_sha256": "5c39e9a7f012c081c90c71583ff1552008387fb9b61ad7b565ce2df05218996c",
+    "output": "excellent\npass\nretry\nmember reward\n"
+  },
+  "logical": {
+    "source_sha256": "707262bb4650a08510a56d6d6ec481b592315ac935bdaf97094075323460520f",
+    "validation_sha256": "960bbeeb350be9469d5cac806327dfbba8c685dc988cbf8dafebe3e5353947e9",
+    "output": "true\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\nfalse\ntrue\nright side evaluated\ntrue\n"
+  },
+  "operators": {
+    "source_sha256": "32647e140a67dba31f9dd81e3b04db5e3757027d57caa94a6f6e5db0dc02601c",
+    "validation_sha256": "db38ba7480c02eb11176c9516741b7aa75d9b7c60a73e599b70daea3d17b551d",
+    "output": "42\n42\n42\n42\n1\n-7\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\n2\n11\n9\n20\n5\n4294967285\n8\n4\n"
+  },
+  "loops": {
+    "source_sha256": "a5aab53f2b9ffd6654f23248a4b0da4499f63c8d94c3113c0dcfa0f452db332b",
+    "validation_sha256": "c51f9ad468dd1d8c4c68bdf2e71a3e7fae593514a224aef58bc4591c2a243b84",
+    "output": "8\n3\n2\n1\n6\n19\n23\n"
+  },
+  "functions": {
+    "source_sha256": "acfabccb1f1db33580c206a09fdb08186e8192286769d6f9ec1a7ffa54ea1a76",
+    "validation_sha256": "bc8599f6b22f8e6a5111730fc28fe74e2e50994ec4c62d4ae9cb99d903751aca",
+    "output": "explicit main call\n42\n120\n42\n"
+  },
+  "arrays": {
+    "source_sha256": "9fd89beb00b1937cbba38c3a9e73d7d0787b157a78d40719d4434c9120b38464",
+    "validation_sha256": "acc9b374ebde7df7f74e1c01ec1f60f4695f1a5cb17f0471684e70d5f0a77e9e",
+    "output": "42\n23\n24\nDev\n68\nline one\nline two\n"
+  },
+  "structs": {
+    "source_sha256": "5629b14c6385bbae6cc69ee9b55a19984ec91ae9693f83739d278db5c9b4314f",
+    "validation_sha256": "b9a2d2de2108d68896b12225d949a066f57185e90317efc0fdfa3728be116c54",
+    "output": "42\n99\n43\n20\n"
+  },
+  "enums": {
+    "source_sha256": "c2f71b5f315a496f99b004a6157ce3517b88ed9b6615001627c679adaba0e807",
+    "validation_sha256": "914d838b3bd3d8ac7235ff2767d44170b977498602dac2f03d8717dd28c40b30",
+    "output": "true\n1\n42\ninvalid input\n"
+  },
+  "matching": {
+    "source_sha256": "23f4ebb38a3a2cb97fd059b52229a09393a0a9644937f8848f6aaed1d069fa25",
+    "validation_sha256": "fb87401ebe90cba5caa47050a5195318b0d1779ba094f79b17ac42685001b0df",
+    "output": "42\nnon-positive\nempty\nerror\n"
+  },
+  "references": {
+    "source_sha256": "8b9bb62ca4142d75559109d50f073a2392e8a617987419817c1bd15f06e0522a",
+    "validation_sha256": "85c4e503d65e0888a8530d921652434f85a0545a4b55167df530bc3d237494e5",
+    "output": "42\n42\n"
+  },
+  "vector": {
+    "source_sha256": "9b884f34121d38a0ab08eedf4f95b9e34e09df264c26a2b24932be821abbc3fa",
+    "validation_sha256": "20d5358e6e45df44c447ee40557ee8fd1db1aa3cd71903558c6fac59d9f98f0c",
+    "output": "19\n99\n3\n7\n0\n3\n"
+  },
+  "slices": {
+    "source_sha256": "15b17f21f93231923fc8a80548522000f9c2cbbb133ee41ae5ea78b13413a64b",
+    "validation_sha256": "25afa74dcc20ec924d4c2e0a67ea06540faf0063c18d53307c4b05c3d62d8c95",
+    "output": "2\n42\n23\n19\n23\n"
+  },
+  "maps": {
+    "source_sha256": "e2fe7732f32118f52ee706d58afe3fd3a76d2c7c6eaa6b81f413b8e0d82b5e29",
+    "validation_sha256": "2b2575317e14598ec05d96b11a5c1f9b9dbf774f9f64c47d1ceb49c5b3d9c275",
+    "output": "99\n42\nfalse\n1\n0\n2\n"
+  },
+  "generics": {
+    "source_sha256": "6d720b88650473c4268a185c8065a75a379c65905832d7903b3baad38b3a6098",
+    "validation_sha256": "f25dedbf01b0183fe9d954edda7d49c29155cfe6ddbc15946eac299fbb9596b8",
+    "output": "42\n42\n42\n4\ntrue\n42\n42\n"
+  },
+  "traits": {
+    "source_sha256": "b62e586401cd9c7b76d438185442bd59581e2d814533b63613d4b0abdf2cdac0",
+    "validation_sha256": "6df89a8aa083cecd2d7791d83ead131c4f6fec50517dae87622e8d14a3f85d55",
+    "output": "42\n"
+  },
+  "closures": {
+    "source_sha256": "1eba909c5d4579b71b40c4450365857231b1a64bd8beec656eaeb07d879c083b",
+    "validation_sha256": "0a21d546d038eee04224ab0f455fbe1f4880229765c47337bc71ecf16f815e7d",
+    "output": "42\n42\n42\n1\n1\n0\n"
+  },
+  "tasks": {
+    "source_sha256": "782d721ddeff368558511a068ea12bc5172bb2322b57f85d6c3962d7514cd33d",
+    "validation_sha256": "9940bd5c61f4a1c22ba3fe194ad0ca2dfc8c3a27d23dedb9e53683d9e4f57976",
+    "output": "42\ntrue\n42\n42\n43\n7\n"
+  },
+  "callbacks": {
+    "source_sha256": "f43bdef6de23e97ce8a8a515e2bd17c671eb81119e72ec1cb7f98b6620e659ae",
+    "validation_sha256": "9bcf2502ede622dd1a4e7b931ed649a34cfee33c2f2a0f44d976a1daeddcc881",
+    "output": "42\n42\n42\n"
+  },
+  "foreign_memory": {
+    "source_sha256": "caec73869ff574ec3548751cce4abc3be3645b630ceafb86f3a6d3f386a7a409",
+    "validation_sha256": "9c30c8efe4fbb1a3081659ef1f8e527f8f0d934b36f8f6d0fd6f10a445f20312",
+    "output": "42\n42\n"
+  },
+  "variadic": {
+    "source_sha256": "5b97c81e7c1cf407fa090c7dab2b6123d3f59f3378f8972a668695cfaec7ac89",
+    "validation_sha256": "8df4a9ff048d6488ccf983da08f76b9e4ce51eee27716be112af9489f7cde099",
+    "output": "value=42 real=1.5\n"
+  },
+  "exports": {
+    "source_sha256": "5437130a90f24d2990dbefa07aaf2578a3c9c15d6270eecf588ece9b6305cc5f",
+    "validation_sha256": "5e6d5a782723de5b157f774ce9f4b4eee9212d823da52d6228662cd7cf81039b",
+    "output": "42\n"
+  },
+  "safe_checks": {
+    "source_sha256": "13ed78d674cd4656f9b4634320c3e432c2461917c75d06090503c24ba7d33822",
+    "validation_sha256": "5ead2a874d4114242a23a57ac5a0d3889156cbac8d1064b91fd30a7b585b7ceb",
+    "output": "42\ndivision avoided\nmissing key handled\n"
+  },
+  "runtime_io": {
+    "source_sha256": "c5d8ef73fe640c775c6d1438279db3526569a78e30ed36b0e4a4ef4bc112364b",
+    "validation_sha256": "b5101716ae92737dc4d6183ee2036c2df9c4b60a5fa8445a916b6ddf2e7f9e53",
+    "output": "message: Hello Dev\n9\ntrue\ntrue\nDevLang\n"
+  },
+  "runtime_files": {
+    "source_sha256": "6fd554eeb63452fc934a24332134de53d77b6265e07028375af1d11a44e1d0cc",
+    "validation_sha256": "79535a36d2ebac213f1b84440d06206ea61570bbfa0790c5d310397d4a42e253",
+    "output": "true\nHello file\n"
+  },
+  "runtime_input": {
+    "source_sha256": "defa8907f7703892919a38fa14b6e17d9159b10cf95778cf9ece8c173beae647",
+    "validation_sha256": "ae404749281c5e05c67357c4e1bac813350522f6ad30ead6ebca21b8b2f7967c",
+    "output": "What is your name?\nHello DevLang\n"
+  },
+  "ffi": {
+    "source_sha256": "e76bd245950ff2bc554250fdcbcb53a0f7af1210ec4ec7165d14d8c45649af54",
+    "validation_sha256": "1a6ec3dcf8acbf6a0b3410d4ba0c521908b333c87448f3807d2dad3c9fd2d7ff",
+    "output": "Calling C directly\n42\n"
+  },
+  "aggregate": {
+    "source_sha256": "871e22fddd290b4b2607b82b27fe3598da5133622f26135ee3f4587b0f73835c",
+    "validation_sha256": "250e6b2885df7a6a36cd0bf0266e83d98c68f0b72f13ec86a91e29e51a47f687",
+    "output": "44\n42\n"
+  },
+  "native-memory": {
+    "source_sha256": "3c094b79887b9a73f3e3339bbedd42c9b0fbca6e1802315188199526659f6b00",
+    "validation_sha256": "63eac74436c6533ca5bf4dda169ba8fdf7f93e329ec800651b3400d6b3d8dfc0",
+    "output": "32\n99\n4\n"
+  },
+  "native-stdlib": {
+    "source_sha256": "7afdb98da2365b9b3d41cc7c70108e6127e51449c09334de7f0d421c7900a624",
+    "validation_sha256": "cde90092919bfab616b07775164676d01ddc82481f1e088a39c02afebfe93a82",
+    "output": "Hello Dev runtime ภาษาไทย\n39\ntrue\n"
   }
 }
