@@ -1,0 +1,24 @@
+use "std/strings"
+
+use "std/io"
+
+use "std/time"
+
+fn main() { unsafe {
+    let message = strings.new("Hello")
+    if message == null { return 1 }
+    if not strings.append(message, " Dev runtime ภาษาไทย") {
+        strings.free(message)
+        return 1
+    }
+    io.writeln(strings.view(message))
+    print(strings.len(message))
+    let start = time.now_ns()
+    time.sleep_ms(1)
+    print(time.now_ns() >= start)
+    strings.free(message)
+ } }
+unsafe {
+main()
+
+}

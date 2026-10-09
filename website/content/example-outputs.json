@@ -1,0 +1,26 @@
+{
+  "hello": {
+    "source_sha256": "89ba44bbab73c5e1107f01689e335b1209b81199c9bc8e79c0bc28cd0cb29409",
+    "output": "Hello from Dev Lang\n42\n"
+  },
+  "modules": {
+    "source_sha256": "d7137a407ef33173ec52447e2454081fa3e57cf06b08f23d7b796ac83a0eeae3",
+    "output": "Three files, one native program\n42\n55\n"
+  },
+  "features": {
+    "source_sha256": "3d93e4796d712fc41f95d75cbd1faf90d2ec8e088d4db8d0b5a987cc54b47de5",
+    "output": "42\n43\nGreen\ntrue\n42\n4\n23\n"
+  },
+  "payload": {
+    "source_sha256": "0bed160700fde68396623d16784f6482f2c4ea4961c94c734763bd36e276875d",
+    "output": "42\n19\nend\n"
+  },
+  "advanced": {
+    "source_sha256": "002eb3d966310271a7f3526b34bf9cabc5e03162906550f2f20fd7cff79f42a1",
+    "output": "42\n42\n42\n42\n42\n42\n42\n42\n"
+  },
+  "continuations": {
+    "source_sha256": "cabaace86c622b54b259df56666c943708b5d05deccdc546061fad293b2e670c",
+    "output": "42\n42\n"
+  }
+}

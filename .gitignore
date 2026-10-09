@@ -11,3 +11,7 @@
 *.lib
 *.exp
 __pycache__/
+/website/.build-deps/
+/website/dist/
+/website/.git/
+/website/.sites-checkout*/

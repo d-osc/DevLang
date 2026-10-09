@@ -1,0 +1,23 @@
+enum Result<T> { Ok(T), Err(str) }
+enum List<T> { Nil, Cons(T, Ref<List<T>>) }
+
+fn main() {
+    let result = Result<i64>.Ok(42)
+    match result {
+        Ok(value) => { print(value) }
+        Err(message) => { print(message) }
+    }
+    let list = List<i64>.Cons(19, ref(List<i64>.Nil()))
+    match list {
+        Nil => {}
+        Cons(value, next) => {
+            print(value)
+            match deref(next) {
+                Nil => { print("end") }
+                Cons(_, _) => {}
+            }
+        }
+    }
+}
+
+main()

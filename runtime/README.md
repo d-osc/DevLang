@@ -43,8 +43,8 @@ Strings and arrays are owned automatically; arrays use value copies.
 The default `auto` engine builds typed numeric instruction plans in memory
 for supported functions and entry scripts, with AST fallback for other code.
 It has no JIT and does not claim native performance. `extern fn`
-calls work through libffi and loaded shared libraries. Raw pointer dereferencing
-and volatile hardware access still require `devc` or a native library. Field and array-element assignments support nested local values. Recursion is limited to 128 calls.
+calls work through libffi and loaded shared libraries. Unsafe raw pointer reads/writes
+and volatile scalar access work on live foreign memory; address-of interpreter locals remains native-only. Field and array-element assignments support nested local values. Recursion is limited to 128 calls.
 
 See `docs/runtime.md` for intrinsic APIs and `stdlib/` for the separate native
 C library. Validate with `python scripts/smoke_runtime.py --runtime target/release/devrun`.

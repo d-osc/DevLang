@@ -1,0 +1,12 @@
+extern fn puts(message str) i32
+
+extern fn device_add(a i32, b i32) i32
+
+fn main() { unsafe {
+    puts("Calling C directly")
+    print(device_add(19, 23))
+ } }
+unsafe {
+main()
+
+}

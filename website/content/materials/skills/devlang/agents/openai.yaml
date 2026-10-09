@@ -1,0 +1,4 @@
+interface:
+  display_name: "DevLang"
+  short_description: "Write and validate DevLang source, modules and FFI"
+  default_prompt: "Use $devlang to write and validate a DevLang program."

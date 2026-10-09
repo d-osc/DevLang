@@ -1,0 +1,17 @@
+fn main() { unsafe {
+    let register u32 = 0
+    let port = &register
+    volatile_store(port, 0x20)
+    let value = volatile_load(port)
+    print(value)
+
+    let bytes [u8; 4] = [10, 20, 30, 40]
+    let data = &bytes[0]
+    *(data + 2) = 99
+    print(bytes[2])
+    print(sizeof(bytes))
+ } }
+unsafe {
+main()
+
+}

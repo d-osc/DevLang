@@ -1,0 +1,7 @@
+fn main() {
+    print("Hello from Dev Lang")
+    let answer = 40 + 2
+    print(answer)
+}
+
+main()

@@ -1,0 +1,9 @@
+# This library contains no printf, malloc, GC or language VM.
+# Addresses must be mapped and permitted by the target OS or board firmware.
+export fn register_read(address usize) u32 {
+    return volatile_load(address as *u32)
+}
+
+export fn register_write(address usize, value u32) {
+    volatile_store(address as *u32, value)
+}

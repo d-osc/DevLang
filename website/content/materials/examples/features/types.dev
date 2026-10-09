@@ -1,0 +1,22 @@
+struct Point {
+    x i64
+    y i64
+}
+
+struct Box<T> {
+    value T
+}
+
+enum Color {
+    Red,
+    Green,
+    Blue
+}
+
+fn identity<T>(value T) T {
+    return value
+}
+
+fn sum<T>(a T, b T) T {
+    return a + b
+}

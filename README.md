@@ -2,6 +2,8 @@
 
 ตัวติดตั้ง offline สำหรับ Windows/Linux และวิธีถอนการติดตั้ง: [คู่มือติดตั้ง](docs/install.md)
 
+เว็บไซต์คู่มือภาษาไทยและ reference: [website](website/README.md) · Skill สำหรับ AI coding agents: [devlang](skills/devlang/SKILL.md)
+
 ใช้คำสั่ง `d` ได้จาก bundle ใน `dist/d/<platform>/` หรือ `target/release/` หลัง `cargo build --release`:
 
 ```sh
