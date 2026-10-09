@@ -1,0 +1,985 @@
+{
+  "measured_at": "2026-10-08T16:37:59.618555+00:00",
+  "cpu_model": "Intel(R) Core(TM) i5-14400F",
+  "runs": 15,
+  "build_runs": 5,
+  "warmups": 2,
+  "runtime": {
+    "masked_sum": {
+      "input": [
+        1,
+        200000003,
+        0,
+        0
+      ],
+      "orders": [
+        [
+          "after_clang_O3",
+          "after_O3_native",
+          "before_O2",
+          "after_O3",
+          "after_clang_O3_native"
+        ],
+        [
+          "after_clang_O3_native",
+          "after_clang_O3",
+          "after_O3",
+          "before_O2",
+          "after_O3_native"
+        ],
+        [
+          "after_O3",
+          "after_clang_O3_native",
+          "after_clang_O3",
+          "after_O3_native",
+          "before_O2"
+        ],
+        [
+          "after_clang_O3",
+          "after_clang_O3_native",
+          "before_O2",
+          "after_O3",
+          "after_O3_native"
+        ],
+        [
+          "after_clang_O3_native",
+          "after_O3",
+          "before_O2",
+          "after_O3_native",
+          "after_clang_O3"
+        ],
+        [
+          "after_O3",
+          "after_clang_O3",
+          "before_O2",
+          "after_O3_native",
+          "after_clang_O3_native"
+        ],
+        [
+          "after_clang_O3_native",
+          "after_O3_native",
+          "before_O2",
+          "after_O3",
+          "after_clang_O3"
+        ],
+        [
+          "before_O2",
+          "after_O3",
+          "after_clang_O3",
+          "after_clang_O3_native",
+          "after_O3_native"
+        ],
+        [
+          "after_O3",
+          "after_clang_O3",
+          "after_O3_native",
+          "after_clang_O3_native",
+          "before_O2"
+        ],
+        [
+          "after_O3_native",
+          "after_clang_O3_native",
+          "after_O3",
+          "after_clang_O3",
+          "before_O2"
+        ],
+        [
+          "after_O3_native",
+          "after_O3",
+          "after_clang_O3_native",
+          "before_O2",
+          "after_clang_O3"
+        ],
+        [
+          "after_O3_native",
+          "after_clang_O3",
+          "before_O2",
+          "after_clang_O3_native",
+          "after_O3"
+        ],
+        [
+          "after_O3_native",
+          "after_O3",
+          "after_clang_O3",
+          "before_O2",
+          "after_clang_O3_native"
+        ],
+        [
+          "before_O2",
+          "after_clang_O3",
+          "after_clang_O3_native",
+          "after_O3",
+          "after_O3_native"
+        ],
+        [
+          "after_clang_O3_native",
+          "after_clang_O3",
+          "after_O3",
+          "before_O2",
+          "after_O3_native"
+        ]
+      ],
+      "profiles": {
+        "before_O2": {
+          "median_ms": 49.952,
+          "min_ms": 47.421,
+          "max_ms": 61.368,
+          "p95_ms": 61.368,
+          "samples_ms": [
+            48.988,
+            50.835,
+            48.844,
+            48.927,
+            47.421,
+            55.501,
+            49.23,
+            61.368,
+            52.505,
+            60.46,
+            48.105,
+            49.952,
+            50.511,
+            50.23,
+            49.439
+          ]
+        },
+        "after_O3": {
+          "median_ms": 42.399,
+          "min_ms": 39.102,
+          "max_ms": 43.732,
+          "p95_ms": 43.732,
+          "samples_ms": [
+            43.732,
+            41.246,
+            42.938,
+            40.26,
+            41.29,
+            42.366,
+            41.955,
+            39.332,
+            43.648,
+            43.058,
+            42.822,
+            43.025,
+            39.102,
+            42.836,
+            42.399
+          ]
+        },
+        "after_O3_native": {
+          "median_ms": 19.02,
+          "min_ms": 17.502,
+          "max_ms": 19.818,
+          "p95_ms": 19.818,
+          "samples_ms": [
+            17.682,
+            19.229,
+            18.016,
+            17.679,
+            17.542,
+            19.114,
+            19.343,
+            19.075,
+            19.818,
+            19.443,
+            19.02,
+            17.777,
+            17.876,
+            19.474,
+            17.502
+          ]
+        },
+        "after_clang_O3": {
+          "median_ms": 33.111,
+          "min_ms": 30.589,
+          "max_ms": 36.56,
+          "p95_ms": 36.56,
+          "samples_ms": [
+            32.086,
+            33.604,
+            32.545,
+            36.56,
+            32.45,
+            33.836,
+            30.589,
+            30.657,
+            34.527,
+            33.886,
+            32.223,
+            33.215,
+            35.999,
+            32.793,
+            33.111
+          ]
+        },
+        "after_clang_O3_native": {
+          "median_ms": 16.051,
+          "min_ms": 14.49,
+          "max_ms": 21.02,
+          "p95_ms": 21.02,
+          "samples_ms": [
+            21.02,
+            16.051,
+            16.572,
+            16.681,
+            14.839,
+            17.437,
+            16.424,
+            15.153,
+            16.641,
+            15.962,
+            15.769,
+            15.831,
+            14.49,
+            16.308,
+            15.651
+          ]
+        }
+      }
+    },
+    "xorshift64": {
+      "input": [
+        2,
+        30000000,
+        88172645463325252,
+        0
+      ],
+      "orders": [
+        [
+          "after_O3_native",
+          "after_clang_O3",
+          "before_O2",
+          "after_clang_O3_native",
+          "after_O3"
+        ],
+        [
+          "after_clang_O3",
+          "after_O3_native",
+          "after_O3",
+          "after_clang_O3_native",
+          "before_O2"
+        ],
+        [
+          "after_O3",
+          "after_clang_O3",
+          "after_clang_O3_native",
+          "after_O3_native",
+          "before_O2"
+        ],
+        [
+          "before_O2",
+          "after_O3_native",
+          "after_clang_O3_native",
+          "after_O3",
+          "after_clang_O3"
+        ],
+        [
+          "after_clang_O3",
+          "after_clang_O3_native",
+          "before_O2",
+          "after_O3",
+          "after_O3_native"
+        ],
+        [
+          "before_O2",
+          "after_clang_O3",
+          "after_clang_O3_native",
+          "after_O3_native",
+          "after_O3"
+        ],
+        [
+          "after_O3_native",
+          "after_O3",
+          "after_clang_O3",
+          "before_O2",
+          "after_clang_O3_native"
+        ],
+        [
+          "after_O3_native",
+          "before_O2",
+          "after_clang_O3",
+          "after_clang_O3_native",
+          "after_O3"
+        ],
+        [
+          "after_clang_O3_native",
+          "after_O3",
+          "before_O2",
+          "after_O3_native",
+          "after_clang_O3"
+        ],
+        [
+          "after_O3",
+          "after_O3_native",
+          "after_clang_O3",
+          "after_clang_O3_native",
+          "before_O2"
+        ],
+        [
+          "before_O2",
+          "after_clang_O3_native",
+          "after_clang_O3",
+          "after_O3",
+          "after_O3_native"
+        ],
+        [
+          "after_clang_O3_native",
+          "before_O2",
+          "after_O3_native",
+          "after_O3",
+          "after_clang_O3"
+        ],
+        [
+          "before_O2",
+          "after_O3_native",
+          "after_clang_O3_native",
+          "after_O3",
+          "after_clang_O3"
+        ],
+        [
+          "after_clang_O3",
+          "after_O3_native",
+          "before_O2",
+          "after_O3",
+          "after_clang_O3_native"
+        ],
+        [
+          "after_clang_O3",
+          "after_O3",
+          "after_O3_native",
+          "after_clang_O3_native",
+          "before_O2"
+        ]
+      ],
+      "profiles": {
+        "before_O2": {
+          "median_ms": 45.89,
+          "min_ms": 41.413,
+          "max_ms": 54.47,
+          "p95_ms": 54.47,
+          "samples_ms": [
+            41.413,
+            42.457,
+            49.063,
+            45.89,
+            43.281,
+            42.435,
+            46.256,
+            46.216,
+            46.166,
+            50.756,
+            54.47,
+            45.514,
+            45.907,
+            41.539,
+            45.004
+          ]
+        },
+        "after_O3": {
+          "median_ms": 46.262,
+          "min_ms": 41.322,
+          "max_ms": 53.745,
+          "p95_ms": 53.745,
+          "samples_ms": [
+            43.452,
+            41.729,
+            46.651,
+            43.557,
+            41.322,
+            46.547,
+            45.949,
+            46.262,
+            46.556,
+            48.293,
+            46.598,
+            47.847,
+            53.745,
+            42.02,
+            42.571
+          ]
+        },
+        "after_O3_native": {
+          "median_ms": 46.042,
+          "min_ms": 41.701,
+          "max_ms": 48.366,
+          "p95_ms": 48.366,
+          "samples_ms": [
+            45.767,
+            42.081,
+            44.733,
+            46.042,
+            41.701,
+            47.485,
+            46.324,
+            48.366,
+            47.302,
+            47.315,
+            46.147,
+            42.976,
+            47.838,
+            44.238,
+            42.24
+          ]
+        },
+        "after_clang_O3": {
+          "median_ms": 45.539,
+          "min_ms": 41.985,
+          "max_ms": 49.764,
+          "p95_ms": 49.764,
+          "samples_ms": [
+            44.111,
+            42.534,
+            42.667,
+            45.539,
+            41.985,
+            45.535,
+            46.152,
+            47.199,
+            49.764,
+            46.711,
+            49.255,
+            46.221,
+            46.044,
+            44.924,
+            45.184
+          ]
+        },
+        "after_clang_O3_native": {
+          "median_ms": 46.068,
+          "min_ms": 41.475,
+          "max_ms": 51.551,
+          "p95_ms": 51.551,
+          "samples_ms": [
+            41.538,
+            42.09,
+            43.626,
+            46.174,
+            41.475,
+            45.792,
+            46.068,
+            47.188,
+            46.31,
+            51.551,
+            49.341,
+            46.134,
+            45.706,
+            43.98,
+            46.11
+          ]
+        }
+      }
+    },
+    "array_update": {
+      "input": [
+        3,
+        262144,
+        123456789,
+        256
+      ],
+      "orders": [
+        [
+          "before_O2",
+          "after_O3_native",
+          "after_clang_O3",
+          "after_clang_O3_native",
+          "after_O3"
+        ],
+        [
+          "after_O3_native",
+          "after_clang_O3",
+          "after_clang_O3_native",
+          "after_O3",
+          "before_O2"
+        ],
+        [
+          "after_O3",
+          "before_O2",
+          "after_clang_O3",
+          "after_clang_O3_native",
+          "after_O3_native"
+        ],
+        [
+          "after_O3_native",
+          "before_O2",
+          "after_clang_O3_native",
+          "after_O3",
+          "after_clang_O3"
+        ],
+        [
+          "before_O2",
+          "after_O3_native",
+          "after_O3",
+          "after_clang_O3_native",
+          "after_clang_O3"
+        ],
+        [
+          "after_clang_O3_native",
+          "after_O3",
+          "after_O3_native",
+          "after_clang_O3",
+          "before_O2"
+        ],
+        [
+          "after_clang_O3",
+          "after_O3_native",
+          "after_clang_O3_native",
+          "after_O3",
+          "before_O2"
+        ],
+        [
+          "after_O3_native",
+          "after_O3",
+          "after_clang_O3_native",
+          "before_O2",
+          "after_clang_O3"
+        ],
+        [
+          "before_O2",
+          "after_clang_O3",
+          "after_O3",
+          "after_clang_O3_native",
+          "after_O3_native"
+        ],
+        [
+          "after_clang_O3",
+          "after_O3_native",
+          "after_O3",
+          "after_clang_O3_native",
+          "before_O2"
+        ],
+        [
+          "after_O3_native",
+          "after_clang_O3",
+          "after_O3",
+          "before_O2",
+          "after_clang_O3_native"
+        ],
+        [
+          "after_O3",
+          "after_O3_native",
+          "after_clang_O3_native",
+          "after_clang_O3",
+          "before_O2"
+        ],
+        [
+          "after_O3",
+          "after_clang_O3",
+          "before_O2",
+          "after_clang_O3_native",
+          "after_O3_native"
+        ],
+        [
+          "after_O3",
+          "after_clang_O3_native",
+          "after_clang_O3",
+          "before_O2",
+          "after_O3_native"
+        ],
+        [
+          "after_clang_O3_native",
+          "after_O3",
+          "before_O2",
+          "after_O3_native",
+          "after_clang_O3"
+        ]
+      ],
+      "profiles": {
+        "before_O2": {
+          "median_ms": 20.762,
+          "min_ms": 19.895,
+          "max_ms": 21.784,
+          "p95_ms": 21.784,
+          "samples_ms": [
+            19.895,
+            20.333,
+            20.281,
+            21.3,
+            20.762,
+            21.437,
+            20.329,
+            21.512,
+            21.079,
+            20.167,
+            21.784,
+            20.207,
+            21.025,
+            20.679,
+            21.606
+          ]
+        },
+        "after_O3": {
+          "median_ms": 19.164,
+          "min_ms": 17.858,
+          "max_ms": 21.603,
+          "p95_ms": 21.603,
+          "samples_ms": [
+            17.858,
+            19.164,
+            18.82,
+            18.37,
+            19.148,
+            18.762,
+            19.948,
+            18.06,
+            19.654,
+            19.867,
+            19.745,
+            18.495,
+            20.136,
+            21.603,
+            19.375
+          ]
+        },
+        "after_O3_native": {
+          "median_ms": 11.606,
+          "min_ms": 10.487,
+          "max_ms": 12.85,
+          "p95_ms": 12.85,
+          "samples_ms": [
+            11.539,
+            11.421,
+            10.487,
+            10.962,
+            12.646,
+            11.974,
+            11.606,
+            12.85,
+            10.986,
+            11.936,
+            11.028,
+            12.277,
+            12.406,
+            11.389,
+            12.24
+          ]
+        },
+        "after_clang_O3": {
+          "median_ms": 19.533,
+          "min_ms": 18.384,
+          "max_ms": 21.073,
+          "p95_ms": 21.073,
+          "samples_ms": [
+            20.933,
+            20.359,
+            21.073,
+            19.233,
+            18.387,
+            19.397,
+            20.391,
+            19.533,
+            19.272,
+            20.315,
+            20.21,
+            20.957,
+            19.063,
+            19.101,
+            18.384
+          ]
+        },
+        "after_clang_O3_native": {
+          "median_ms": 20.805,
+          "min_ms": 17.006,
+          "max_ms": 23.439,
+          "p95_ms": 23.439,
+          "samples_ms": [
+            22.749,
+            20.794,
+            20.556,
+            20.805,
+            21.37,
+            19.533,
+            23.439,
+            19.901,
+            20.173,
+            21.214,
+            21.286,
+            21.064,
+            21.537,
+            19.719,
+            17.006
+          ]
+        }
+      }
+    }
+  },
+  "builds": {
+    "before_O2": {
+      "median_ms": 281.707,
+      "min_ms": 272.436,
+      "max_ms": 330.522,
+      "p95_ms": 330.522,
+      "samples_ms": [
+        281.707,
+        272.436,
+        330.522,
+        322.15,
+        277.216
+      ]
+    },
+    "after_O3": {
+      "median_ms": 326.434,
+      "min_ms": 265.464,
+      "max_ms": 633.772,
+      "p95_ms": 633.772,
+      "samples_ms": [
+        326.434,
+        265.464,
+        432.667,
+        294.032,
+        633.772
+      ]
+    },
+    "after_O3_native": {
+      "median_ms": 334.444,
+      "min_ms": 324.494,
+      "max_ms": 391.561,
+      "p95_ms": 391.561,
+      "samples_ms": [
+        333.508,
+        324.494,
+        391.561,
+        334.444,
+        355.958
+      ]
+    },
+    "after_clang_O3": {
+      "median_ms": 305.709,
+      "min_ms": 206.11,
+      "max_ms": 373.691,
+      "p95_ms": 373.691,
+      "samples_ms": [
+        373.691,
+        245.47,
+        305.709,
+        206.11,
+        349.881
+      ]
+    },
+    "after_clang_O3_native": {
+      "median_ms": 330.391,
+      "min_ms": 210.931,
+      "max_ms": 503.515,
+      "p95_ms": 503.515,
+      "samples_ms": [
+        330.391,
+        503.515,
+        386.616,
+        239.495,
+        210.931
+      ]
+    },
+    "before_development": {
+      "median_ms": 288.225,
+      "min_ms": 235.074,
+      "max_ms": 567.674,
+      "p95_ms": 567.674,
+      "samples_ms": [
+        567.674,
+        235.074,
+        288.646,
+        280.173,
+        288.225
+      ]
+    },
+    "after_development": {
+      "median_ms": 289.215,
+      "min_ms": 236.982,
+      "max_ms": 395.846,
+      "p95_ms": 395.846,
+      "samples_ms": [
+        236.982,
+        395.846,
+        303.652,
+        289.215,
+        255.118
+      ]
+    },
+    "after_fast": {
+      "median_ms": 5.352,
+      "min_ms": 4.667,
+      "max_ms": 7.199,
+      "p95_ms": 7.199,
+      "samples_ms": [
+        7.199,
+        5.352,
+        6.243,
+        4.667,
+        4.829
+      ]
+    }
+  },
+  "toolchains": {
+    "before": "devc 0.1.0",
+    "after": "devc 0.2.0",
+    "gcc": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "clang": "Ubuntu clang version 19.1.1 (1ubuntu1~24.04.2)",
+    "tcc": "tcc version 0.9.28rc 2026-10-03 HEAD@43c7708 (x86_64 Linux)"
+  },
+  "source_sha256": "0b0d16d99d8e267b566ea91efd6e5b472b365d923c5423143fd27d21db92bee1",
+  "method": "All Dev profiles in one randomized session, same source and runtime inputs, runtime pinned. Full builds use fresh caches; checksums verified on every execution. No universal ranking.",
+  "before_sha256": "79a35cdd017280b55b14578c7aefb5d17b1b03894aca2a4264788bc51d7be6e4",
+  "after_sha256": "4097f607d4df2cf248e3567d15496f0a3e73dad766e26597a776eb2c41a172bc",
+  "profiles": {
+    "before_O2": [
+      "before",
+      "cc",
+      [
+        "--release"
+      ]
+    ],
+    "after_O3": [
+      "after",
+      "cc",
+      [
+        "--release"
+      ]
+    ],
+    "after_O3_native": [
+      "after",
+      "cc",
+      [
+        "--release",
+        "--native"
+      ]
+    ],
+    "after_clang_O3": [
+      "after",
+      "clang-19",
+      [
+        "--release"
+      ]
+    ],
+    "after_clang_O3_native": [
+      "after",
+      "clang-19",
+      [
+        "--release",
+        "--native"
+      ]
+    ],
+    "before_development": [
+      "before",
+      "cc",
+      []
+    ],
+    "after_development": [
+      "after",
+      "cc",
+      []
+    ],
+    "after_fast": [
+      "after",
+      "/tmp/dev-lang-tcc-fRtRm5/install/bin/tcc",
+      [
+        "--fast"
+      ]
+    ]
+  },
+  "unchanged_builds": {
+    "before_O2": {
+      "median_ms": 1.329,
+      "min_ms": 1.199,
+      "max_ms": 1.647,
+      "p95_ms": 1.647,
+      "samples_ms": [
+        1.647,
+        1.348,
+        1.329,
+        1.258,
+        1.199
+      ]
+    },
+    "after_O3": {
+      "median_ms": 1.084,
+      "min_ms": 1.032,
+      "max_ms": 1.244,
+      "p95_ms": 1.244,
+      "samples_ms": [
+        1.244,
+        1.096,
+        1.056,
+        1.032,
+        1.084
+      ]
+    },
+    "after_O3_native": {
+      "median_ms": 1.196,
+      "min_ms": 1.167,
+      "max_ms": 1.239,
+      "p95_ms": 1.239,
+      "samples_ms": [
+        1.196,
+        1.202,
+        1.175,
+        1.167,
+        1.239
+      ]
+    },
+    "after_clang_O3": {
+      "median_ms": 1.077,
+      "min_ms": 1.011,
+      "max_ms": 1.154,
+      "p95_ms": 1.154,
+      "samples_ms": [
+        1.154,
+        1.119,
+        1.011,
+        1.077,
+        1.056
+      ]
+    },
+    "after_clang_O3_native": {
+      "median_ms": 1.191,
+      "min_ms": 1.155,
+      "max_ms": 1.381,
+      "p95_ms": 1.381,
+      "samples_ms": [
+        1.207,
+        1.156,
+        1.191,
+        1.155,
+        1.381
+      ]
+    },
+    "before_development": {
+      "median_ms": 1.23,
+      "min_ms": 1.199,
+      "max_ms": 1.373,
+      "p95_ms": 1.373,
+      "samples_ms": [
+        1.333,
+        1.373,
+        1.2,
+        1.199,
+        1.23
+      ]
+    },
+    "after_development": {
+      "median_ms": 1.061,
+      "min_ms": 1.04,
+      "max_ms": 1.283,
+      "p95_ms": 1.283,
+      "samples_ms": [
+        1.061,
+        1.053,
+        1.083,
+        1.04,
+        1.283
+      ]
+    },
+    "after_fast": {
+      "median_ms": 1.383,
+      "min_ms": 1.16,
+      "max_ms": 2.464,
+      "p95_ms": 2.464,
+      "samples_ms": [
+        2.464,
+        1.454,
+        1.383,
+        1.192,
+        1.16
+      ]
+    }
+  },
+  "runtime_cpu": 0
+}

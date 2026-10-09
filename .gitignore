@@ -1,0 +1,8 @@
+/target/
+/compiler/target/
+/stdlib/lib/
+**/.dev-cache/
+/out/
+/dist/
+*.exe
+__pycache__/

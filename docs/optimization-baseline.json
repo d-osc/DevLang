@@ -1,0 +1,754 @@
+{
+  "measured_at": "2026-10-08T23:14:06+07:00",
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "cpu_model": "Intel(R) Core(TM) i5-14400F",
+  "cpu_count": 16,
+  "runtime_runs": 11,
+  "build_runs": 5,
+  "warmups": 2,
+  "toolchains": {
+    "dev": "devc 0.1.0",
+    "c": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "rust": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "go": "go version go1.22.2 linux/amd64"
+  },
+  "flags": {
+    "unoptimized": {
+      "dev": "default -O0",
+      "c": "-std=c11 -O0 -fwrapv",
+      "rust": "-C opt-level=0 -C overflow-checks=off -C debuginfo=0",
+      "go": "-gcflags=-N -l (application only)"
+    },
+    "optimized": {
+      "dev": "--release / -O2",
+      "c": "-std=c11 -O2 -fwrapv",
+      "rust": "-C opt-level=2 -C overflow-checks=off -C debuginfo=0",
+      "go": "go build (default optimized)"
+    }
+  },
+  "source_sha256": {
+    "dev": "0b0d16d99d8e267b566ea91efd6e5b472b365d923c5423143fd27d21db92bee1",
+    "c": "ed085bc6aedd468d64f9a305fbff9f6afb7be02fb313575d7f76278133fc5a97",
+    "rust": "88a0715b3c74d2d7ad205da36404901cd09c438fd67a30744e782cedfa000f2a",
+    "go": "58535646bb4c440a525b518f1cb63949074b05bf85a7116b82078917deb40ae3"
+  },
+  "devc_sha256": "79a35cdd017280b55b14578c7aefb5d17b1b03894aca2a4264788bc51d7be6e4",
+  "bootstrap_builds": {
+    "dev": {
+      "elapsed_ms": 530.613,
+      "command": [
+        "/tmp/dev-lang-compare-topm2mkw/devc-tool",
+        "build",
+        "/tmp/dev-lang-compare-topm2mkw/bench.dev",
+        "-o",
+        "/tmp/dev-lang-compare-topm2mkw/dev",
+        "--cc",
+        "cc",
+        "--cache-dir",
+        "/tmp/dev-lang-compare-topm2mkw/bootstrap-cache",
+        "--release"
+      ]
+    },
+    "c": {
+      "elapsed_ms": 387.195,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O2",
+        "-fwrapv",
+        "/tmp/dev-lang-compare-topm2mkw/bench.c",
+        "-o",
+        "/tmp/dev-lang-compare-topm2mkw/c"
+      ]
+    },
+    "rust": {
+      "elapsed_ms": 930.278,
+      "command": [
+        "rustc",
+        "--edition=2021",
+        "--crate-name",
+        "native_bench",
+        "-C",
+        "opt-level=2",
+        "-C",
+        "overflow-checks=off",
+        "-C",
+        "debuginfo=0",
+        "/tmp/dev-lang-compare-topm2mkw/bench.rs",
+        "-o",
+        "/tmp/dev-lang-compare-topm2mkw/rust"
+      ]
+    },
+    "go": {
+      "elapsed_ms": 2632.291,
+      "command": [
+        "go",
+        "build",
+        "-o",
+        "/tmp/dev-lang-compare-topm2mkw/go",
+        "/tmp/dev-lang-compare-topm2mkw/bench.go"
+      ]
+    }
+  },
+  "builds": {
+    "unoptimized": {
+      "dev": {
+        "median_ms": 278.278,
+        "min_ms": 254.517,
+        "max_ms": 351.89,
+        "p95_ms": 351.89,
+        "samples_ms": [
+          278.278,
+          254.517,
+          261.186,
+          307.0,
+          351.89
+        ]
+      },
+      "c": {
+        "median_ms": 274.926,
+        "min_ms": 256.046,
+        "max_ms": 354.781,
+        "p95_ms": 354.781,
+        "samples_ms": [
+          295.23,
+          274.638,
+          274.926,
+          256.046,
+          354.781
+        ]
+      },
+      "rust": {
+        "median_ms": 330.601,
+        "min_ms": 286.254,
+        "max_ms": 354.558,
+        "p95_ms": 354.558,
+        "samples_ms": [
+          305.061,
+          286.254,
+          330.601,
+          354.558,
+          347.813
+        ]
+      },
+      "go": {
+        "median_ms": 243.223,
+        "min_ms": 232.463,
+        "max_ms": 258.131,
+        "p95_ms": 258.131,
+        "samples_ms": [
+          232.463,
+          258.131,
+          243.692,
+          233.268,
+          243.223
+        ]
+      }
+    },
+    "optimized": {
+      "dev": {
+        "median_ms": 276.336,
+        "min_ms": 271.819,
+        "max_ms": 331.873,
+        "p95_ms": 331.873,
+        "samples_ms": [
+          276.336,
+          319.075,
+          271.819,
+          273.859,
+          331.873
+        ]
+      },
+      "c": {
+        "median_ms": 279.107,
+        "min_ms": 246.829,
+        "max_ms": 292.59,
+        "p95_ms": 292.59,
+        "samples_ms": [
+          270.802,
+          279.107,
+          246.829,
+          285.37,
+          292.59
+        ]
+      },
+      "rust": {
+        "median_ms": 400.519,
+        "min_ms": 352.342,
+        "max_ms": 422.922,
+        "p95_ms": 422.922,
+        "samples_ms": [
+          352.342,
+          400.519,
+          422.922,
+          403.344,
+          358.586
+        ]
+      },
+      "go": {
+        "median_ms": 235.059,
+        "min_ms": 204.092,
+        "max_ms": 471.185,
+        "p95_ms": 471.185,
+        "samples_ms": [
+          471.185,
+          235.059,
+          253.096,
+          210.41,
+          204.092
+        ]
+      }
+    }
+  },
+  "unchanged_builds": {
+    "dev": {
+      "median_ms": 1.677,
+      "min_ms": 1.358,
+      "max_ms": 2.208,
+      "p95_ms": 2.208,
+      "samples_ms": [
+        1.677,
+        1.874,
+        2.208,
+        1.675,
+        1.358
+      ]
+    },
+    "go": {
+      "median_ms": 169.299,
+      "min_ms": 165.853,
+      "max_ms": 182.378,
+      "p95_ms": 182.378,
+      "samples_ms": [
+        169.269,
+        165.853,
+        182.378,
+        169.299,
+        174.236
+      ]
+    }
+  },
+  "runtime": {
+    "masked_sum": {
+      "input": [
+        1,
+        200000003,
+        0,
+        0
+      ],
+      "expected": 25500000003,
+      "orders": [
+        [
+          "rust",
+          "go",
+          "c",
+          "dev"
+        ],
+        [
+          "go",
+          "c",
+          "dev",
+          "rust"
+        ],
+        [
+          "c",
+          "rust",
+          "go",
+          "dev"
+        ],
+        [
+          "go",
+          "c",
+          "dev",
+          "rust"
+        ],
+        [
+          "rust",
+          "go",
+          "dev",
+          "c"
+        ],
+        [
+          "c",
+          "rust",
+          "go",
+          "dev"
+        ],
+        [
+          "go",
+          "c",
+          "rust",
+          "dev"
+        ],
+        [
+          "c",
+          "rust",
+          "go",
+          "dev"
+        ],
+        [
+          "c",
+          "rust",
+          "dev",
+          "go"
+        ],
+        [
+          "c",
+          "rust",
+          "dev",
+          "go"
+        ],
+        [
+          "go",
+          "dev",
+          "c",
+          "rust"
+        ]
+      ],
+      "languages": {
+        "dev": {
+          "median_ms": 50.057,
+          "min_ms": 46.516,
+          "max_ms": 52.599,
+          "p95_ms": 52.599,
+          "samples_ms": [
+            46.516,
+            51.407,
+            48.826,
+            47.211,
+            50.719,
+            48.242,
+            50.747,
+            52.599,
+            51.15,
+            47.48,
+            50.057
+          ]
+        },
+        "c": {
+          "median_ms": 50.568,
+          "min_ms": 45.804,
+          "max_ms": 51.762,
+          "p95_ms": 51.762,
+          "samples_ms": [
+            46.89,
+            51.171,
+            51.762,
+            46.802,
+            45.804,
+            51.751,
+            47.691,
+            50.776,
+            50.743,
+            47.987,
+            50.568
+          ]
+        },
+        "rust": {
+          "median_ms": 34.46,
+          "min_ms": 31.38,
+          "max_ms": 37.308,
+          "p95_ms": 37.308,
+          "samples_ms": [
+            35.381,
+            37.119,
+            34.205,
+            32.866,
+            34.82,
+            31.38,
+            35.97,
+            34.34,
+            34.46,
+            34.055,
+            37.308
+          ]
+        },
+        "go": {
+          "median_ms": 50.325,
+          "min_ms": 46.512,
+          "max_ms": 53.232,
+          "p95_ms": 53.232,
+          "samples_ms": [
+            49.636,
+            52.968,
+            51.601,
+            48.099,
+            53.232,
+            46.512,
+            50.325,
+            47.845,
+            51.578,
+            49.982,
+            52.064
+          ]
+        }
+      }
+    },
+    "xorshift64": {
+      "input": [
+        2,
+        30000000,
+        88172645463325252,
+        0
+      ],
+      "expected": 2535504059865855682,
+      "orders": [
+        [
+          "c",
+          "rust",
+          "go",
+          "dev"
+        ],
+        [
+          "dev",
+          "rust",
+          "c",
+          "go"
+        ],
+        [
+          "go",
+          "rust",
+          "dev",
+          "c"
+        ],
+        [
+          "rust",
+          "go",
+          "c",
+          "dev"
+        ],
+        [
+          "rust",
+          "dev",
+          "c",
+          "go"
+        ],
+        [
+          "go",
+          "c",
+          "dev",
+          "rust"
+        ],
+        [
+          "c",
+          "dev",
+          "go",
+          "rust"
+        ],
+        [
+          "c",
+          "go",
+          "dev",
+          "rust"
+        ],
+        [
+          "rust",
+          "go",
+          "c",
+          "dev"
+        ],
+        [
+          "rust",
+          "go",
+          "c",
+          "dev"
+        ],
+        [
+          "rust",
+          "dev",
+          "c",
+          "go"
+        ]
+      ],
+      "languages": {
+        "dev": {
+          "median_ms": 43.244,
+          "min_ms": 41.804,
+          "max_ms": 51.255,
+          "p95_ms": 51.255,
+          "samples_ms": [
+            42.933,
+            41.804,
+            46.784,
+            51.255,
+            46.352,
+            42.096,
+            47.256,
+            42.814,
+            45.782,
+            43.189,
+            43.244
+          ]
+        },
+        "c": {
+          "median_ms": 45.398,
+          "min_ms": 41.886,
+          "max_ms": 48.236,
+          "p95_ms": 48.236,
+          "samples_ms": [
+            46.13,
+            44.169,
+            46.792,
+            46.592,
+            48.236,
+            45.398,
+            45.012,
+            44.026,
+            41.886,
+            45.526,
+            43.596
+          ]
+        },
+        "rust": {
+          "median_ms": 45.037,
+          "min_ms": 42.053,
+          "max_ms": 51.924,
+          "p95_ms": 51.924,
+          "samples_ms": [
+            46.398,
+            42.84,
+            46.862,
+            46.05,
+            51.924,
+            45.445,
+            42.053,
+            42.758,
+            43.543,
+            45.037,
+            42.124
+          ]
+        },
+        "go": {
+          "median_ms": 46.744,
+          "min_ms": 44.307,
+          "max_ms": 50.854,
+          "p95_ms": 50.854,
+          "samples_ms": [
+            45.818,
+            48.769,
+            49.371,
+            50.854,
+            45.734,
+            45.912,
+            48.809,
+            47.387,
+            44.307,
+            46.744,
+            44.807
+          ]
+        }
+      }
+    },
+    "array_update": {
+      "input": [
+        3,
+        262144,
+        123456789,
+        256
+      ],
+      "expected": 562952374714368,
+      "orders": [
+        [
+          "rust",
+          "dev",
+          "c",
+          "go"
+        ],
+        [
+          "rust",
+          "dev",
+          "go",
+          "c"
+        ],
+        [
+          "go",
+          "dev",
+          "rust",
+          "c"
+        ],
+        [
+          "dev",
+          "go",
+          "rust",
+          "c"
+        ],
+        [
+          "go",
+          "c",
+          "dev",
+          "rust"
+        ],
+        [
+          "rust",
+          "go",
+          "dev",
+          "c"
+        ],
+        [
+          "c",
+          "go",
+          "dev",
+          "rust"
+        ],
+        [
+          "go",
+          "c",
+          "rust",
+          "dev"
+        ],
+        [
+          "c",
+          "rust",
+          "go",
+          "dev"
+        ],
+        [
+          "dev",
+          "go",
+          "c",
+          "rust"
+        ],
+        [
+          "c",
+          "rust",
+          "go",
+          "dev"
+        ]
+      ],
+      "languages": {
+        "dev": {
+          "median_ms": 20.875,
+          "min_ms": 19.437,
+          "max_ms": 21.58,
+          "p95_ms": 21.58,
+          "samples_ms": [
+            21.022,
+            20.875,
+            21.58,
+            21.172,
+            19.781,
+            20.481,
+            20.444,
+            21.001,
+            21.356,
+            20.631,
+            19.437
+          ]
+        },
+        "c": {
+          "median_ms": 21.006,
+          "min_ms": 19.93,
+          "max_ms": 22.128,
+          "p95_ms": 22.128,
+          "samples_ms": [
+            19.93,
+            22.103,
+            21.303,
+            21.006,
+            20.103,
+            22.128,
+            20.765,
+            21.852,
+            20.32,
+            20.833,
+            21.183
+          ]
+        },
+        "rust": {
+          "median_ms": 20.384,
+          "min_ms": 18.537,
+          "max_ms": 22.015,
+          "p95_ms": 22.015,
+          "samples_ms": [
+            19.362,
+            21.131,
+            22.015,
+            18.537,
+            20.939,
+            20.384,
+            19.44,
+            20.229,
+            21.712,
+            20.216,
+            20.526
+          ]
+        },
+        "go": {
+          "median_ms": 27.989,
+          "min_ms": 25.187,
+          "max_ms": 32.219,
+          "p95_ms": 32.219,
+          "samples_ms": [
+            27.203,
+            27.779,
+            28.047,
+            32.219,
+            25.727,
+            28.799,
+            25.187,
+            28.286,
+            27.989,
+            27.345,
+            30.272
+          ]
+        }
+      }
+    }
+  },
+  "method": "Single-file programs, equivalent unsigned-64 kernels; runtime inputs; randomized language order; runtime pinned when supported; end-to-end process timings. Build table recompiles application with toolchain dependencies warm. Go's initial standard-library compilation reported separately.",
+  "go_source_change_requires_main_compile": true,
+  "commands": {
+    "go": [
+      "go",
+      "build",
+      "-o",
+      "/tmp/dev-lang-compare-topm2mkw/go",
+      "/tmp/dev-lang-compare-topm2mkw/bench.go"
+    ],
+    "c": [
+      "cc",
+      "-std=c11",
+      "-O2",
+      "-fwrapv",
+      "/tmp/dev-lang-compare-topm2mkw/bench.c",
+      "-o",
+      "/tmp/dev-lang-compare-topm2mkw/c"
+    ],
+    "dev": [
+      "/tmp/dev-lang-compare-topm2mkw/devc-tool",
+      "build",
+      "/tmp/dev-lang-compare-topm2mkw/bench.dev",
+      "-o",
+      "/tmp/dev-lang-compare-topm2mkw/dev",
+      "--cc",
+      "cc",
+      "--cache-dir",
+      "/tmp/dev-lang-compare-topm2mkw/cache-optimized-4",
+      "--release"
+    ],
+    "rust": [
+      "rustc",
+      "--edition=2021",
+      "--crate-name",
+      "native_bench",
+      "-C",
+      "opt-level=2",
+      "-C",
+      "overflow-checks=off",
+      "-C",
+      "debuginfo=0",
+      "/tmp/dev-lang-compare-topm2mkw/bench.rs",
+      "-o",
+      "/tmp/dev-lang-compare-topm2mkw/rust"
+    ]
+  },
+  "binary_bytes": {
+    "dev": 16424,
+    "c": 16272,
+    "rust": 4521192,
+    "go": 2048549
+  },
+  "correctness_fixtures_per_language": 9,
+  "runtime_cpu": 0,
+  "workdir": "/tmp/dev-lang-compare-topm2mkw"
+}

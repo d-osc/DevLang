@@ -1,0 +1,66 @@
+{
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "cpu_count": 16,
+  "compiler": "devc 0.2.0",
+  "compiler_sha256": "4097f607d4df2cf248e3567d15496f0a3e73dad766e26597a776eb2c41a172bc",
+  "cc": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "runs": 7,
+  "method": "Wall-clock process latency, median across runs. Sources/cache on local temp filesystem. C comparison uses the same loop and -O3 -fwrapv. Runtime includes process startup and printing; no universal speed claim. Fixed runtime input is visible to optimizers; use benchmark_compare.py for runtime-input comparisons.",
+  "development_backend": "/tmp/dev-lang-tcc-fRtRm5/install/bin/tcc",
+  "native": false,
+  "development_profile": "--fast",
+  "release_flags": "--release / -O3",
+  "single_module": {
+    "cold_build": {
+      "median_ms": 4.097,
+      "min_ms": 3.687,
+      "max_ms": 5.127
+    },
+    "warm_build": {
+      "median_ms": 1.059,
+      "min_ms": 0.907,
+      "max_ms": 1.253
+    },
+    "frontend_only_phase": {
+      "median_ms": 0.059,
+      "min_ms": 0.055,
+      "max_ms": 0.075
+    },
+    "check_process": {
+      "median_ms": 0.753,
+      "min_ms": 0.644,
+      "max_ms": 0.947
+    }
+  },
+  "33_modules_257_functions": {
+    "cold_build_one_sample_ms": 18.696,
+    "warm_build": {
+      "median_ms": 2.859,
+      "min_ms": 2.708,
+      "max_ms": 3.466
+    },
+    "one_body_changed": {
+      "median_ms": 8.132,
+      "min_ms": 7.675,
+      "max_ms": 9.385
+    },
+    "frontend_phase": {
+      "median_ms": 1.336,
+      "min_ms": 1.234,
+      "max_ms": 1.744
+    }
+  },
+  "100_million_iteration_runtime": {
+    "dev_release": {
+      "median_ms": 21.017,
+      "min_ms": 19.545,
+      "max_ms": 23.503
+    },
+    "equivalent_c_O3": {
+      "median_ms": 21.006,
+      "min_ms": 20.456,
+      "max_ms": 21.504
+    },
+    "output": "12750000000"
+  }
+}

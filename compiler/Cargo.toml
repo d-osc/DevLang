@@ -1,0 +1,13 @@
+[package]
+name = "dev-lang"
+version = "0.4.0"
+edition = "2021"
+license = "MIT"
+description = "A small native language with fast builds, modules, and C interoperability"
+
+[[bin]]
+name = "devc"
+path = "src/main.rs"
+
+[dependencies]
+dev-syntax = { path = "../syntax" }

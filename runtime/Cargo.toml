@@ -1,0 +1,12 @@
+[package]
+name = "dev-runtime"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[[bin]]
+name = "devrun"
+path = "src/main.rs"
+
+[dependencies]
+dev-syntax = { path = "../syntax" }

@@ -1,0 +1,61 @@
+{
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "cpu_count": 16,
+  "compiler": "devc 0.1.0",
+  "cc": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "runs": 7,
+  "method": "Wall-clock process latency, median across runs. Sources/cache on local temp filesystem. C comparison uses the same loop and -O2 -fwrapv. Runtime includes process startup and printing; no universal speed claim.",
+  "single_module": {
+    "cold_build": {
+      "median_ms": 277.406,
+      "min_ms": 254.483,
+      "max_ms": 451.655
+    },
+    "warm_build": {
+      "median_ms": 2.358,
+      "min_ms": 2.216,
+      "max_ms": 2.787
+    },
+    "frontend_only_phase": {
+      "median_ms": 0.067,
+      "min_ms": 0.064,
+      "max_ms": 0.103
+    },
+    "check_process": {
+      "median_ms": 0.769,
+      "min_ms": 0.7,
+      "max_ms": 1.196
+    }
+  },
+  "33_modules_257_functions": {
+    "cold_build_one_sample_ms": 333.547,
+    "warm_build": {
+      "median_ms": 6.192,
+      "min_ms": 5.29,
+      "max_ms": 6.871
+    },
+    "one_body_changed": {
+      "median_ms": 274.695,
+      "min_ms": 259.507,
+      "max_ms": 292.827
+    },
+    "frontend_phase": {
+      "median_ms": 1.315,
+      "min_ms": 1.249,
+      "max_ms": 1.666
+    }
+  },
+  "100_million_iteration_runtime": {
+    "dev_release": {
+      "median_ms": 25.629,
+      "min_ms": 24.872,
+      "max_ms": 26.628
+    },
+    "equivalent_c_O2": {
+      "median_ms": 42.028,
+      "min_ms": 32.951,
+      "max_ms": 44.722
+    },
+    "output": "12750000000"
+  }
+}

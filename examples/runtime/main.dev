@@ -1,0 +1,13 @@
+use "std/io"
+use "std/strings"
+use "std/args"
+use "std/time"
+
+fn main() {
+    let start = time.now_ns()
+    let message = strings.concat("Hello ", "Dev runtime")
+    io.writeln(message)
+    print(strings.len(message))
+    if args.len() > 0 { io.writeln(args.get(0)) }
+    print(time.now_ns() >= start)
+}

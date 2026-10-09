@@ -1,0 +1,66 @@
+{
+  "platform": "Windows-11-10.0.26200-SP0",
+  "cpu_count": 16,
+  "compiler": "devc 0.2.0",
+  "compiler_sha256": "8fa4b3a0b3cf39c5d51629b9b709f71045ccbfc6311f93a012414dcded0153db",
+  "cc": "clang version 18.1.7",
+  "runs": 7,
+  "method": "Wall-clock process latency, median across runs. Sources/cache on local temp filesystem. C comparison uses the same loop and -O3 -fwrapv. Runtime includes process startup and printing; no universal speed claim. Fixed runtime input is visible to optimizers; use benchmark_compare.py for runtime-input comparisons.",
+  "development_backend": "clang",
+  "native": false,
+  "development_profile": "default -O0",
+  "release_flags": "--release / -O3",
+  "single_module": {
+    "cold_build": {
+      "median_ms": 263.806,
+      "min_ms": 243.583,
+      "max_ms": 398.209
+    },
+    "warm_build": {
+      "median_ms": 20.129,
+      "min_ms": 17.461,
+      "max_ms": 98.217
+    },
+    "frontend_only_phase": {
+      "median_ms": 0.331,
+      "min_ms": 0.322,
+      "max_ms": 0.355
+    },
+    "check_process": {
+      "median_ms": 13.101,
+      "min_ms": 12.553,
+      "max_ms": 15.844
+    }
+  },
+  "33_modules_257_functions": {
+    "cold_build_one_sample_ms": 1135.642,
+    "warm_build": {
+      "median_ms": 32.833,
+      "min_ms": 29.218,
+      "max_ms": 38.727
+    },
+    "one_body_changed": {
+      "median_ms": 282.773,
+      "min_ms": 276.615,
+      "max_ms": 294.09
+    },
+    "frontend_phase": {
+      "median_ms": 6.771,
+      "min_ms": 6.245,
+      "max_ms": 8.216
+    }
+  },
+  "100_million_iteration_runtime": {
+    "dev_release": {
+      "median_ms": 28.402,
+      "min_ms": 26.08,
+      "max_ms": 176.572
+    },
+    "equivalent_c_O3": {
+      "median_ms": 27.211,
+      "min_ms": 26.496,
+      "max_ms": 183.089
+    },
+    "output": "12750000000"
+  }
+}

@@ -1,0 +1,8 @@
+use math
+use "lib/greet.dev" as greet
+
+fn main() {
+    greet.hello()
+    print(math.add(20, 22))
+    print(math.fib(10))
+}
