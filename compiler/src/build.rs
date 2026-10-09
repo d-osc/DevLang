@@ -1,6 +1,5 @@
-use crate::ast::*;
 use crate::codegen::{Generated, TYPES_HEADER};
-use crate::program::{hash, Program};
+use crate::program::{hash, module_name, Program};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -23,22 +22,10 @@ pub struct Options {
     pub timings: bool,
 }
 pub fn entry_wrapper(program: &Program) -> Result<String, String> {
-    let f = program.modules[0]
-        .functions
-        .iter()
-        .find(|f| f.name == "main" && f.body.is_some())
-        .ok_or_else(|| {
-            "entry module needs 'fn main()'; use --lib to build a library".to_string()
-        })?;
-    if !f.params.is_empty() || f.ret != Type::i32() {
-        return Err(error(
-            &program.modules[0].path,
-            f.span,
-            "main must have no parameters and return i32",
-        ));
-    }
-    let sig = &program.signatures[&(0, "main".into())];
-    Ok(format!("\nint main(void) {{ return {}(); }}\n", sig.c_name))
+    Ok(format!(
+        "\nint main(void) {{ return dev_script_{}(); }}\n",
+        module_name(&program.modules[0].path)
+    ))
 }
 pub fn write_generated(dir: &Path, modules: &[Generated]) -> Result<(), String> {
     std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;

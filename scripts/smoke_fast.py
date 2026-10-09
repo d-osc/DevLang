@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Regression tests for executable caching, CPU profiles and TinyCC builds."""
+from source_text import explicit_entry
 import argparse
 from pathlib import Path
 import random
@@ -28,7 +29,7 @@ def main():
                 raise AssertionError("unexpected success")
             return p
 
-        source.write_text("fn main() { print(42) }")
+        source.write_text(explicit_entry("fn main() { print(42) }", path=source))
         first = invoke()
         assert first.stdout == "42\n" and "1 compiled" in first.stderr
         second = invoke()
@@ -55,7 +56,7 @@ def main():
         p = invoke(flags=("--release", "--native"))
         assert p.stdout == "42\n" and "0 compiled, 1 cached" in p.stderr
         count += 1
-        source.write_text("fn main() { print(43) }")
+        source.write_text(explicit_entry("fn main() { print(43) }", path=source))
         p = invoke()
         assert p.stdout == "43\n" and "1 compiled" in p.stderr
         count += 1
@@ -87,7 +88,7 @@ def main():
         lines += ["let calls u64 = 4294967295", "print((f(&calls) * 3 + 7) & 0xffffffff)", "print(calls)",
                   "let s i64 = -1", "print((s * 7) & 0xffffffff)", "}"]
         expected += ["7", "4294967296", "4294967289"]
-        source.write_text("\n".join(lines))
+        source.write_text(explicit_entry("\n".join(lines), path=source))
         regular = ("--cc", args.cc) if args.cc else ()
         profiles = [regular + ("--release",), regular + ("--release", "--native")]
         if args.tcc:
@@ -109,28 +110,28 @@ def main():
                 ("fn main() { let x u64 = 0xffffffff; print((x << 32) >> 32); print(x / 3); print(x % 3) }", "4294967295\n1431655765\n0\n"),
             ]
             for code, expected in cases:
-                source.write_text(code, encoding="utf-8")
+                source.write_text(explicit_entry(code, path=source), encoding="utf-8")
                 p = invoke(flags=fast)
                 assert p.stdout == expected, (p.stdout, p.stderr)
                 count += 1
-            (root / "other.dev").write_text("use main\nfn add(x i64) i64 { return x + 1 }")
-            source.write_text("use other\nfn main() { print(other.add(41)) }")
+            (root / "other.dev").write_text(explicit_entry("use main\nfn add(x i64) i64 { return x + 1 }", path=root / "other.dev"))
+            source.write_text(explicit_entry("use other\nfn main() { print(other.add(41)) }", path=source))
             p = invoke(flags=fast)
             assert p.stdout == "42\n" and "2 compiled" in p.stderr
             p = invoke(flags=fast)
             assert "0 compiled, 2 cached" in p.stderr
             count += 1
             driver = root / "driver.c"
-            driver.write_text("#include <stdint.h>\nint32_t add(int32_t a, int32_t b) { return a+b; }")
-            source.write_text("extern fn add(a i32, b i32) i32\nfn main() { print(add(20, 22)) }")
+            driver.write_text(explicit_entry("#include <stdint.h>\nint32_t add(int32_t a, int32_t b) { return a+b; }", path=driver))
+            source.write_text(explicit_entry("extern fn add(a i32, b i32) i32\nfn main() { print(add(20, 22)) }", path=source))
             p = invoke(flags=fast + ("--link", str(driver)))
             assert p.stdout == "42\n"
             before = output.read_bytes()
-            driver.write_text("invalid C!")
+            driver.write_text(explicit_entry("invalid C!", path=driver))
             invoke(command="build", flags=fast + ("--link", str(driver)), ok=False)
             assert output.read_bytes() == before
             count += 1
-            source.write_text("fn main() { print(42) }")
+            source.write_text(explicit_entry("fn main() { print(42) }", path=source))
             for conflict in ("--release", "--native", "--lib", "--freestanding"):
                 p = invoke(command="build", flags=fast + (conflict,), ok=False)
                 assert "--fast is for hosted" in p.stderr

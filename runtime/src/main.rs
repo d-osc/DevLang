@@ -1,4 +1,7 @@
 mod engine;
+mod memory;
+mod native;
+mod numeric;
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -7,7 +10,9 @@ devrun -e|--eval 'print(40 + 2)' [--timings] [-- arguments]
   -h, --help       Show help
   -v, -V, --version  Show runtime version
   --timings        Print source-load and execution timings to stderr
-Interprets Dev directly without a compiler or generated build artifacts.";
+  --ffi-lib PATH   Load a native shared library (.dll/.so), repeatable
+  --engine MODE    auto (default numeric plans) or ast (reference interpreter)
+Interprets Dev directly; source-only C dependencies are prepared automatically.";
 
 fn main() {
     match run() {
@@ -21,6 +26,8 @@ fn main() {
 fn run() -> Result<i32, String> {
     let mut remaining = Vec::new();
     let mut timings = false;
+    let mut libraries = Vec::new();
+    let mut numeric = true;
     let mut raw = std::env::args().skip(1);
     while let Some(arg) = raw.next() {
         match arg.as_str() {
@@ -30,6 +37,16 @@ fn run() -> Result<i32, String> {
                 break;
             }
             "--timings" => timings = true,
+            "--engine" => {
+                numeric = match raw.next().as_deref() {
+                    Some("auto") => true,
+                    Some("ast") => false,
+                    _ => return Err("--engine needs auto or ast".into()),
+                };
+            }
+            "--ffi-lib" => libraries.push(PathBuf::from(
+                raw.next().ok_or("--ffi-lib needs a shared-library path")?,
+            )),
             "--help" | "-h" => {
                 println!("{HELP}");
                 return Ok(0);
@@ -60,10 +77,7 @@ fn run() -> Result<i32, String> {
         PathBuf::from(entry)
     };
     let source = if inline {
-        Some(format!(
-            "fn main() {{\n{}\n}}",
-            args.next().ok_or("-e needs code")?
-        ))
+        Some(args.next().ok_or("-e needs code")?)
     } else {
         None
     };
@@ -75,7 +89,8 @@ fn run() -> Result<i32, String> {
         program_args.remove(0);
     }
     let start = Instant::now();
-    let mut engine = engine::Engine::load(&path, source.as_deref(), program_args)?;
+    let mut engine =
+        engine::Engine::load(&path, source.as_deref(), program_args, &libraries, numeric)?;
     let loaded = start.elapsed();
     let executed = Instant::now();
     let result = engine.run();

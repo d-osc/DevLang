@@ -1,0 +1,21 @@
+fn main() {
+    let job = spawn(fn() i64 { return 19 })
+    let result = then(job, fn(n i64) Ref<i64> { return ref(n + 23) })
+    // An application can continue doing work and poll on a later tick.
+    while !ready(result) {}
+    print(deref(await(result)))
+
+    let callbacks = Vec<ContextCallback<fn(i64) i64>>()
+    unsafe {
+        for i in 0..200 {
+            callbacks.push(callback_context(fn(n i64) i64 { return i + n }))
+        }
+        let keep = callbacks[41]
+        callbacks.clear()
+        // A C API receives keep.call and keep.data separately (userdata last).
+        // Keep this managed record alive until C unregisters the callback.
+        print(keep.call(1, keep.data))
+    }
+}
+
+main()

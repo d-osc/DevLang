@@ -1,0 +1,43 @@
+trait HasValue { fn value(self Self) i64 }
+struct Box<T> { item T }
+fn Box.value(self Box<i64>) i64 { return self.item }
+fn read<T:HasValue>(value T) i64 { return value.value() }
+struct Buffer<T,const N> { data [T;N] }
+enum Inner { None, Value(i64) }
+enum Result<T> { Ok(T), Err(str) }
+
+fn make(offset i64) fn(i64) i64 {
+    return fn(value i64) i64 { return offset + value }
+}
+async fn compute(value i64) Ref<i64> { return ref(value * 2) }
+fn increment(value i64) i64 { return value + 1 }
+
+fn main() {
+    let values = Vec<i64>(19,23)
+    let snapshot = values.slice(0,2)
+    values[0] = 99
+    print(snapshot[0] + snapshot[1])
+
+    let names = Map<str,i64>()
+    names.set("answer",42)
+    print(names.get("answer"))
+    print(read(Box(42)))
+    let buffer = Buffer<i64,2>([19,23])
+    print(buffer.data[0] + buffer.data[1])
+    print(make(19)(23))
+
+    let result = Result.Ok(Inner.Value(42))
+    match result {
+        Ok(Value(n)) if n > 0 => { print(n) }
+        _ => { print(0) }
+    }
+
+    let task = compute(21)
+    print(deref(await(task)))
+    unsafe {
+        let callback_value = callback(increment)
+        print(callback_value(41))
+    }
+    return 0
+}
+main()

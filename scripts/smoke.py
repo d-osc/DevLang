@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise the actual native build/link/run path, including cache invalidation."""
+from source_text import explicit_entry
 import argparse
 import os
 from pathlib import Path
@@ -26,7 +27,7 @@ def main():
         def write(name, source):
             path = root / name
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(source, encoding="utf-8")
+            path.write_text(explicit_entry(source, path=path), encoding="utf-8")
             return path
 
         def invoke(command, entry="main.dev", flags=(), ok=True):
@@ -96,7 +97,7 @@ def main():
         ffi = 'extern fn puts(text str) i32\nextern fn device_add(a i32, b i32) i32\nfn main() { puts("C ABI"); print(device_add(20, 22)) }'
         run_source(ffi, "C ABI\n42\n", flags=("--link", str(c)))
         before = exe.read_bytes()
-        c.write_text("invalid C code!", encoding="utf-8")
+        c.write_text(explicit_entry("invalid C code!", path=c), encoding="utf-8")
         p = invoke("build", flags=("--link", str(c)), ok=False)
         assert exe.read_bytes() == before and "failed" in p.stderr
         count += 1
@@ -121,14 +122,14 @@ def main():
             wrapper_text = f'@echo off\nif "%~1"=="--version" echo version>>"{log}"\n"{real_cc}" %*\n'
         else:
             wrapper_text = f'#!/bin/sh\nif [ "$1" = "--version" ]; then echo version >> {shlex.quote(str(log))}; fi\nexec {shlex.quote(real_cc)} "$@"\n'
-        wrapper.write_text(wrapper_text, encoding="utf-8")
+        wrapper.write_text(explicit_entry(wrapper_text, path=wrapper), encoding="utf-8")
         wrapper.chmod(0o755)
         write("main.dev", "fn main() { print(42) }")
         invoke("build", flags=("--cc", str(wrapper)))
         p = invoke("build", flags=("--cc", str(wrapper)))
         assert "0 compiled, 1 cached; link cached" in p.stderr, p.stderr
         assert log.read_text().splitlines() == ["version"]
-        wrapper.write_text(wrapper_text + ("rem changed\n" if os.name == "nt" else "# changed\n"), encoding="utf-8")
+        wrapper.write_text(explicit_entry(wrapper_text + ("rem changed\n" if os.name == "nt" else "# changed\n"), path=wrapper), encoding="utf-8")
         p = invoke("build", flags=("--cc", str(wrapper)))
         assert "1 compiled, 0 cached; link yes" in p.stderr, p.stderr
         assert log.read_text().splitlines() == ["version", "version"]

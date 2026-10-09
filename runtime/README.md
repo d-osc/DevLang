@@ -1,7 +1,7 @@
 # Dev source runtime
 
-`devrun` interprets `.dev` source directly. It does not invoke `devc`, a C
-compiler, linker, or Rust during execution, and creates no build artifacts.
+`devrun` interprets `.dev` source directly. Pure Dev execution needs no compiler or build artifacts. Source-only C FFI
+dependencies are prepared automatically by the separate `devc` executable.
 Compiler and runtime are independent executables; only the syntax crate is shared.
 
 ```sh
@@ -14,19 +14,93 @@ cargo build --release -p dev-runtime
 ```
 
 Windows uses `devrun.exe`. Distribute the binary alone; users do not need Rust
-or the compiler to run it. Source builds need Rust and the sibling `syntax/`
-crate, but not `compiler/` or `stdlib/`.
+or the compiler for pure Dev or prebuilt-library FFI execution. Automatic
+C dependency preparation needs sibling `devc` and a C backend on the first run. Source builds need Rust, native C build tools for
+bundled libffi, and the sibling `syntax/` crate, but not `compiler/` or `stdlib/`.
 
 Supports functions, relative imports (including cycles), local scopes, typed
-numbers, strings, arrays, casts, conditions, loops, break/continue and print.
-The entry point remains `fn main()`. `-e` wraps statements in that entry point.
+numbers, strings, arrays, casts, conditions, while/range-for loops, break/continue,
+value structs, payload enums with exhaustive `match`, inferred/explicit function/struct/enum generics and print.
+The runtime executes entry-file statements in source order. Function declarations
+do not execute their bodies. Call `main()` explicitly if you define it:
+
+```dev
+fn main() {
+    print("Hello")
+}
+
+main()
+```
+
+`-e` evaluates the supplied source directly. Top-level `print(42)` works without
+any function. An expression such as `main()` discards its return value; use
+`return main()` at file level to propagate it as the process exit code.
+Imported modules contain declarations only and do not invoke `main`.
+File-level variables are local to the entry script; pass values as arguments
+to functions instead of capturing script locals.
 Strings and arrays are owned automatically; arrays use value copies.
 
-This first release executes an AST and has no JIT. It is intended for direct
-execution and scripting; it does not claim native performance. Raw pointers,
-volatile hardware access and external C functions require `devc`. Array
-assignment currently supports a named array indexed by an expression; nested
-array assignment is unsupported. Recursion is limited to 128 calls.
+The default `auto` engine builds typed numeric instruction plans in memory
+for supported functions and entry scripts, with AST fallback for other code.
+It has no JIT and does not claim native performance. `extern fn`
+calls work through libffi and loaded shared libraries. Raw pointer dereferencing
+and volatile hardware access still require `devc` or a native library. Field and array-element assignments support nested local values. Recursion is limited to 128 calls.
 
 See `docs/runtime.md` for intrinsic APIs and `stdlib/` for the separate native
 C library. Validate with `python scripts/smoke_runtime.py --runtime target/release/devrun`.
+
+Native FFI:
+
+```powershell
+.\target\release\d.exe examples/ffi/main.dev
+```
+
+Missing native symbols trigger automatic discovery
+of shared libraries beside modules declaring extern functions. `--ffi-lib`
+selects libraries explicitly or loads libraries from other directories;
+standard C symbols such as `puts` resolve from the system CRT. Native code is
+prepared automatically from adjacent C files when no library supplies the symbol.
+The runtime delegates this work to sibling `devc`; the first run needs Clang/GCC
+or `DEV_CC`. Cached libraries live in `.dev-cache/native/`; C and local header
+changes invalidate them. Warm execution needs no C backend. Prebuilt libraries
+take precedence. Dev source itself remains interpreted. Supports
+integer/size/bool/float, UTF-8 `str`, void returns, C structs, variadic functions, scalar callbacks and unsafe direct foreign memory.
+See `docs/runtime.md` for ABI, ownership and unsupported features. Validate with
+`python scripts/smoke_ffi.py --bin-dir target/release`.
+
+Validate automatic preparation with `python scripts/smoke_native_auto.py --bin-dir target/release`.
+
+## Compute runtime
+
+Numeric plans use indexed local slots, pre-parsed constants and explicit jumps
+instead of repeated AST walks and name lookups. Integer/float/bool operations,
+numeric arrays, branches, loops, casts and function calls are supported. Reading
+an array element does not copy the entire array; array assignment and parameters
+still preserve value-copy semantics. Repeated calls reuse one workspace per
+function, with independent frames for recursion.
+
+```powershell
+.\target\release\d.exe examples/runtime/compute.dev --timings
+.\target\release\d.exe examples/runtime/compute.dev --engine ast
+```
+
+`--engine auto` is the default; `--engine ast` selects the reference interpreter.
+Both modes run without `devc`, a native toolchain or generated files for pure
+Dev. These plans are runtime-internal instructions, not native compilation.
+Unsupported or statically inconsistent plans fall back to AST execution;
+unexecuted invalid code retains the existing lazy error behavior. Bounds checks,
+integer divide/shift checks, numeric wrapping and the 128-call recursion limit
+remain active. Strings, pointers and intrinsic-heavy functions generally use
+AST fallback, but called numeric functions can still use plans.
+
+See [measured results](../docs/runtime-compute.md). Validate with
+`python scripts/smoke_numeric.py --runtime target/release/devrun`.
+
+Use `examples/features/main.dev` for structs, enums, ranges and explicit generics. See `docs/language.md` for syntax and limits; validate with `python scripts/smoke_features.py --bin-dir target/release`.
+
+Recursive `*T`/`Ref<T>` layouts are accepted. Pure Dev uses immutable `ref(value)`
+and `deref(reference)`; live foreign pointers can be read/written in lexical unsafe blocks.
+See `examples/features/payload.dev` and `docs/language.md` for match syntax and
+reference lifetime differences between runtime and native compilation.
+
+See `docs/advanced.md` for reference-counted collections, function values/closures, constrained/const generics and thread-backed async tasks.

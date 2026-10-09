@@ -1,6 +1,4 @@
-# Real pointers and volatile operations, using a local value as a mock register.
-# Replace its address with a mapped MMIO address for your actual device.
-fn main() {
+fn main() { unsafe {
     let register u32 = 0
     let port = &register
     volatile_store(port, 0x20)
@@ -12,4 +10,8 @@ fn main() {
     *(data + 2) = 99
     print(bytes[2])
     print(sizeof(bytes))
+ } }
+unsafe {
+main()
+
 }

@@ -1,8 +1,10 @@
 use "std/strings"
+
 use "std/io"
+
 use "std/time"
 
-fn main() {
+fn main() { unsafe {
     let message = strings.new("Hello")
     if message == null { return 1 }
     if not strings.append(message, " Dev runtime ภาษาไทย") {
@@ -15,4 +17,8 @@ fn main() {
     time.sleep_ms(1)
     print(time.now_ns() >= start)
     strings.free(message)
+ } }
+unsafe {
+main()
+
 }

@@ -1,6 +1,7 @@
 extern fn dvr_now_ns() u64
+
 extern fn dvr_sleep_ms(milliseconds u64) i32
 
-fn now_ns() u64 { return dvr_now_ns() }
-fn now_ms() u64 { return dvr_now_ns() / 1000000 }
-fn sleep_ms(milliseconds u64) bool { return dvr_sleep_ms(milliseconds) != 0 }
+fn now_ns() u64 { unsafe {  return dvr_now_ns()  } }
+fn now_ms() u64 { unsafe {  return dvr_now_ns() / 1000000  } }
+fn sleep_ms(milliseconds u64) bool { unsafe {  return dvr_sleep_ms(milliseconds) != 0  } }

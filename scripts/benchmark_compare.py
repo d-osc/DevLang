@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Compare equivalent native Dev/C/Rust/Go programs with runtime inputs."""
+from source_text import explicit_entry
 import argparse
 from contextlib import contextmanager
 import datetime
@@ -231,7 +232,7 @@ def main():
         binaries = {lang: root / (lang + (".exe" if os.name == "nt" else "")) for lang in LANGUAGES}
         paths = {lang: root / f"bench.{EXTENSIONS[lang]}" for lang in LANGUAGES}
         for lang in LANGUAGES:
-            paths[lang].write_text(sources[lang])
+            paths[lang].write_text(explicit_entry(sources[lang], path=paths[lang]))
 
         def command(lang, profile, cache):
             optimized = profile == "optimized"
@@ -252,7 +253,7 @@ def main():
             report["bootstrap_builds"][lang] = {"elapsed_ms": round(duration, 3), "command": cmd}
             print(f"Bootstrap {lang}: {duration:.1f} ms", flush=True)
 
-        paths["go"].write_text(sources["go"] + "\n// application cache invalidation probe\n")
+        paths["go"].write_text(explicit_entry(sources["go"] + "\n// application cache invalidation probe\n", path=paths["go"]))
         probe = command("go", "optimized", root / "probe-cache")
         probe.insert(2, "-n")
         _, planned = process(probe, env=env, cwd=root)
@@ -276,7 +277,7 @@ def main():
                     # A changed comment invalidates the Go main-package cache. Dev
                     # instead gets a fresh object cache, since comments aren't emitted.
                     marker = "#" if lang == "dev" else "//"
-                    paths[lang].write_text(sources[lang] + f"\n{marker} rebuild {profile} {iteration}\n")
+                    paths[lang].write_text(explicit_entry(sources[lang] + f"\n{marker} rebuild {profile} {iteration}\n", path=paths[lang]))
                     if binaries[lang].exists():
                         binaries[lang].unlink()
                     cmd = command(lang, profile, root / f"cache-{profile}-{iteration}")
@@ -332,11 +333,11 @@ def main():
             report["workdir"] = str(root)
         output = Path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(json.dumps(report, indent=2) + "\n")
+        output.write_text(explicit_entry(json.dumps(report, indent=2) + "\n", path=output))
         if args.markdown:
             path = Path(args.markdown)
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(markdown(report))
+            path.write_text(explicit_entry(markdown(report), path=path))
         print(f"Report: {output}", flush=True)
     finally:
         if temporary:

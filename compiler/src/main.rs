@@ -1,8 +1,12 @@
+mod callbacks;
+mod collections;
+mod tasks;
 #[cfg(test)]
 use dev_syntax::lexer;
 use dev_syntax::{ast, parser};
 mod build;
 mod codegen;
+mod native;
 mod program;
 #[cfg(test)]
 mod tests;
@@ -59,6 +63,28 @@ fn cli() -> Result<i32, String> {
     }
     if command == "--version" {
         println!("devc {}", env!("CARGO_PKG_VERSION"));
+        return Ok(0);
+    }
+    if command == "native-build" {
+        let directory = PathBuf::from(args.next().ok_or("native-build needs a source directory")?);
+        let mut symbols = Vec::new();
+        while let Some(option) = args.next() {
+            if option != "--symbol" {
+                return Err(format!("unknown native-build option {option}"));
+            }
+            let symbol = args.next().ok_or("--symbol needs a C identifier")?;
+            if symbol.is_empty()
+                || !symbol.bytes().enumerate().all(|(i, b)| {
+                    b == b'_' || b.is_ascii_alphabetic() || (i > 0 && b.is_ascii_digit())
+                })
+            {
+                return Err("invalid native symbol".into());
+            }
+            symbols.push(symbol);
+        }
+        symbols.sort();
+        symbols.dedup();
+        println!("{}", native::prepare(&directory, &symbols)?.display());
         return Ok(0);
     }
     if !["build", "run", "check", "emit"].contains(&command.as_str()) {

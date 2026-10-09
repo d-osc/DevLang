@@ -3,3 +3,5 @@ fn main() {
     let answer = 40 + 2
     print(answer)
 }
+
+main()

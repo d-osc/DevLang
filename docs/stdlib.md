@@ -23,6 +23,8 @@ fn main() {
     print(strings.len(message))
     strings.free(message)
 }
+
+main()
 ```
 
 Build the runtime and consume it explicitly:

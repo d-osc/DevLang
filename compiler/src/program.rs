@@ -10,6 +10,7 @@ pub struct Program {
 }
 #[derive(Clone)]
 pub struct Signature {
+    pub variadic: bool,
     pub c_name: String,
     pub params: Vec<Type>,
     pub ret: Type,
@@ -38,7 +39,14 @@ impl Program {
             signatures: HashMap::new(),
         };
         program.load_module(entry, &mut HashMap::new(), module_dirs)?;
-        let mut external_names: HashMap<String, (Vec<Type>, Type, bool)> = HashMap::new();
+        dev_syntax::expand::modules(&mut program.modules, &program.aliases)?;
+        for module in &program.modules {
+            for ty in &module.concrete_types {
+                valid_type(ty, false)
+                    .map_err(|msg| error(&module.path, Span { line: 1, col: 1 }, msg))?;
+            }
+        }
+        let mut external_names: HashMap<String, (Vec<Type>, Type, bool, bool)> = HashMap::new();
         for (id, module) in program.modules.iter().enumerate() {
             for function in &module.functions {
                 let fail = |message: &str| error(&module.path, function.span, message);
@@ -63,16 +71,28 @@ impl Program {
                     }
                 }
                 let external = function.body.is_none();
+                if external
+                    && (matches!(function.ret, Type::Ref(..))
+                        || function
+                            .params
+                            .iter()
+                            .any(|(_, t)| matches!(t, Type::Ref(..))))
+                {
+                    return Err(fail(
+                        "aggregate and enum FFI values are not supported; use scalar wrappers",
+                    ));
+                }
                 let params: Vec<Type> = function.params.iter().map(|(_, t)| t.clone()).collect();
                 if external || function.exported {
                     // C keywords and the implementation's reserved identifier space cannot be exported.
                     if function.name.starts_with('_') || c_keyword(&function.name) {
                         return Err(fail("this name cannot be used as a C symbol"));
                     }
-                    if let Some((old_params, old_ret, definition)) =
+                    if let Some((old_params, old_ret, definition, variadic)) =
                         external_names.get_mut(&function.name)
                     {
-                        if *old_params != params
+                        if *variadic != function.variadic
+                            || *old_params != params
                             || *old_ret != function.ret
                             || (*definition && !external)
                         {
@@ -82,7 +102,12 @@ impl Program {
                     } else {
                         external_names.insert(
                             function.name.clone(),
-                            (params.clone(), function.ret.clone(), !external),
+                            (
+                                params.clone(),
+                                function.ret.clone(),
+                                !external,
+                                function.variadic,
+                            ),
                         );
                     }
                 }
@@ -97,6 +122,7 @@ impl Program {
                     .insert(
                         key,
                         Signature {
+                            variadic: function.variadic,
                             c_name,
                             params,
                             ret: function.ret.clone(),
@@ -211,6 +237,30 @@ impl Program {
 pub fn valid_type(ty: &Type, allow_void: bool) -> Result<(), String> {
     match ty {
         Type::Void if !allow_void => Err("void is not a value type".into()),
+        Type::Function(ps, r) => {
+            for t in ps {
+                if matches!(t, Type::Array(..)) {
+                    return Err("function value parameters cannot be arrays".into());
+                }
+                valid_type(t, false)?;
+            }
+            if matches!(**r, Type::Array(..)) {
+                return Err("function values cannot return arrays".into());
+            }
+            valid_type(r, true)
+        }
+        Type::Task(r) => valid_type(r, true),
+        Type::Map(k, v) => {
+            valid_type(k, false)?;
+            valid_type(v, false)
+        }
+        Type::Vector(inner) | Type::Slice(inner) => valid_type(inner, false),
+        Type::Ref(inner) => {
+            if matches!(**inner, Type::Void | Type::Array(..)) {
+                return Err("Ref requires a non-array value type".into());
+            }
+            valid_type(inner, false)
+        }
         Type::Ptr(inner) => {
             if matches!(**inner, Type::Array(..)) {
                 return Err("pointers to arrays are not supported; use an element pointer".into());
@@ -222,6 +272,23 @@ pub fn valid_type(ty: &Type, allow_void: bool) -> Result<(), String> {
                 return Err("nested arrays are not supported in v0.1".into());
             }
             valid_type(inner, false)
+        }
+        Type::Record(_, fields) => {
+            for (_, t) in fields {
+                valid_type(t, false)?;
+            }
+            Ok(())
+        }
+        Type::Enum(_, variants) => {
+            for (_, ts) in variants {
+                for t in ts {
+                    valid_type(t, false)?;
+                }
+            }
+            Ok(())
+        }
+        Type::Named(..) | Type::Const(_) | Type::ArrayConst(..) => {
+            Err("unresolved or non-value type".into())
         }
         _ => Ok(()),
     }

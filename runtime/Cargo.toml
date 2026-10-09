@@ -10,3 +10,5 @@ path = "src/main.rs"
 
 [dependencies]
 dev-syntax = { path = "../syntax" }
+libffi = "5"
+libloading = "0.8"

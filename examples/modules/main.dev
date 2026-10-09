@@ -6,3 +6,5 @@ fn main() {
     print(math.add(20, 22))
     print(math.fib(10))
 }
+
+main()

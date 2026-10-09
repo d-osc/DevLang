@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise runtime modules via the actual native compiler and cache paths."""
+from source_text import explicit_entry
 import argparse
 import os
 from pathlib import Path
@@ -37,14 +38,14 @@ def main():
         # Compiler alone works and does not auto-discover an adjacent runtime.
         relocated = root / ("devc.exe" if os.name == "nt" else "devc")
         shutil.copy2(compiler, relocated)
-        entry.write_text('fn main() { print("standalone compiler") }')
+        entry.write_text(explicit_entry('fn main() { print("standalone compiler") }', path=entry))
         env = os.environ.copy()
         env.pop("DEV_RUNTIME", None)
         result = subprocess.run([str(relocated), "run", str(entry), "-o", str(exe), "--cache-dir", str(cache), *regular],
                                 cwd=root, env=env, capture_output=True, text=True, timeout=120)
         assert result.returncode == 0 and result.stdout == "standalone compiler\n", (result.stdout, result.stderr)
         count += 1
-        entry.write_text('use "std/strings"\nfn main() {}')
+        entry.write_text(explicit_entry('use "std/strings"\nfn main() {}', path=entry))
         result = subprocess.run([str(relocated), "check", str(entry)], cwd=root, capture_output=True, text=True)
         assert result.returncode != 0 and "cannot import" in result.stderr, result.stderr
         count += 1
@@ -73,7 +74,7 @@ def main():
             profiles.append(["--fast", "--cc", str(Path(args.tcc).resolve())])
         for profile in profiles:
             for code, expected in cases:
-                entry.write_text(code, encoding="utf-8")
+                entry.write_text(explicit_entry(code, path=entry), encoding="utf-8")
                 result = invoke(flags=profile)
                 assert result.stdout == expected, (profile, result.stdout, expected)
                 count += 1
@@ -81,7 +82,7 @@ def main():
                 assert result.stdout == expected and "0 compiled" in result.stderr and "link cached" in result.stderr, result.stderr
                 count += 1
         assert (root / "ไฟล์-runtime.bin").read_bytes() == "ภาษาไทย".encode() + bytes([0, 255, 66])
-        entry.write_text('use "std/strings"\nfn main() { let s = strings.new("emitted"); if s == null { return 1 }; print(strings.view(s)); strings.free(s) }')
+        entry.write_text(explicit_entry('use "std/strings"\nfn main() { let s = strings.new("emitted"); if s == null { return 1 }; print(strings.view(s)); strings.free(s) }', path=entry))
         generated = root / "generated"
         invoke("emit", flags=["-o", str(generated)])
         cc = args.cc or ("clang" if os.name == "nt" else "cc")
@@ -91,11 +92,11 @@ def main():
         count += 1
         archive = library
         consumer = root / "consumer.c"
-        consumer.write_text('#include "dev_runtime.h"\n#include <assert.h>\nint main(void) { void *s = dvr_string_new("C ABI"); assert(s && dvr_string_len(s) == 5); dvr_string_free(s); return 0; }')
+        consumer.write_text(explicit_entry('#include "dev_runtime.h"\n#include <assert.h>\nint main(void) { void *s = dvr_string_new("C ABI"); assert(s && dvr_string_len(s) == 5); dvr_string_free(s); return 0; }', path=consumer))
         subprocess.run([cc, "-std=c11", "-I", str(runtime / "include"), str(consumer), str(archive), "-o", str(exe)], cwd=root, check=True, capture_output=True, timeout=120)
         subprocess.run([str(exe)], check=True, timeout=30)
         count += 1
-        entry.write_text('use "std/io"\nfn main() { let data [u8; 5] = [0,0,0,0,0]; print(io.read_line(&data[0], 5)); print(data[0]); print(io.read_line(&data[0], 5)); print(data[0]); print(io.read_line(&data[0], 5)); print(io.read_line(null, 0)) }')
+        entry.write_text(explicit_entry('use "std/io"\nfn main() { let data [u8; 5] = [0,0,0,0,0]; print(io.read_line(&data[0], 5)); print(data[0]); print(io.read_line(&data[0], 5)); print(data[0]); print(io.read_line(&data[0], 5)); print(io.read_line(null, 0)) }', path=entry))
         result = invoke(input_text="ab\r\n\nz")
         assert result.stdout == "2\n97\n0\n0\n1\n-2\n", result.stdout
         result = invoke(input_text="")
@@ -103,40 +104,40 @@ def main():
         count += 2
 
         # Rebuild the runtime independently; Dev objects stay cached on relink.
-        entry.write_text('use "std/memory"\nfn main() { memory.free(null); print(42) }')
+        entry.write_text(explicit_entry('use "std/memory"\nfn main() { memory.free(null); print(42) }', path=entry))
         invoke()
         source = runtime / "src/memory.c"
         header = runtime / "include/dev_runtime.h"
-        header.write_text(header.read_text() + '\n#define DVR_TEST_MESSAGE "source changed"\n')
-        source.write_text('#include <stdio.h>\n' + source.read_text().replace(
+        header.write_text(explicit_entry(header.read_text() + '\n#define DVR_TEST_MESSAGE "source changed"\n', path=header))
+        source.write_text(explicit_entry('#include <stdio.h>\n' + source.read_text().replace(
             'void dvr_free(void *data) { free(data); }',
-            'void dvr_free(void *data) { if (!data) puts(DVR_TEST_MESSAGE); free(data); }'))
+            'void dvr_free(void *data) { if (!data) puts(DVR_TEST_MESSAGE); free(data); }'), path=source))
         build_runtime()
         result = invoke()
         assert result.stdout == "source changed\n42\n" and "0 compiled" in result.stderr and "link yes" in result.stderr, result.stderr
         count += 1
-        header.write_text(header.read_text().replace('"source changed"', '"header changed"'))
+        header.write_text(explicit_entry(header.read_text().replace('"source changed"', '"header changed"'), path=header))
         build_runtime()
         result = invoke()
         assert result.stdout == "header changed\n42\n" and "0 compiled" in result.stderr, result.stderr
         before = library.read_bytes()
-        source.write_text("invalid C source")
+        source.write_text(explicit_entry("invalid C source", path=source))
         build_runtime(ok=False)
         assert library.read_bytes() == before
         assert invoke().stdout == "header changed\n42\n"
         count += 2
-        entry.write_text('use "std/memory"\nfn main() { memory.free(null) }')
+        entry.write_text(explicit_entry('use "std/memory"\nfn main() { memory.free(null) }', path=entry))
         invoke("check", flags=["--freestanding", "--lib"])
         count += 1
-        entry.write_text('use "std/unknown"\nfn main() {}')
+        entry.write_text(explicit_entry('use "std/unknown"\nfn main() {}', path=entry))
         result = invoke("check", ok=False)
         assert "cannot import" in result.stderr
         count += 1
-        entry.write_text('use "std/../secret"\nfn main() {}')
+        entry.write_text(explicit_entry('use "std/../secret"\nfn main() {}', path=entry))
         result = invoke("check", ok=False)
         assert "cannot escape" in result.stderr
         count += 1
-        entry.write_text('use "custom/strings" as text\nfn main() { let s = text.new("generic modules"); print(text.view(s)); text.free(s) }')
+        entry.write_text(explicit_entry('use "custom/strings" as text\nfn main() { let s = text.new("generic modules"); print(text.view(s)); text.free(s) }', path=entry))
         result = invoke(flags=["--module-dir", f"custom={runtime / 'modules'}"])
         assert result.stdout == "generic modules\n"
         count += 1

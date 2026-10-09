@@ -28,3 +28,9 @@ emitted C requires the same explicitly selected external libraries.
 There is no reserved runtime namespace, runtime auto-discovery, `DEV_RUNTIME`
 environment variable or automatic runtime compilation. Applications choose their
 libraries through normal module lookup and C ABI linkage.
+
+Entry-file statements execute in order. Function declarations never execute automatically: write `main()` explicitly. A bare call discards its return value; `return main()` forwards it as the exit status. Imported modules contain declarations only.
+
+Supports range `for`, nominal value structs, payload enums with exhaustive `match` and inferred/explicit function/struct/enum generics. See `docs/language.md` and `examples/features/main.dev` for syntax, supported forms and limits.
+
+`docs/advanced.md` describes enforced unsafe boundaries, checked arithmetic/indexing, managed cleanup, collections, closures, traits, const generics, tasks and the supported C ABI. Native OS-thread code requires a C11 compiler with atomics and platform thread support.

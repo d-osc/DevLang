@@ -1,0 +1,150 @@
+{
+  "note": "Wall time includes process startup and runtime parsing; native compilation is excluded. One warmup, identical insert/get/remove workload, no shared snapshots.",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "processor": "Intel64 Family 6 Model 191 Stepping 2, GenuineIntel",
+  "binary_sha256": {
+    "baseline": {
+      "devc": "de2f5829a1c7499cb99616f1d0c1df45ce8110ad30bab9654099d7a836c8e9a8",
+      "devrun": "f56b3984e08be463dcfcece1c84b71344e0b774dce04fe27c7f88571cf7a193d"
+    },
+    "hash": {
+      "devc": "ae4bfd5c1a491b8e5579cee35612c4e495d4ea26641d1dbaa27f96abf52e7b5f",
+      "devrun": "2c9abaa395937adafa4c44b84521a3032b08d5ae5ecd946d717a7506740aafe2"
+    }
+  },
+  "repetitions": 3,
+  "rows": [
+    {
+      "entries": 250,
+      "implementation": "baseline",
+      "mode": "runtime",
+      "median_seconds": 0.020506399974692613,
+      "samples_seconds": [
+        0.018439700012095273,
+        0.020506399974692613,
+        0.02165220002643764
+      ]
+    },
+    {
+      "entries": 250,
+      "implementation": "baseline",
+      "mode": "native",
+      "median_seconds": 0.012424499960616231,
+      "samples_seconds": [
+        0.012424499960616231,
+        0.013267100031953305,
+        0.012314599996898323
+      ]
+    },
+    {
+      "entries": 250,
+      "implementation": "hash",
+      "mode": "runtime",
+      "median_seconds": 0.015397600014694035,
+      "samples_seconds": [
+        0.015189199999440461,
+        0.015754399995785207,
+        0.015397600014694035
+      ]
+    },
+    {
+      "entries": 250,
+      "implementation": "hash",
+      "mode": "native",
+      "median_seconds": 0.012252999993506819,
+      "samples_seconds": [
+        0.012368099996820092,
+        0.01223189994925633,
+        0.012252999993506819
+      ]
+    },
+    {
+      "entries": 1000,
+      "implementation": "baseline",
+      "mode": "runtime",
+      "median_seconds": 0.09320499998284504,
+      "samples_seconds": [
+        0.09181750001152977,
+        0.0932471000123769,
+        0.09320499998284504
+      ]
+    },
+    {
+      "entries": 1000,
+      "implementation": "baseline",
+      "mode": "native",
+      "median_seconds": 0.013791000004857779,
+      "samples_seconds": [
+        0.013756300031673163,
+        0.015505099960137159,
+        0.013791000004857779
+      ]
+    },
+    {
+      "entries": 1000,
+      "implementation": "hash",
+      "mode": "runtime",
+      "median_seconds": 0.017251299985218793,
+      "samples_seconds": [
+        0.017251299985218793,
+        0.01771089999238029,
+        0.017060099984519184
+      ]
+    },
+    {
+      "entries": 1000,
+      "implementation": "hash",
+      "mode": "native",
+      "median_seconds": 0.012051300029270351,
+      "samples_seconds": [
+        0.012252199987415224,
+        0.01192540000192821,
+        0.012051300029270351
+      ]
+    },
+    {
+      "entries": 4000,
+      "implementation": "baseline",
+      "mode": "runtime",
+      "median_seconds": 1.2340946000185795,
+      "samples_seconds": [
+        1.2519994000322185,
+        1.2275386999826878,
+        1.2340946000185795
+      ]
+    },
+    {
+      "entries": 4000,
+      "implementation": "baseline",
+      "mode": "native",
+      "median_seconds": 0.04835060000186786,
+      "samples_seconds": [
+        0.049526299990247935,
+        0.04807829996570945,
+        0.04835060000186786
+      ]
+    },
+    {
+      "entries": 4000,
+      "implementation": "hash",
+      "mode": "runtime",
+      "median_seconds": 0.03081419999944046,
+      "samples_seconds": [
+        0.030209499993361533,
+        0.031330399971921,
+        0.03081419999944046
+      ]
+    },
+    {
+      "entries": 4000,
+      "implementation": "hash",
+      "mode": "native",
+      "median_seconds": 0.012571599974762648,
+      "samples_seconds": [
+        0.015087400039192289,
+        0.012145199987571687,
+        0.012571599974762648
+      ]
+    }
+  ]
+}

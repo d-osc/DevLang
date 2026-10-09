@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Reproducible measurements; reports process latency as well as compiler phases."""
+from source_text import explicit_entry
 import argparse
 import hashlib
 import json
@@ -60,7 +61,7 @@ def main():
         compiler = str(local_compiler)
         exe = root / ("app.exe" if os.name == "nt" else "app")
         single = root / "hello.dev"
-        single.write_text('fn main() { print("hello"); print(40 + 2) }\n', encoding="utf-8")
+        single.write_text(explicit_entry('fn main() { print("hello"); print(40 + 2) }\n', path=single), encoding="utf-8")
 
         def build_cmd(entry, cache, flags=()):
             selected = ["--cc", args.fast_tcc, "--fast"] if args.fast_tcc and "--release" not in flags else extra
@@ -86,9 +87,9 @@ def main():
             imports.append(f"use m{m}")
             calls.append(f"total += m{m}.f0(1)")
             functions = [f"fn f{i}(x i64) i64 {{ return x + {i} }}" for i in range(8)]
-            (root / f"m{m}.dev").write_text("\n".join(functions), encoding="utf-8")
+            (root / f"m{m}.dev").write_text(explicit_entry("\n".join(functions), path=root / f"m{m}.dev"), encoding="utf-8")
         multi = root / "main.dev"
-        multi.write_text("\n".join(imports) + "\nfn main() { let total = 0; " + "; ".join(calls) + "; print(total) }\n", encoding="utf-8")
+        multi.write_text(explicit_entry("\n".join(imports) + "\nfn main() { let total = 0; " + "; ".join(calls) + "; print(total) }\n", path=multi), encoding="utf-8")
         cache = root / "multi-cache"
         cold_elapsed, p = timed(build_cmd(multi, cache))
         assert "33 compiled" in p.stderr
@@ -99,7 +100,7 @@ def main():
             assert "0 compiled, 33 cached; link cached" in p.stderr
             # Mutate one implementation without changing its interface.
             module = root / "m0.dev"
-            module.write_text(f"fn f0(x i64) i64 {{ return x + {i + 1000} }}\n" + "\n".join(f"fn f{j}(x i64) i64 {{ return x + {j} }}" for j in range(1, 8)), encoding="utf-8")
+            module.write_text(explicit_entry(f"fn f0(x i64) i64 {{ return x + {i + 1000} }}\n" + "\n".join(f"fn f{j}(x i64) i64 {{ return x + {j} }}" for j in range(1, 8)), path=module), encoding="utf-8")
             elapsed, p = timed(build_cmd(multi, cache))
             incremental.append(elapsed)
             assert "1 compiled, 32 cached" in p.stderr
@@ -108,10 +109,10 @@ def main():
 
         # Compare a real release executable with an equivalent C executable.
         runtime = root / "loop.dev"
-        runtime.write_text("fn sum_loop(n i64) i64 { let total = 0; let i = 0; while i < n { total += i & 255; i += 1 }; return total }\nfn main() { print(sum_loop(100000000)) }\n", encoding="utf-8")
+        runtime.write_text(explicit_entry("fn sum_loop(n i64) i64 { let total = 0; let i = 0; while i < n { total += i & 255; i += 1 }; return total }\nfn main() { print(sum_loop(100000000)) }\n", path=runtime), encoding="utf-8")
         timed(build_cmd(runtime, root / "runtime-cache", ("--release",)))
         c_source = root / "loop.c"
-        c_source.write_text('#include <stdint.h>\n#include <stdio.h>\nint64_t sum_loop(int64_t n) { int64_t total=0; int64_t i=0; while(i<n) { total += i & 255; i += 1; } return total; }\nint main(void) { printf("%lld\\n", (long long)sum_loop(100000000)); return 0; }\n', encoding="utf-8")
+        c_source.write_text(explicit_entry('#include <stdint.h>\n#include <stdio.h>\nint64_t sum_loop(int64_t n) { int64_t total=0; int64_t i=0; while(i<n) { total += i & 255; i += 1; } return total; }\nint main(void) { printf("%lld\\n", (long long)sum_loop(100000000)); return 0; }\n', path=c_source), encoding="utf-8")
         c_exe = root / ("c-app.exe" if os.name == "nt" else "c-app")
         timed([cc, "-std=c11", "-O3", "-fwrapv", str(c_source), "-o", str(c_exe)] + (["-march=native"] if args.native else []))
         dev_times, c_times = [], []
@@ -125,7 +126,7 @@ def main():
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    output.write_text(explicit_entry(json.dumps(report, indent=2) + "\n", path=output), encoding="utf-8")
     print(json.dumps(report, indent=2))
 
 

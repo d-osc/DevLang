@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Measure Dev's old/new/backend profiles together; no timing assertions."""
+from source_text import explicit_entry
 import argparse
 import datetime
 import hashlib
@@ -56,7 +57,7 @@ def main():
         paths = {name: root / (name + ".dev") for name in profiles}
         binaries = {name: root / (name + "-app") for name in profiles}
         for path in paths.values():
-            path.write_text(source)
+            path.write_text(explicit_entry(source, path=path))
         rng = random.Random(2026100802)
         samples = {name: [] for name in profiles}
         last = {}
@@ -106,7 +107,7 @@ def main():
                 report["runtime"][name] = {"input": values, "orders": orders,
                                            "profiles": {p: stats(v) for p, v in samples.items()}}
                 print(name + ": " + ", ".join(f"{p} {stats(v)['median_ms']:.3f} ms" for p, v in samples.items()), flush=True)
-        Path(args.output).write_text(json.dumps(report, indent=2) + "\n")
+        Path(args.output).write_text(explicit_entry(json.dumps(report, indent=2) + "\n", path=Path(args.output)))
 
 
 if __name__ == "__main__":

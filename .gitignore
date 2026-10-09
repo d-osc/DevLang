@@ -5,4 +5,9 @@
 /out/
 /dist/
 *.exe
+*.dll
+*.so
+*.dylib
+*.lib
+*.exp
 __pycache__/

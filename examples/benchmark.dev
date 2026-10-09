@@ -11,3 +11,5 @@ export fn sum_loop(n i64) i64 {
 fn main() {
     print(sum_loop(100000000))
 }
+
+main()

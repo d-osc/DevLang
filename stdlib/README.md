@@ -40,6 +40,8 @@ fn main() {
     io.writeln(strings.view(text))
     strings.free(text)
 }
+
+main()
 ```
 
 Modules: `memory` provides alloc/zero-filled arrays/resize/free/overlap-safe copy;

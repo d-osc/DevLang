@@ -11,3 +11,5 @@ fn main() {
     if args.len() > 0 { io.writeln(args.get(0)) }
     print(time.now_ns() >= start)
 }
+
+main()

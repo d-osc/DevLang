@@ -1,35 +1,35 @@
 # Dev Lang
 
-ใช้คำสั่ง `dev` ได้จาก bundle ใน `dist/dev/<platform>/` หรือ `target/release/` หลัง `cargo build --release`:
+ใช้คำสั่ง `d` ได้จาก bundle ใน `dist/d/<platform>/` หรือ `target/release/` หลัง `cargo build --release`:
 
 ```sh
-dev examples/modules/main.dev
-dev run examples/modules/main.dev
-dev --run examples/modules/main.dev
-dev -r examples/modules/main.dev
+d examples/modules/main.dev
+d run examples/modules/main.dev
+d --run examples/modules/main.dev
+d -r examples/modules/main.dev
 
-dev build examples/modules/main.dev
-dev --build examples/modules/main.dev
-dev -b examples/modules/main.dev
-dev compiler examples/modules/main.dev
-dev --compiler examples/modules/main.dev
-dev -c examples/modules/main.dev
+d build examples/modules/main.dev
+d --build examples/modules/main.dev
+d -b examples/modules/main.dev
+d compiler examples/modules/main.dev
+d --compiler examples/modules/main.dev
+d -c examples/modules/main.dev
 ```
 
-กลุ่มแรกใช้ runtime กลุ่มหลังใช้ compiler โดย `dev` เรียก `devrun` หรือ `devc` ที่อยู่ข้างกัน ทั้งสองยังเป็น executable แยกกัน ใส่โฟลเดอร์ bundle ใน PATH เพื่อใช้คำสั่งสั้น ๆ ดู [คู่มือ CLI](cli/README.md)
+กลุ่มแรกใช้ runtime กลุ่มหลังใช้ compiler โดย `d` เรียก `devrun` หรือ `devc` ที่อยู่ข้างกัน ทั้งสองยังเป็น executable แยกกัน ใส่โฟลเดอร์ bundle ใน PATH เพื่อใช้คำสั่งสั้น ๆ ดู [คู่มือ CLI](cli/README.md)
 
 Option พื้นฐาน:
 
 ```sh
-dev --help
-dev --version
-dev --cwd examples/modules main.dev --timings
-dev --eval 'print(40 + 2)'
-dev --check examples/modules/main.dev
-dev build examples/modules/main.dev --release --output out/app
-dev build examples/modules/main.dev --debug
-dev emit examples/modules/main.dev --output out/generated
-dev examples/runtime/main.dev -- hello
+d --help
+d --version
+d --cwd examples/modules main.dev --timings
+d --eval 'print(40 + 2)'
+d --check examples/modules/main.dev
+d build examples/modules/main.dev --release --output out/app
+d build examples/modules/main.dev --debug
+d emit examples/modules/main.dev --output out/generated
+d examples/runtime/main.dev -- hello
 ```
 
 `-h` คือ help, `-v`/`-V` คือ version, `-C` คือ working directory และ `-o` คือ output ส่วน `--timings` แสดงเวลาทาง stderr โดยไม่ปนกับผลลัพธ์โปรแกรม Options สำหรับ build ใส่หลังชื่อไฟล์
@@ -42,6 +42,8 @@ fn main() {
     print("Hello Dev")
     print(answer)
 }
+
+main()
 ```
 
 ไม่ต้องใส่ semicolon, ไม่ต้องเขียนชนิดของตัวแปรทุกตัว และไม่ต้องใส่ `:` หรือ `->` ในฟังก์ชัน ตัวแปร `let` แก้ค่าได้
@@ -95,7 +97,7 @@ Linux binary ใน `dist` มี TinyCC backend รวมไว้แล้ว 
 
 | ความต้องการ | การทำงานใน v0.4 |
 | --- | --- |
-| Syntax น้อย | `fn`, `let`, `if`, `while`, `return`, `use`; newline จบ statement |
+| Syntax น้อย | `fn`, `let`, `if`, `while`, `for`, `return`, `use`; newline จบ statement |
 | เขียนง่าย | อนุมานชนิดตัวแปรและ literal; ตรวจชนิดข้อมูลก่อนเรียก backend |
 | Native code | ไม่มี VM หรือ GC; `--release` ใช้ `-O3`; `--native` เปิดคำสั่งตาม CPU |
 | Hardware / C | C ABI, `extern fn`, `export fn`, pointer, fixed-width integers, volatile access |
@@ -116,12 +118,22 @@ default ใช้ `-O0`, release ใช้ `-O3` และ `--fast` เลือ
 .\dist\runtime\windows-x86_64\devrun.exe -e 'print(40 + 2)'
 ```
 
-Linux: `./dist/runtime/linux-x86_64/devrun`. Executes AST directly without
-calling devc, Clang/GCC, Rust or a linker, and without creating build artifacts.
-The entry point is `fn main()`. Built-in I/O, strings, time and arguments use
-`std/*` imports. Values are managed automatically. This first interpreter has
-no JIT and does not claim native performance. Hardware and C FFI use `devc`.
+Linux: `./dist/runtime/linux-x86_64/devrun`. Interprets Dev using in-memory numeric plans and AST fallback.
+Pure Dev execution needs no compiler or build artifacts.
+File-level statements start execution; call `main()` explicitly. Built-in I/O, strings, time and arguments use
+`std/*` imports. Values are managed automatically. The default engine uses typed numeric plans for compute loops, with AST fallback.
+It has no JIT and does not claim native performance. See [runtime measurements](docs/runtime-compute.md). Native C FFI uses `extern fn` and `--ffi-lib PATH`. Direct hardware/volatile access uses `devc` or a native library.
 See [runtime](runtime/README.md) and [API](docs/runtime.md).
+
+Function declarations do not run automatically. Add `main()` at file level to start your program, or use `return main()` to propagate its exit code. Both the runtime and compiler execute entry-file statements.
+
+Runtime FFI example:
+
+```powershell
+.\target\release\d.exe examples/ffi/main.dev
+```
+
+ไม่ต้อง build เอง: runtime หา library ข้างโมดูลก่อน ถ้ายังไม่พบ symbol จะให้ `devc` ที่อยู่ข้าง `devrun` เตรียม C dependency ให้อัตโนมัติ ครั้งแรกต้องมี Clang/GCC หรือ `DEV_CC` แล้วเก็บแคชใน `.dev-cache/native/` ครั้งถัดไปใช้แคชได้โดยไม่ต้องมี C backend; แก้ C/header แล้วจะเตรียมใหม่ ไฟล์ Dev ยังคงรันผ่าน interpreter โดยตรง ใช้ `--ffi-lib PATH` เพื่อเลือก library เอง (prebuilt library มีลำดับก่อน source อัตโนมัติ). See [FFI example](examples/ffi/README.md).
 
 ## Native stdlib
 
@@ -153,6 +165,8 @@ use math
 fn main() {
     print(math.add(20, 22))
 }
+
+main()
 ```
 
 `use math` โหลด `math.dev` จากโฟลเดอร์เดียวกับไฟล์ที่ import ส่วน path แบบกำหนดเองใช้ `use "lib/math.dev" as math` ฟังก์ชันของโมดูลเรียกผ่าน `math.add(...)`
@@ -171,6 +185,8 @@ fn main() {
     volatile_store(port, 0x20)
     print(volatile_load(port))
 }
+
+main()
 ```
 
 `&x` ให้ address, `*p` อ่านหรือเขียนหน่วยความจำ, `address as *u32` แปลง address เป็น pointer และ `volatile_load/store` ใช้ volatile access ของ C มีตัวอย่าง MMIO library ใน `examples/hardware/registers.dev`
@@ -232,8 +248,43 @@ python3 scripts/benchmark_compare.py --compiler dist/compiler/linux-x86_64/devc 
 
 ## ขอบเขต v0.4
 
-นี่คือ compiler รุ่นเริ่มต้นที่รัน native program ได้จริง รองรับฟังก์ชัน, scalar types, array หนึ่งมิติ, raw pointer, module และ C ABI แบบ scalar/pointer ยังไม่มี struct, enum, generic, variadic FFI, inline assembly, package manager, debugger integration หรือ language server
+นี่คือ compiler รุ่นเริ่มต้นที่รัน native program ได้จริง รองรับฟังก์ชัน, scalar types, array หนึ่งมิติ, raw pointer, module และ C ABI แบบ scalar/pointer รองรับ `for` แบบ range, value struct, enum ที่มี payload และ `match` และ explicit generics ของ function/struct/enum แล้ว รองรับ variadic FFI, scalar callbacks, C struct ABI, collections, closures, traits, const generics และ thread-backed async แล้ว ยังไม่มี inline assembly, package manager, debugger integration หรือ language server
 
-Raw pointer และ indexing ไม่มีระบบตรวจความปลอดภัยขณะรัน การจัดการหน่วยความจำและลำดับ side effect ใน expression ใช้แนวทาง C แยกการเรียกฟังก์ชันที่แก้ state เป็นคนละ statement เมื่อจำเป็น อ่านรายละเอียดใน [docs/language.md](docs/language.md)
+มี `unsafe` ที่บังคับใช้ และตรวจ bounds, integer division และ shift ขณะรัน; raw pointer ที่หมดอายุและ bounds ของ allocation ภายนอกยังเป็นสัญญาที่ผู้เขียนต้องรักษา การจัดการหน่วยความจำและลำดับ side effect ใน expression ใช้แนวทาง C แยกการเรียกฟังก์ชันที่แก้ state เป็นคนละ statement เมื่อจำเป็น อ่านรายละเอียดใน [docs/language.md](docs/language.md)
 
 Compiler ใช้ MIT ส่วน TinyCC ที่รวมใน Linux distribution ใช้ LGPL-2.1 มี license, revision และ source archive อยู่ใน `dist/compiler/linux-x86_64/backend/`
+
+## Types and generics examples
+
+```powershell
+.\target\release\d.exe examples/features/main.dev
+.\target\release\d.exe build examples/features/main.dev
+```
+
+Both runtime and native compilation support range `for`, structs, payload enums with exhaustive `match` and inferred/explicit function/struct/enum generics. See [language syntax and limits](docs/language.md).
+
+
+Payload enum and recursive reference example:
+
+```powershell
+target\release\d.exe examples/features/payload.dev
+target\release\d.exe build examples/features/payload.dev -o out/payload.exe
+```
+
+`Ref<T>` is immutable managed storage reclaimed by reference counting in both modes. Foreign-memory operations require `unsafe`; raw-pointer lifetimes remain the caller's responsibility. See
+[recursive types and reference lifetimes](docs/language.md#recursive-types-and-immutable-references).
+
+
+See [advanced features and current boundaries](docs/advanced.md) and
+`examples/features/advanced.dev` for collections, closures, traits, const generics,
+match guards, OS threads, async functions and C callbacks/varargs. Both source
+runtime and native compiler share these language features.
+
+Map now uses a COW hash table in both modes. `ready(task)` polls without waiting;
+dropping a task detaches unfinished work. Capturing C callbacks retain their
+environments (native: 64 unique pairs per signature per module). Try
+`examples/features/tasks_callbacks.dev` and see [Map measurements](docs/map-performance.md).
+
+`callback_context(f)` supports C APIs with userdata and managed environment cleanup,
+without the native 64-instance limit. `then(task, next)` chains work without waiting
+in the caller. Try `examples/features/continuations.dev`; tasks still use OS threads.

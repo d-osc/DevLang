@@ -1,13 +1,18 @@
 extern fn dvr_alloc(bytes usize) *void
+
 extern fn dvr_alloc_array(count usize, size usize) *void
+
 extern fn dvr_resize(data *void, bytes usize) *void
+
 extern fn dvr_free(data *void)
+
 extern fn dvr_copy(dest *void, source *void, bytes usize)
+
 extern fn dvr_fill(dest *void, value u8, bytes usize)
 
-fn alloc(bytes usize) *void { return dvr_alloc(bytes) }
-fn alloc_array(count usize, size usize) *void { return dvr_alloc_array(count, size) }
-fn resize(data *void, bytes usize) *void { return dvr_resize(data, bytes) }
-fn free(data *void) { dvr_free(data) }
-fn copy(dest *void, source *void, bytes usize) { dvr_copy(dest, source, bytes) }
-fn fill(dest *void, value u8, bytes usize) { dvr_fill(dest, value, bytes) }
+fn alloc(bytes usize) *void { unsafe {  return dvr_alloc(bytes)  } }
+fn alloc_array(count usize, size usize) *void { unsafe {  return dvr_alloc_array(count, size)  } }
+fn resize(data *void, bytes usize) *void { unsafe {  return dvr_resize(data, bytes)  } }
+fn free(data *void) { unsafe {  dvr_free(data)  } }
+fn copy(dest *void, source *void, bytes usize) { unsafe {  dvr_copy(dest, source, bytes)  } }
+fn fill(dest *void, value u8, bytes usize) { unsafe {  dvr_fill(dest, value, bytes)  } }

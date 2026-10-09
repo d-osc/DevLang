@@ -5,5 +5,5 @@ edition = "2021"
 license = "MIT"
 
 [[bin]]
-name = "dev"
+name = "d"
 path = "src/main.rs"

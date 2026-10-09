@@ -1,0 +1,25 @@
+use "types.dev" as types
+
+fn main() {
+    let total = 0
+    for i in 0..10 {
+        if i == 3 { continue }
+        total += i
+    }
+    print(total)
+
+    let point = types.Point(19, 23)
+    point.x += 1
+    print(point.x + point.y)
+
+    let color = types.Color.Green
+    print(color)
+    print(color == types.Color.Green)
+
+    print(types.identity<i64>(42))
+    print(types.sum<f64>(1.5, 2.5))
+    let boxed = types.Box<types.Point>(point)
+    print(boxed.value.y)
+}
+
+main()

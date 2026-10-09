@@ -100,7 +100,7 @@ fn missing_import_reports_import_location() {
 }
 #[test]
 fn arrays_pointer_access_and_volatile() {
-    Project::new().generate("fn main() { let a [u8; 2] = [1, 2]; let p = &a[0]; volatile_store(p, 7); print(volatile_load(p)); *p = 3 }").unwrap();
+    Project::new().generate("fn main() { unsafe { let a [u8; 2] = [1, 2]; let p = &a[0]; volatile_store(p, 7); print(volatile_load(p)); *p = 3 } }").unwrap();
 }
 #[test]
 fn string_is_escaped_as_utf8() {
@@ -127,14 +127,23 @@ fn reject_invalid_programs_without_codegen_panics() {
         ("fn main() { let a = []; print(a) }", "empty"),
         ("fn main() { let a = [1]; let b = a }", "array literal"),
         ("fn main() { print([1][0]) }", "bind the array"),
-        ("fn main() { let a = [1]; let p = &a }", "invalid unary"),
+        (
+            "fn main() { unsafe { let a = [1]; let p = &a } }",
+            "invalid unary",
+        ),
         ("fn main() { let x void = 1 }", "void"),
         ("fn main() { let a [void; 2] = [1, 2] }", "void"),
-        ("fn main() { let p = null; print(*p) }", "cast *void"),
-        ("fn main() { volatile_load(1) }", "requires a pointer"),
+        (
+            "fn main() { unsafe { let p = null; print(*p) } }",
+            "cast *void",
+        ),
+        (
+            "fn main() { unsafe { volatile_load(1) } }",
+            "requires a pointer",
+        ),
         ("fn main() { let s = \"hi\"; s[0] = 1 }", "writable"),
         (
-            "fn main() { let s = \"hi\"; let p = s as *u8 }",
+            "fn main() { let s = \"hi\"; unsafe { let p = s as *u8 } }",
             "read-only",
         ),
         ("fn main() { print(1.5 & 2.0) }", "integers"),
@@ -145,11 +154,11 @@ fn reject_invalid_programs_without_codegen_panics() {
         ("fn main() { other.f() }", "unknown module"),
         ("fn main() { let x = 1; x = true }", "expected i64"),
         (
-            "fn main() { let x = 1; let p = &x; let n = p as f64 }",
+            "fn main() { unsafe { let x = 1; let p = &x; let n = p as f64 } }",
             "pointer casts",
         ),
         (
-            "fn main() { let x = 1; let p = &x; let n = p * 2 }",
+            "fn main() { unsafe { let x = 1; let p = &x; let n = p * 2 } }",
             "expected",
         ),
         ("fn f(a [i32; 2]) {}", "array parameters"),

@@ -2,19 +2,21 @@ use std::{env, ffi::OsString, process::Command};
 
 const HELP: &str = "Dev Lang
 
-  dev FILE.dev [-- arguments]                 Run source with the runtime
-  dev run|--run|-r FILE.dev [-- arguments]     Run source with the runtime
-  dev build|--build|-b FILE.dev [options]      Compile a native program
-  dev compiler|--compiler|-c FILE.dev [options]  Alias for build
-  dev -e|--eval 'print(40 + 2)'               Run inline source
-  dev check|--check FILE.dev [options]        Check a native program
-  dev emit|--emit FILE.dev [options]          Emit C source
+  d FILE.dev [-- arguments]                 Run source with the runtime
+  d run|--run|-r FILE.dev [-- arguments]     Run source with the runtime
+  d build|--build|-b FILE.dev [options]      Compile a native program
+  d compiler|--compiler|-c FILE.dev [options]  Alias for build
+  d -e|--eval 'print(40 + 2)'               Run inline source
+  d check|--check FILE.dev [options]        Check a native program
+  d emit|--emit FILE.dev [options]          Emit C source
 
 Common options (before --):
   -h, --help       Show help, including after a command or filename
-  -v, -V, --version  Show dev version
+  -v, -V, --version  Show d version
   -C, --cwd DIR    Run from a working directory
   --timings        Print runtime or compiler timings to stderr
+  --ffi-lib PATH   Load a native shared library in runtime mode (repeatable)
+  --engine MODE    Runtime: auto (default) or ast
   -- ARGUMENTS     Forward program arguments in runtime mode
 
 Compiler options (after FILE.dev):
@@ -31,14 +33,14 @@ Compiler options (after FILE.dev):
   --freestanding   Disable hosted features
   --cache-dir DIR  Set the object cache directory
 
-devrun and devc are separate executables next to dev.
+devrun and devc are separate executables next to d.
 Build mode requires a C backend; runtime mode does not.";
 
 fn main() {
     match run() {
         Ok(code) => std::process::exit(code),
         Err(error) => {
-            eprintln!("dev: {error}");
+            eprintln!("d: {error}");
             std::process::exit(1);
         }
     }
@@ -61,7 +63,7 @@ fn run() -> Result<i32, String> {
                 return Ok(0);
             }
             "--version" | "-V" | "-v" => {
-                println!("dev {}", env!("CARGO_PKG_VERSION"));
+                println!("d {}", env!("CARGO_PKG_VERSION"));
                 return Ok(0);
             }
             "--cwd" | "-C" => {
@@ -72,7 +74,7 @@ fn run() -> Result<i32, String> {
             }
             "--timings" => timings = true,
             "-e" | "--eval" | "-o" | "--output" | "--cc" | "--ar" | "--link" | "--cflag"
-            | "--ldflag" | "--module-dir" | "--jobs" | "--cache-dir" => {
+            | "--ldflag" | "--module-dir" | "--jobs" | "--cache-dir" | "--ffi-lib" | "--engine" => {
                 args.push(raw[at].clone());
                 at += 1;
                 args.push(raw.get(at).ok_or("option needs a value")?.clone());
@@ -91,7 +93,7 @@ fn run() -> Result<i32, String> {
         return Ok(0);
     }
     if matches!(selector, "--version" | "-V") {
-        println!("dev {}", env!("CARGO_PKG_VERSION"));
+        println!("d {}", env!("CARGO_PKG_VERSION"));
         return Ok(0);
     }
     let (tool, command) = match selector {
@@ -136,7 +138,7 @@ fn run() -> Result<i32, String> {
     }
     let status = child.status().map_err(|e| {
         format!(
-            "cannot start {}: {e}; place {tool} next to dev",
+            "cannot start {}: {e}; place {tool} next to d",
             binary.display()
         )
     })?;

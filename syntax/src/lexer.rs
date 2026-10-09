@@ -146,10 +146,19 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
             });
             continue;
         }
+        if chars[i..].starts_with(&['.', '.', '.']) {
+            i += 3;
+            col += 3;
+            tokens.push(Token {
+                kind: Kind::Symbol("...".into()),
+                span,
+            });
+            continue;
+        }
         let pair: String = chars[i..(i + 2).min(chars.len())].iter().collect();
         if [
             "==", "!=", "<=", ">=", "&&", "||", "<<", ">>", "+=", "-=", "*=", "/=", "%=", "&=",
-            "|=", "^=", "->",
+            "|=", "^=", "->", "..", "=>",
         ]
         .contains(&pair.as_str())
         {
