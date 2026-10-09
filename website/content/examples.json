@@ -9,8 +9,8 @@
     "commands": [
       "d examples/hello.dev",
       "d check examples/hello.dev",
-      "d build examples/hello.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/hello.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -23,8 +23,8 @@
     "commands": [
       "d examples/modules/main.dev",
       "d check examples/modules/main.dev",
-      "d build examples/modules/main.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/modules/main.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -37,8 +37,8 @@
     "commands": [
       "d examples/features/main.dev",
       "d check examples/features/main.dev",
-      "d build examples/features/main.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/features/main.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -51,8 +51,8 @@
     "commands": [
       "d examples/features/payload.dev",
       "d check examples/features/payload.dev",
-      "d build examples/features/payload.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/features/payload.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -65,8 +65,8 @@
     "commands": [
       "d examples/features/advanced.dev",
       "d check examples/features/advanced.dev",
-      "d build examples/features/advanced.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/features/advanced.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -79,8 +79,8 @@
     "commands": [
       "d examples/features/continuations.dev",
       "d check examples/features/continuations.dev",
-      "d build examples/features/continuations.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/features/continuations.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -93,8 +93,8 @@
     "commands": [
       "d examples/howto/variables.dev",
       "d check examples/howto/variables.dev",
-      "d build examples/howto/variables.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/variables.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -107,8 +107,8 @@
     "commands": [
       "d examples/howto/conditions.dev",
       "d check examples/howto/conditions.dev",
-      "d build examples/howto/conditions.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/conditions.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -121,8 +121,8 @@
     "commands": [
       "d examples/howto/logical.dev",
       "d check examples/howto/logical.dev",
-      "d build examples/howto/logical.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/logical.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -135,8 +135,8 @@
     "commands": [
       "d examples/howto/operators.dev",
       "d check examples/howto/operators.dev",
-      "d build examples/howto/operators.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/operators.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -149,8 +149,8 @@
     "commands": [
       "d examples/howto/loops.dev",
       "d check examples/howto/loops.dev",
-      "d build examples/howto/loops.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/loops.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -163,8 +163,8 @@
     "commands": [
       "d examples/howto/functions.dev",
       "d check examples/howto/functions.dev",
-      "d build examples/howto/functions.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/functions.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -177,8 +177,8 @@
     "commands": [
       "d examples/howto/arrays.dev",
       "d check examples/howto/arrays.dev",
-      "d build examples/howto/arrays.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/arrays.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -191,8 +191,8 @@
     "commands": [
       "d examples/howto/structs.dev",
       "d check examples/howto/structs.dev",
-      "d build examples/howto/structs.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/structs.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -205,8 +205,8 @@
     "commands": [
       "d examples/howto/enums.dev",
       "d check examples/howto/enums.dev",
-      "d build examples/howto/enums.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/enums.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -219,8 +219,8 @@
     "commands": [
       "d examples/howto/matching.dev",
       "d check examples/howto/matching.dev",
-      "d build examples/howto/matching.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/matching.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -233,8 +233,8 @@
     "commands": [
       "d examples/howto/references.dev",
       "d check examples/howto/references.dev",
-      "d build examples/howto/references.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/references.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -247,8 +247,8 @@
     "commands": [
       "d examples/howto/vector.dev",
       "d check examples/howto/vector.dev",
-      "d build examples/howto/vector.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/vector.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -261,8 +261,8 @@
     "commands": [
       "d examples/howto/slices.dev",
       "d check examples/howto/slices.dev",
-      "d build examples/howto/slices.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/slices.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -275,8 +275,8 @@
     "commands": [
       "d examples/howto/maps.dev",
       "d check examples/howto/maps.dev",
-      "d build examples/howto/maps.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/maps.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -289,8 +289,8 @@
     "commands": [
       "d examples/howto/generics.dev",
       "d check examples/howto/generics.dev",
-      "d build examples/howto/generics.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/generics.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -303,8 +303,8 @@
     "commands": [
       "d examples/howto/traits.dev",
       "d check examples/howto/traits.dev",
-      "d build examples/howto/traits.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/traits.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -317,8 +317,8 @@
     "commands": [
       "d examples/howto/closures.dev",
       "d check examples/howto/closures.dev",
-      "d build examples/howto/closures.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/closures.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -331,8 +331,8 @@
     "commands": [
       "d examples/howto/tasks.dev",
       "d check examples/howto/tasks.dev",
-      "d build examples/howto/tasks.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/tasks.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -345,8 +345,8 @@
     "commands": [
       "d examples/howto/callbacks.dev",
       "d check examples/howto/callbacks.dev",
-      "d build examples/howto/callbacks.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/callbacks.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -359,8 +359,8 @@
     "commands": [
       "d examples/howto/foreign_memory.dev",
       "d check examples/howto/foreign_memory.dev",
-      "d build examples/howto/foreign_memory.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/foreign_memory.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -373,8 +373,8 @@
     "commands": [
       "d examples/howto/variadic.dev",
       "d check examples/howto/variadic.dev",
-      "d build examples/howto/variadic.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/variadic.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -387,8 +387,8 @@
     "commands": [
       "d examples/howto/exports.dev",
       "d check examples/howto/exports.dev",
-      "d build examples/howto/exports.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/exports.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -401,8 +401,8 @@
     "commands": [
       "d examples/howto/safe_checks.dev",
       "d check examples/howto/safe_checks.dev",
-      "d build examples/howto/safe_checks.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/howto/safe_checks.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ]
   },
   {
@@ -458,8 +458,8 @@
     "doc": "ffi",
     "commands": [
       "d examples/ffi/main.dev",
-      "d build examples/ffi/main.dev --link examples/ffi/device.c --release -o out/ffi",
-      "# Windows: out/ffi.exe | Linux: ./out/ffi"
+      "d build examples/ffi/main.dev --link examples/ffi/device.c --release -o out/ffi.exe",
+      "# Windows: ./out/ffi.exe | Linux: ./out/ffi.exe"
     ],
     "notes": "ครั้งแรกต้องมี devc และ Clang/GCC เพื่อเตรียม C library; Dev source ยังรันผ่าน interpreter หลังจากนั้นใช้ cache ได้"
   },
@@ -472,8 +472,8 @@
     "doc": "ffi",
     "commands": [
       "d examples/aggregate/main.dev",
-      "d build examples/aggregate/main.dev --link examples/aggregate/device.c --release -o out/aggregate",
-      "# Windows: out/aggregate.exe | Linux: ./out/aggregate"
+      "d build examples/aggregate/main.dev --link examples/aggregate/device.c --release -o out/aggregate.exe",
+      "# Windows: ./out/aggregate.exe | Linux: ./out/aggregate.exe"
     ],
     "notes": "ZIP รวม device.c ครั้งแรกต้องมี C backend; signature และ struct layout ต้องตรงกับ C"
   },
@@ -485,8 +485,8 @@
     "description": "ใช้ &local, raw pointers, pointer arithmetic และ volatile กับ local memory",
     "doc": "hardware",
     "commands": [
-      "d build examples/memory.dev --release -o out/example",
-      "# Windows: out/example.exe | Linux: ./out/example"
+      "d build examples/memory.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
     ],
     "mode": "native",
     "notes": "ต้อง build native เพราะ runtime ไม่รองรับ &local ตัวอย่างใช้ RAM ของโปรแกรม ไม่ได้เข้าถึง physical device; hardware จริงต้องมี mapped address และสิทธิ์ OS/board"
@@ -500,8 +500,8 @@
     "doc": "stdlib",
     "commands": [
       "python stdlib/build.py",
-      "d build examples/stdlib/main.dev --module-dir std=stdlib/modules --link stdlib/lib/libdevruntime.a --release -o out/stdlib",
-      "# Windows: out/stdlib.exe | Linux: ./out/stdlib"
+      "d build examples/stdlib/main.dev --module-dir std=stdlib/modules --link stdlib/lib/libdevruntime.a --release -o out/stdlib.exe",
+      "# Windows: ./out/stdlib.exe | Linux: ./out/stdlib.exe"
     ],
     "mode": "native",
     "package_roots": [

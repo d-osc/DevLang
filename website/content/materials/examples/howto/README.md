@@ -24,6 +24,7 @@ responsibility. `examples/memory.dev` requires native compilation because it
 takes addresses of local variables. `examples/aggregate` includes a C source
 dependency; its first source run needs `devc` and a C backend.
 
-Build a pure Dev example using `d build examples/howto/NAME.dev --release -o out/app`.
-On Windows run `out/app.exe`; on Linux run `./out/app`. Task examples need a C11
+Build a pure Dev example using `d build examples/howto/NAME.dev --release -o out/app.exe`.
+Run `./out/app.exe` on Windows or Linux. The output name is explicit; the compiler
+does not add `.exe` automatically. Task examples need a C11
 backend. All published validation commands and outputs appear on the website.
