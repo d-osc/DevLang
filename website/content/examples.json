@@ -714,5 +714,17 @@
     "commands": [
       "d examples/secure-network/main.dev"
     ]
+  },
+  {
+    "id": "sync",
+    "title": "Channels, Mutex และ Cancellation",
+    "category": "I/O",
+    "path": "examples/sync/main.dev",
+    "description": "ส่งข้อมูลข้าม worker, atomic update และ cooperative cancellation",
+    "doc": "sync",
+    "mode": "runtime",
+    "commands": [
+      "d examples/sync/main.dev"
+    ]
   }
 ]

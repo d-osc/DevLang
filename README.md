@@ -9,12 +9,15 @@ Source ล่าสุดมี `d new`, package manager แบบ path/Git (`d 
 
 เว็บไซต์คู่มือภาษาไทยและ reference: [เปิดเว็บไซต์ DevLang](https://d-osc.github.io/DevLang/) ([Sites mirror](https://devlang-docs.pineapplestudio7.chatgpt.site), [source](website/README.md)) · Skill สำหรับ AI coding agents: [devlang](skills/devlang/SKILL.md)
 
-[ตัวอย่างพร้อมคำสั่งรันและ ZIP 52 ชุด](https://d-osc.github.io/DevLang/#/examples) ครอบคลุมเงื่อนไข/operators, loops, types, modules, collections, generics, closures, tasks, C FFI และ runtime/native APIs ดู source แยกเรื่องใน [examples/howto](examples/howto/README.md)
+[ตัวอย่างพร้อมคำสั่งรันและ ZIP 53 ชุด](https://d-osc.github.io/DevLang/#/examples) ครอบคลุมเงื่อนไข/operators, loops, types, modules, collections, generics, closures, tasks, C FFI และ runtime/native APIs ดู source แยกเรื่องใน [examples/howto](examples/howto/README.md)
 
 Runtime เพิ่ม [Result, timers และ child_process](docs/control-libs.md),
 [SQLite, CSV, TOML และ YAML](docs/storage-libs.md) และ [TLS/WebSocket](docs/secure-network.md)
 พร้อมตัวอย่างและการทดสอบ auto/AST ใช้ executable ที่ build จาก source ล่าสุด
 โมดูลชุดนี้ยังไม่รองรับ native build และยังไม่มี coroutine async I/O
+
+`std/sync` เพิ่ม [channels, mutex และ cooperative cancellation](docs/sync.md)
+ที่แชร์ข้าม worker ได้ ลอง `d examples/sync/main.dev`
 
 Source runtime ล่าสุดรองรับ `use "std/json"`: parse/stringify, objects/arrays,
 typed access และแปลง struct/Map/Vec เป็น JSON ดู [JSON API](docs/json.md)

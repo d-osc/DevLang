@@ -9,6 +9,15 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
 
 ## Choose context and mode
 
+- For cross-worker channels, mutexes and cooperative cancellation, read
+  `docs/sync.md`. `std/sync` handles share state across spawn/captured copies;
+  ordinary payload data keeps value semantics. Match Item/Empty/Closed from
+  receives, explicitly close queues to wake waiters, and await workers.
+  Use Mutex.update for atomic changes; get followed by set is not atomic.
+  CancelToken does not forcibly stop Task or interrupt network/queue waits.
+  Pointers, functions, Tasks and sync handles cannot be stored as payloads.
+  These APIs are interpreter-only; do not invent native support or coroutines.
+
 - For catchable runtime failures, timers and executable processes, read
   `docs/control-libs.md`. Use `result.attempt(fn() T)` or `result.run(fn() void)`;
   catching errors does not undo side effects. Timer callbacks take a Timer handle.

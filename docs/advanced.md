@@ -3,6 +3,10 @@
 All examples work with `d FILE` and `d build FILE` unless stated otherwise.
 Run `examples/features/advanced.dev` for a complete executable example.
 
+Interpreter-only cross-worker channels, mutex callbacks and cooperative
+cancellation are available through [std/sync](sync.md). Captured sync handles
+share their resource, while ordinary managed data keeps value semantics.
+
 ## Safety and lifetime
 
 `unsafe { ... }` is required for raw-pointer address-of/dereference/casts,

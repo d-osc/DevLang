@@ -1,0 +1,32 @@
+use "std/sync"
+use "std/result"
+
+fn main() {
+    let messages = sync.channel<i64>(2)
+    let total = sync.mutex(0)
+    let worker = spawn(fn() {
+        for i in 1..6 { messages.send(i) }
+        messages.close()
+    })
+    while true {
+        match messages.receive() {
+            Item(value) => { total.update(fn(n i64) i64 { return n + value }) }
+            Empty => {}
+            Closed => { break }
+        }
+    }
+    await(worker)
+    print(total.get())
+    let failed = result.run(fn() {
+        total.update(fn(n i64) i64 { result.raise("failed update"); return n })
+    })
+    print(result.isErr(failed))
+    print(total.get())
+    total.close()
+
+    let token = sync.token()
+    let cancellable = spawn(fn() bool { return token.wait(5000) })
+    token.cancel()
+    print(await(cancellable))
+}
+main()

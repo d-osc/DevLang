@@ -20,9 +20,10 @@ GROUPS = {
     'เริ่มต้น': ['intro', 'install', 'layout', 'cli', 'tooling'],
     'พื้นฐานภาษา': ['variables', 'types', 'operators', 'loops', 'functions', 'strings-arrays', 'modules'],
     'ข้อมูลและ abstraction': ['structs', 'enums-match', 'references', 'collections', 'generics', 'closures'],
-    'ระบบและ interoperability': ['tasks', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'fs-http', 'node-core', 'limitations', 'ai'],
+    'ระบบและ interoperability': ['tasks', 'sync', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'fs-http', 'node-core', 'limitations', 'ai'],
 }
 REFERENCES = {
+    'sync-reference': ('Shared channels, mutexes and cancellation', 'docs/sync.md'),
     'control-libs-reference': ('Errors, timers and child processes', 'docs/control-libs.md'),
     'storage-libs-reference': ('SQLite, CSV, TOML and YAML', 'docs/storage-libs.md'),
     'secure-network-reference': ('TLS and WebSocket', 'docs/secure-network.md'),

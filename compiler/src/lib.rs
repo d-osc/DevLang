@@ -41,7 +41,7 @@ mod tests {
             "regex", "encoding", "crypto", "compression", "archive", "uuid",
             "dns", "cli",
             "result", "timers", "child_process",
-            "sqlite", "csv", "toml", "yaml", "tls", "websocket",
+            "sqlite", "csv", "toml", "yaml", "tls", "websocket", "sync",
         ] {
             let source = format!("use \"std/{module}\"\nfn main() {{}}\nmain()");
             assert!(
@@ -81,6 +81,9 @@ mod tests {
             "use \"std/yaml\"\nyaml.valid(42)",
             "use \"std/tls\"\ntls.createServer(\"cert\",\"key\",fn(s i64) {})",
             "use \"std/websocket\"\nwebsocket.connect(42,1000,\"\")",
+            "use \"std/sync\"\nlet q=sync.channel<i64>(1)\nq.send(\"wrong\")",
+            "use \"std/sync\"\nlet m=sync.mutex(1)\nm.update(fn(n str) str { return n })",
+            "use \"std/sync\"\nsync.token().wait(\"wrong\")",
         ] {
             assert!(!errors(source).is_empty(), "accepted: {source}");
         }
@@ -90,6 +93,11 @@ mod tests {
         let source = "use \"std/result\"\nfn apply<T>(body fn() T) T { return body() }\nfn main() {\nlet answer i64=apply(fn() i64 { return 42 })\nlet outcome=result.attempt(fn() str { return \"ok\" })\nlet text str=result.unwrapOr(outcome,\"fallback\")\nmatch outcome { Ok(value) => { print(value) } Err(message) => { print(message) } }\nprint(answer)\nprint(text)\n}\nmain()";
         assert!(errors(source).is_empty(), "{:?}", errors(source));
         assert!(!errors("fn select<T>(a fn() T, b fn() T) T { return a() }\nselect(fn() i64 { return 1 },fn() str { return \"x\" })").is_empty());
+    }
+    #[test]
+    fn sync_payloads_and_callbacks_have_editor_types() {
+        let source = "use \"std/sync\"\nfn main() {\nlet q=sync.channel<str>(1)\nq.trySend(\"ok\")\nmatch q.tryReceive() { Item(value) => { let text str=value; print(text) } Empty => {} Closed => {} }\nlet m=sync.mutex(0)\nlet count i64=m.update(fn(n i64) i64 { return n+1 })\nprint(count)\nsync.token().check()\n}\nmain()";
+        assert!(errors(source).is_empty(), "{:?}", errors(source));
     }
     #[test]
     fn runtime_io_signatures_are_checked_without_execution() {

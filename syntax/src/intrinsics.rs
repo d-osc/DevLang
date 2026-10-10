@@ -1,6 +1,7 @@
 //! Source-runtime signatures shared by runtime loading and editor checking.
 pub fn module(name: &str) -> Option<&'static str> {
     match name {
+        "std/sync" => Some(SYNC),
         "std/json" => Some(JSON),
         "std/tls" => Some(TLS),
         "std/websocket" => Some(WEBSOCKET),

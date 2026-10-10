@@ -1363,3 +1363,48 @@ main()
 ```
 
 อ่าน [API และข้อจำกัด](../../docs/secure-network.md)
+
+# [sync] Channels, Mutex และ Cancellation
+
+std/sync แชร์ resource ข้าม spawn ได้ ส่วน payload ปกติยังเป็นสำเนาข้อมูล
+Channel มีคิวจำกัดขนาดและคืน Item/Empty/Closed; ปิดคิวเพื่อปลุก worker ที่กำลังรอ
+Mutex.update ทำการเปลี่ยนข้อมูลเป็นหนึ่ง operation และปล่อย lock แม้ callback error
+CancelToken เป็น cooperative cancellation; worker ต้องตรวจ token เอง และ await ก่อนจบโปรแกรม
+
+```dev-runtime
+use "std/sync"
+use "std/result"
+
+fn main() {
+    let messages = sync.channel<i64>(2)
+    let total = sync.mutex(0)
+    let worker = spawn(fn() {
+        for i in 1..6 { messages.send(i) }
+        messages.close()
+    })
+    while true {
+        match messages.receive() {
+            Item(value) => { total.update(fn(n i64) i64 { return n + value }) }
+            Empty => {}
+            Closed => { break }
+        }
+    }
+    await(worker)
+    print(total.get())
+    let failed = result.run(fn() {
+        total.update(fn(n i64) i64 { result.raise("failed update"); return n })
+    })
+    print(result.isErr(failed))
+    print(total.get())
+    total.close()
+
+    let token = sync.token()
+    let cancellable = spawn(fn() bool { return token.wait(5000) })
+    token.cancel()
+    print(await(cancellable))
+}
+main()
+```
+
+ชุดนี้ใช้ runtime เท่านั้นและยังไม่ใช่ coroutine async I/O
+อ่าน [API, timeout และข้อจำกัด](../../docs/sync.md)

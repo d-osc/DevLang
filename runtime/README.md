@@ -112,6 +112,8 @@ Runtime APIs now include `std/result`, `std/timers`, `std/child_process`,
 `std/sqlite`, `std/csv`, `std/toml`, `std/yaml`, `std/tls`, `std/websocket`.
 See [control libraries](../docs/control-libs.md), [storage libraries](../docs/storage-libs.md)
 and [secure networking](../docs/secure-network.md) for contracts and limits.
+`std/sync` adds shared channels, mutex updates and cancellation tokens; see
+[sync contracts](../docs/sync.md) and `examples/sync/main.dev`.
 
 `--engine auto` is the default; `--engine ast` selects the reference interpreter.
 Both modes run without `devc`, a native toolchain or generated files for pure

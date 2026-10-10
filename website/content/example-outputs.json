@@ -258,5 +258,10 @@
     "source_sha256": "59bea272b81483a8c8e63ac2aeea92d1a04d66653ea755b655b943b6ab3ad9b2",
     "validation_sha256": "2f0d26103807b8e2a6c8a36658064041796adf92aa887b2e46465204e8cda00a",
     "output": "10000\ntrue\nUse ws:// or wss://; TLS verifies certificates\n"
+  },
+  "sync": {
+    "source_sha256": "994cfbca4ffdb2f7b41609128588aaf57b688757d043a1867b067f8d1749a5a7",
+    "validation_sha256": "eef4088f773ce6ce9ab745dc126935e55adb1827c7cf57cdc3d9ca4b9c9422c2",
+    "output": "15\ntrue\n15\ntrue\n"
   }
 }

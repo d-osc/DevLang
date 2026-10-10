@@ -158,6 +158,10 @@ Measured before/after results and reproduction commands are in
 
 ## Shared language features
 
+[std/sync](sync.md) provides bounded channels, atomic mutex updates and cooperative
+cancellation shared across workers. These primitives use OS threads and blocking
+waits; they do not change async functions into coroutines.
+
 Runtime libraries include [error recovery, timers and child processes](control-libs.md),
 [SQLite, CSV, TOML and YAML](storage-libs.md), and [TLS/WS/WSS](secure-network.md).
 Use `std/result` to recover runtime callback errors. These additions are separate

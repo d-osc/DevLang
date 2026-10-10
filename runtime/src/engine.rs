@@ -10,6 +10,7 @@ use std::{
 
 #[derive(Clone, Debug)]
 pub(crate) enum Value {
+    Shared(Arc<SharedResource>, Type),
     Json(Arc<serde_json::Value>, Type),
     Task(Arc<TaskState>, Type),
     Callable(String, String, Option<Arc<Value>>, Type),
@@ -38,11 +39,13 @@ include!("control_libs.rs");
 include!("child_process.rs");
 include!("storage_libs.rs");
 include!("secure_network.rs");
+include!("sync_lib.rs");
 
 impl Value {
     pub(crate) fn ty(&self) -> Type {
         match self {
             Self::Json(_, t)
+            | Self::Shared(_, t)
             | Self::Task(_, t)
             | Self::Callable(_, _, _, t)
             | Self::Int(_, t)
@@ -62,6 +65,7 @@ impl Value {
     }
     fn display(&self) -> String {
         match self {
+            Self::Shared(..) => "<shared>".into(),
             Self::Json(value, _) => value.to_string(),
             Self::Int(n, _) => n.to_string(),
             Self::Float(n, _) => n.to_string(),
@@ -2037,6 +2041,7 @@ impl Engine {
     }
     fn builtin(&mut self, module: &str, name: &str, args: Vec<Value>) -> Result<Value, String> {
         if [
+            "std/sync",
             "std/tls", "std/websocket",
             "std/sqlite", "std/csv", "std/toml", "std/yaml",
             "std/result", "std/timers", "std/child_process",

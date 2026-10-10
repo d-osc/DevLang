@@ -6,6 +6,34 @@ fn isIP(address str) i64 { return 0 }
 fn isIPv4(address str) bool { return false }
 fn isIPv6(address str) bool { return false }
 "#;
+pub const SYNC: &str = r#"
+struct Channel<T> {}
+enum Receive<T> { Item(T), Empty, Closed }
+fn channel<T>(capacity i64) Channel<T> { return Channel<T>() }
+fn Channel.send<T>(self Channel<T>, value T) bool { return false }
+fn Channel.sendTimeout<T>(self Channel<T>, value T, timeoutMs i64) bool { return false }
+fn Channel.trySend<T>(self Channel<T>, value T) bool { return false }
+fn Channel.receive<T>(self Channel<T>) Receive<T> { return Receive<T>.Closed() }
+fn Channel.receiveTimeout<T>(self Channel<T>, timeoutMs i64) Receive<T> { return Receive<T>.Closed() }
+fn Channel.tryReceive<T>(self Channel<T>) Receive<T> { return Receive<T>.Empty() }
+fn Channel.close<T>(self Channel<T>) bool { return false }
+fn Channel.isClosed<T>(self Channel<T>) bool { return false }
+fn Channel.len<T>(self Channel<T>) i64 { return 0 }
+fn Channel.capacity<T>(self Channel<T>) i64 { return 0 }
+struct Mutex<T> {}
+fn mutex<T>(value T) Mutex<T> { return Mutex<T>() }
+fn Mutex.get<T>(self Mutex<T>) T { return self.get() }
+fn Mutex.set<T>(self Mutex<T>, value T) { }
+fn Mutex.update<T>(self Mutex<T>, callback fn(T) T) T { return self.get() }
+fn Mutex.updateTimeout<T>(self Mutex<T>, callback fn(T) T, timeoutMs i64) T { return self.get() }
+fn Mutex.close<T>(self Mutex<T>) bool { return false }
+struct CancelToken {}
+fn token() CancelToken { return CancelToken() }
+fn CancelToken.cancel(self CancelToken) bool { return false }
+fn CancelToken.isCancelled(self CancelToken) bool { return false }
+fn CancelToken.check(self CancelToken) { }
+fn CancelToken.wait(self CancelToken, timeoutMs i64) bool { return false }
+"#;
 pub const CLI: &str = r#"
 struct Option { name str, short str, takesValue bool }
 struct Parsed { values Map<str,str>, flags Map<str,bool>, positionals Vec<str> }

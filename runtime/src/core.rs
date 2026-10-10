@@ -1,5 +1,6 @@
 #[derive(Default)]
 struct CoreState {
+    sync_resources: Vec<std::sync::Weak<SharedResource>>,
     secure_sockets: HashMap<i64, SecureTransport>,
     secure_servers: HashMap<i64, SecureServer>,
     websockets: HashMap<i64, CoreWebSocket>,
@@ -48,6 +49,7 @@ impl Engine {
             + c.secure_sockets.len()
             + c.secure_servers.len()
             + c.websockets.len()
+            + c.sync_resources.iter().filter(|r| r.strong_count() > 0).count()
             >= 256
         {
             Err("at most 256 core resource handles per interpreter; close unused resources".into())
@@ -107,6 +109,7 @@ impl Engine {
             .collect::<Result<Vec<_>, _>>()?;
         let ret = function.ret.clone();
         match module {
+            "std/sync" => self.sync_call(name, args, ret),
             "std/tls" => self.tls_call(name, args, ret),
             "std/websocket" => self.websocket_call(name, args, ret),
             "std/sqlite" => self.sqlite_call(name, args, ret),

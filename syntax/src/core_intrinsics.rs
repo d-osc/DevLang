@@ -1,4 +1,5 @@
 pub const BUILTINS: &[&str] = &[
+    "std/sync",
     "std/tls",
     "std/websocket",
     "std/sqlite",
