@@ -1,5 +1,10 @@
 #[derive(Default)]
 struct CoreState {
+    random: Option<u64>,
+    tests: Vec<(String, Value)>,
+    testing: bool,
+    log_level: Option<u8>,
+    log_file: Option<std::fs::File>,
     scratch: Vec<u8>,
     buffers: HashMap<i64, Vec<u8>>,
     events: HashMap<i64, Vec<CoreListener>>,
@@ -87,6 +92,12 @@ impl Engine {
             .collect::<Result<Vec<_>, _>>()?;
         let ret = function.ret.clone();
         match module {
+            "std/math" => self.math_call(name, args),
+            "std/random" => self.random_call(name, args),
+            "std/strings" => self.strings_call(name, args),
+            "std/datetime" => self.datetime_call(name, args, ret),
+            "std/test" => self.test_call(name, args, ret),
+            "std/log" => self.log_call(name, args),
             "std/path" => crate::platform::path_call(name, &args, ret),
             "std/os" => crate::platform::os_call(name),
             "std/url" if name == "searchParams" || name.starts_with("method_URLSearchParams_") => {

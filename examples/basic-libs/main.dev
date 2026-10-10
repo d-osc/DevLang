@@ -1,0 +1,30 @@
+use "std/math"
+use "std/random"
+use "std/strings"
+use "std/datetime"
+use "std/test"
+use "std/log"
+
+fn main() {
+    print(math.sqrt(9.0))
+    print(strings.toUpperCase(strings.trim("  DevLang  ")))
+    random.seed(42)
+    let first = random.int(1, 100)
+    random.seed(42)
+    print(first == random.int(1, 100))
+    let date = datetime.utc(2024, 2, 29, 12, 30, 0, 0)
+    print(datetime.iso(date))
+    print(datetime.formatOffset(date, 420, "%F %T %:z"))
+    test.case("math", fn() {
+        test.near(math.sqrt(16.0), 4.0, 0.000001, "sqrt")
+    })
+    test.case("unicode", fn() {
+        test.equal(strings.charLength("Aé🚀"), 3, "characters")
+    })
+    let report = test.run()
+    print(report.summary)
+    print(report.failed == 0)
+    log.setLevel("info")
+    log.info("Basic libraries are ready")
+}
+main()

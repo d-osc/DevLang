@@ -1101,6 +1101,53 @@ dependencies: {
 `'@version'` เป็นข้อความธรรมดา ส่วน `rev: version` ยังใช้ไม่ได้ ต้องมี `@`
 key ที่ไม่มีอยู่และ reference วนกันจะเกิด error เมื่อ serialize หรือแก้ dependencies จะเขียนค่าที่ resolve แล้ว
 field `version` ชั้นนอกเป็น metadata ของ package ยังไม่ได้ใช้แก้ semver dependencies
+
+# [basic-libs] ไลบรารีพื้นฐาน: Math, Random, Strings, Datetime, Test และ Log
+
+ชุดนี้ใช้ผ่าน source runtime และมี signatures ให้ Language Server ตรวจชนิดข้อมูล
+
+| โมดูล | ใช้งาน |
+| --- | --- |
+| `std/math` | sqrt, pow, log, trigonometry, rounding, clamp |
+| `std/random` | seed, float, int, bool และ bytes |
+| `std/strings` | trim, split/join, replace, casing และ Unicode character access |
+| `std/datetime` | Unix milliseconds, RFC3339, calendar และ UTC offsets |
+| `std/test` | assertions, named cases และรายงานผล |
+| `std/log` | ระดับ log พร้อมเวลา ส่งออก stderr หรือไฟล์ |
+
+```dev-runtime
+use "std/math"
+use "std/random"
+use "std/strings"
+use "std/datetime"
+use "std/test"
+use "std/log"
+fn main() {
+    print(math.sqrt(9.0))
+    print(strings.toUpperCase(strings.trim("  Dev  ")))
+    random.seed(42)
+    let first = random.int(1, 100)
+    random.seed(42)
+    print(first == random.int(1, 100))
+    print(datetime.iso(datetime.utc(2024, 2, 29, 0, 0, 0, 0)))
+    test.case("square root", fn() {
+        test.near(math.sqrt(9.0), 3.0, 0.000001, "sqrt")
+    })
+    let report = test.run()
+    print(report.summary)
+    log.info("test run finished")
+    if report.failed > 0 { return 1 }
+    return 0
+}
+return main()
+```
+
+Math ใช้ `f64` และ radians, `random.int(min,max)` ไม่รวม max และ PRNG ไม่เหมาะกับงาน security
+`strings.len/indexOf` ใช้ UTF-8 bytes; `charLength/substring/charAt` ใช้ Unicode scalars ไม่ใช่ grapheme clusters
+Datetime เป็นเวลาปฏิทิน Unix milliseconds ต่างจาก monotonic `std/time`; offset กรุงเทพคือ 420 นาที
+ยังไม่มี timezone แบบ IANA หรือ DST, `test.run()` ต้องส่งต่อ exit status เอง และ log เป็น synchronous
+
+ลอง `d examples/basic-libs/main.dev` และอ่าน [API กับข้อจำกัด](../../docs/basic-libs.md)
 ใช้ `std/fs` อ่านเขียนไฟล์ และ `d don check|fmt|to-json|from-json FILE` ตรวจหรือแปลงข้อมูล
 คำสั่ง format/convert ส่งออก stdout ไม่แก้ไฟล์ต้นฉบับ แต่ output ไม่เก็บ comments เดิม
 

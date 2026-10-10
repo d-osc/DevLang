@@ -31,6 +31,7 @@ include!("map.rs");
 include!("server.rs");
 include!("core.rs");
 include!("network.rs");
+include!("basics.rs");
 
 impl Value {
     pub(crate) fn ty(&self) -> Type {
@@ -2030,6 +2031,7 @@ impl Engine {
     }
     fn builtin(&mut self, module: &str, name: &str, args: Vec<Value>) -> Result<Value, String> {
         if [
+            "std/math", "std/random", "std/strings", "std/datetime", "std/test", "std/log",
             "std/net",
             "std/path",
             "std/os",

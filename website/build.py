@@ -20,9 +20,10 @@ GROUPS = {
     'เริ่มต้น': ['intro', 'install', 'layout', 'cli', 'tooling'],
     'พื้นฐานภาษา': ['variables', 'types', 'operators', 'loops', 'functions', 'strings-arrays', 'modules'],
     'ข้อมูลและ abstraction': ['structs', 'enums-match', 'references', 'collections', 'generics', 'closures'],
-    'ระบบและ interoperability': ['tasks', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'json', 'don', 'fs-http', 'node-core', 'limitations', 'ai'],
+    'ระบบและ interoperability': ['tasks', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'json', 'don', 'fs-http', 'node-core', 'limitations', 'ai'],
 }
 REFERENCES = {
+    'basic-libs-reference': ('Foundational libraries', 'docs/basic-libs.md'),
     'don-reference': ('Dev Object Notation', 'docs/don.md'),
     'node-core-reference': ('Core runtime modules', 'docs/node-core.md'),
     'fs-http-reference': ('Filesystem and HTTP API', 'docs/fs-http.md'),

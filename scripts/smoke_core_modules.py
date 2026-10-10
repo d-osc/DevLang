@@ -78,7 +78,7 @@ fn main() {
     print(module.isBuiltin("std/net"))
     print(module.isBuiltin("buffer"))
     print(module.isBuiltin("not-a-builtin"))
-    print(module.builtinModules().len())
+    print(module.isBuiltin("don") && module.isBuiltin("math") && module.isBuiltin("random") && module.isBuiltin("datetime") && module.isBuiltin("test") && module.isBuiltin("log"))
     print(module.loaded().len() >= 4 as usize)
     print(module.entry() == process.argv()[1])
     print(fs.is_file(module.resolve("main", module.entry())))
@@ -91,7 +91,7 @@ fn main() {
 }
 fn pathless() bool { return process.cwd() != "" }
 main()
-''',('true\n'*11)+'core\ncore\ntrue\nfalse\ntrue\ntrue\ntrue\nfalse\n18\ntrue\ntrue\ntrue\ntrue\n')
+''',('true\n'*11)+'core\ncore\ntrue\nfalse\ntrue\ntrue\ntrue\nfalse\ntrue\ntrue\ntrue\ntrue\ntrue\n')
         run('''use "std/buffer"
 fn main() {
     let b = buffer.from("hello", "utf8")

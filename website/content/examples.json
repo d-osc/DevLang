@@ -642,5 +642,17 @@
     "commands": [
       "d examples/don/main.dev"
     ]
+  },
+  {
+    "id": "basic-libs",
+    "title": "Math, Random, Strings, Datetime, Test และ Log",
+    "category": "พื้นฐาน",
+    "path": "examples/basic-libs/main.dev",
+    "description": "คณิตศาสตร์ การสุ่ม Unicode วันที่ ทดสอบ และ logging",
+    "doc": "basic-libs",
+    "mode": "runtime",
+    "commands": [
+      "d examples/basic-libs/main.dev"
+    ]
   }
 ]

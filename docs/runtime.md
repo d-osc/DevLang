@@ -1,5 +1,9 @@
 # Interpreter API
 
+Foundational `std/math`, `std/random`, `std/datetime`, `std/test`, `std/log` and
+expanded `std/strings` are available in the current runtime. See
+[Foundational library APIs](basic-libs.md) for contracts and examples.
+
 `std/don` reads and writes Dev Object Notation (`.don`), a JSON-compatible format
 with comments, bare keys and newline separators. See [DON](don.md).
 
@@ -50,8 +54,8 @@ not type-checked: use `devc check` for native programs, noting that runtime
 intrinsics and the native stdlib have different APIs.
 
 The runtime evaluates Dev source without C translation or native code generation.
-Only automatically prepared C dependencies use a native-library cache. No networking, async, JIT or JavaScript compatibility
-is provided in this release.
+Only automatically prepared C dependencies use a native-library cache. Networking
+modules and thread-backed tasks are supported; there is no JIT or full JavaScript compatibility.
 
 ## Native C FFI
 

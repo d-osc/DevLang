@@ -34,6 +34,14 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
 
 ## Essential language rules
 
+- Source-runtime foundational APIs live in `std/math`, `std/random`, `std/strings`,
+  `std/datetime`, `std/test`, `std/log`; consult `docs/basic-libs.md`. Math uses f64
+  and radians. Random is seeded SplitMix64, not cryptographic. Datetime uses Unix
+  milliseconds and fixed offsets, while std/time is monotonic. Strings len/indexOf
+  use UTF-8 bytes; charLength/substring use Unicode scalars. test.run reports failed
+  cases but the program must explicitly propagate a failing exit status. These
+  modules are runtime-only and do not extend the separate native C stdlib.
+
 - DON (`.don`) is the JSON-compatible data format: comments, bare keys, colon/equal,
   newline separators, single/double/triple-quoted strings. Read `docs/don.md` in a
   checkout. `std/don` parse/stringify/toJSON/fromJSON runs in the source runtime.

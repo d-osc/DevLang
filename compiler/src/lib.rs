@@ -37,6 +37,7 @@ mod tests {
     fn core_modules_have_valid_editor_signatures() {
         for module in [
             "net", "path", "os", "stream", "url", "module", "process", "events", "buffer", "dgram",
+            "math", "random", "datetime", "test", "log", "strings",
         ] {
             let source = format!("use \"std/{module}\"\nfn main() {{}}\nmain()");
             assert!(
@@ -50,6 +51,12 @@ mod tests {
             "use \"std/net\"\nnet.connect(80, 42, 1000)",
             "use \"std/buffer\"\nbuffer.alloc(\"4\", 0 as u8)",
             "use \"std/events\"\nlet e = events.createEmitter()\ne.on(\"x\", fn(value i64) {})",
+            "use \"std/math\"\nmath.sqrt(\"wrong\")",
+            "use \"std/random\"\nrandom.int(1, \"wrong\")",
+            "use \"std/strings\"\nstrings.trim(1)",
+            "use \"std/datetime\"\ndatetime.parts(0, \"UTC\")",
+            "use \"std/test\"\ntest.case(\"wrong\", fn(n i64) {})",
+            "use \"std/log\"\nlog.info(1)",
         ] {
             assert!(!errors(source).is_empty(), "accepted: {source}");
         }

@@ -1,5 +1,8 @@
 # Dev source runtime
 
+Foundational `math`, `random`, `datetime`, `test`, `log` and expanded `strings`
+are built-in source-runtime modules. See [API contracts](../docs/basic-libs.md).
+
 `std/don` supports [Dev Object Notation](../docs/don.md): flexible data/config
 syntax, managed objects and JSON conversion, without a C compiler.
 
