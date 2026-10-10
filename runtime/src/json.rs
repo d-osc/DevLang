@@ -5,16 +5,7 @@ use std::sync::Arc;
 
 // Signatures let the shared expander infer values captured by closures.
 // Calls are dispatched to the runtime intrinsics, not these placeholder bodies.
-pub(crate) const MODULE: &str = r#"
-struct Value {}
-fn parse(text str) Value { return Value() }
-fn get(value Value, key str) Value { return Value() }
-fn at(value Value, index i64) Value { return Value() }
-fn object() Value { return Value() }
-fn array() Value { return Value() }
-fn null_value() Value { return Value() }
-fn remove(value Value, key str) Value { return Value() }
-"#;
+pub(crate) const MODULE: &str = dev_syntax::intrinsics::JSON;
 
 pub(crate) fn check_depth(value: &Json, initial: usize) -> Result<(), String> {
     let mut pending = vec![(value, initial)];

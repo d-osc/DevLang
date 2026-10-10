@@ -116,7 +116,7 @@ NaN/Infinity from Dev floats cannot be serialized. Nesting is bounded to protect
 recursive parsing/conversion; the parser uses serde_json's default recursion
 limit, and constructed trees reject depth greater than 128.
 
-Errors stop runtime execution with source location; there is no try/catch API.
+Errors include source locations. Use `std/result` callbacks to recover runtime failures; there is no try/catch syntax.
 Use `valid`, `has`, `kind` and `len` before parsing/accessing untrusted data when
 appropriate. These APIs do not provide application schema validation.
 

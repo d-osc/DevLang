@@ -40,6 +40,8 @@ mod tests {
             "math", "random", "datetime", "test", "log", "strings",
             "regex", "encoding", "crypto", "compression", "archive", "uuid",
             "dns", "cli",
+            "result", "timers", "child_process",
+            "sqlite", "csv", "toml", "yaml", "tls", "websocket",
         ] {
             let source = format!("use \"std/{module}\"\nfn main() {{}}\nmain()");
             assert!(
@@ -70,9 +72,24 @@ mod tests {
             "use \"std/dns\"\ndns.lookup(42, 4)",
             "use \"std/dns\"\ndns.lookup(\"localhost\", \"IPv4\")",
             "use \"std/cli\"\ncli.parse(Vec<str>(), Vec<i64>())",
+            "use \"std/result\"\nresult.attempt(42)",
+            "use \"std/timers\"\ntimers.setTimeout(fn() {}, 1)",
+            "use \"std/child_process\"\nchild_process.spawn(42, Vec<str>(), child_process.options())",
+            "use \"std/sqlite\"\nsqlite.open(42)",
+            "use \"std/csv\"\ncsv.parse(42,\",\",true)",
+            "use \"std/toml\"\ntoml.parse(42)",
+            "use \"std/yaml\"\nyaml.valid(42)",
+            "use \"std/tls\"\ntls.createServer(\"cert\",\"key\",fn(s i64) {})",
+            "use \"std/websocket\"\nwebsocket.connect(42,1000,\"\")",
         ] {
             assert!(!errors(source).is_empty(), "accepted: {source}");
         }
+    }
+    #[test]
+    fn infers_generic_function_parameters_and_result_payloads() {
+        let source = "use \"std/result\"\nfn apply<T>(body fn() T) T { return body() }\nfn main() {\nlet answer i64=apply(fn() i64 { return 42 })\nlet outcome=result.attempt(fn() str { return \"ok\" })\nlet text str=result.unwrapOr(outcome,\"fallback\")\nmatch outcome { Ok(value) => { print(value) } Err(message) => { print(message) } }\nprint(answer)\nprint(text)\n}\nmain()";
+        assert!(errors(source).is_empty(), "{:?}", errors(source));
+        assert!(!errors("fn select<T>(a fn() T, b fn() T) T { return a() }\nselect(fn() i64 { return 1 },fn() str { return \"x\" })").is_empty());
     }
     #[test]
     fn runtime_io_signatures_are_checked_without_execution() {

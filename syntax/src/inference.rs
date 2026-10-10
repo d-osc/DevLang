@@ -310,6 +310,13 @@ impl Expand {
             return Ok(());
         }
         match (pattern, actual) {
+            (Type::Function(ps, pr), Type::Function(ts, tr))
+            | (Type::Callback(ps, pr), Type::Callback(ts, tr)) if ps.len() == ts.len() => {
+                for (p, t) in ps.iter().zip(ts) {
+                    self.unify(owner, p, t, generics, bindings)?;
+                }
+                self.unify(owner, pr, tr, generics, bindings)?;
+            }
             (Type::ArrayConst(p, n), Type::Array(t, m)) => {
                 self.unify(owner, p, t, generics, bindings)?;
                 if let Some(old) = bindings.insert(n.clone(), Type::Const(*m)) {

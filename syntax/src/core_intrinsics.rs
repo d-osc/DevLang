@@ -1,4 +1,13 @@
 pub const BUILTINS: &[&str] = &[
+    "std/tls",
+    "std/websocket",
+    "std/sqlite",
+    "std/csv",
+    "std/toml",
+    "std/yaml",
+    "std/result",
+    "std/timers",
+    "std/child_process",
     "std/dns",
     "std/cli",
     "std/io",

@@ -9,7 +9,7 @@ runtime-only and require an updated source build; older installers may lack them
 These are typed APIs inspired by Node, not JavaScript/Node compatibility.
 Arguments, encodings and timeouts are explicit. Node properties such as
 os.platform and module.builtinModules are functions here. Failures produce
-source-located runtime errors. There is no catch API or JavaScript Promise.
+source-located runtime errors. Recover runtime callback errors with `std/result`; JavaScript Promises are not implemented.
 
 ## Resource ownership and callbacks
 

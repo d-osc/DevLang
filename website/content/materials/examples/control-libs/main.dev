@@ -1,0 +1,25 @@
+use "std/result"
+use "std/fs"
+use "std/timers"
+use "std/child_process"
+
+fn main() {
+    let outcome = result.attempt(fn() str {
+        return fs.read_text("missing-example-file.txt")
+    })
+    match outcome {
+        Ok(text) => { print(text) }
+        Err(message) => { print("read failed; program continues") }
+    }
+    print(result.unwrapOr(outcome, "fallback"))
+    let arithmetic = result.attempt(fn() i64 { return 6 * 7 })
+    print(result.unwrap(arithmetic))
+    let options = child_process.options()
+    print(options.timeoutMs)
+    timers.setInterval(fn(timer timers.Timer) {
+        print(timer.ticks())
+        if timer.ticks() >= 3 { timer.cancel() }
+    }, 1)
+    print("main finished; timers run next")
+}
+main()

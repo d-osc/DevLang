@@ -1262,3 +1262,104 @@ Value option กิน token ถัดไปตามข้อความเด
 ชุดนี้ยังไม่รองรับ native build; CLI จำกัด 128 definitions, 4096 arguments และข้อความ 8 MiB
 
 ลอง `d examples/system-libs/main.dev` และอ่าน [API กับตัวอย่าง CLI](../../docs/system-libs.md)
+
+# [control-libs] Result, Timers และ Child Process
+
+ใช้ result.attempt จับ runtime error แล้วทำงานต่อได้; callback ของ timer รับ Timer handle
+child_process.spawn เรียก executable โดยตรง มี timeout และจำกัด stdout/stderr อ่าน API ก่อนเรียกโปรแกรมภายนอก
+
+```dev-runtime
+use "std/result"
+use "std/fs"
+use "std/timers"
+use "std/child_process"
+
+fn main() {
+    let outcome = result.attempt(fn() str {
+        return fs.read_text("missing-example-file.txt")
+    })
+    match outcome {
+        Ok(text) => { print(text) }
+        Err(message) => { print("read failed; program continues") }
+    }
+    print(result.unwrapOr(outcome, "fallback"))
+    let arithmetic = result.attempt(fn() i64 { return 6 * 7 })
+    print(result.unwrap(arithmetic))
+    let options = child_process.options()
+    print(options.timeoutMs)
+    timers.setInterval(fn(timer timers.Timer) {
+        print(timer.ticks())
+        if timer.ticks() >= 3 { timer.cancel() }
+    }, 1)
+    print("main finished; timers run next")
+}
+main()
+```
+
+อ่าน [API และข้อจำกัด](../../docs/control-libs.md)
+
+# [storage-libs] SQLite, CSV, TOML และ YAML
+
+SQLite ใช้ parameter binding และผลลัพธ์ typed enum; transaction ต้อง COMMIT/ROLLBACK เอง
+CSV เป็นข้อมูล string ส่วน YAML/TOML ใช้ JSON model และมีข้อจำกัดด้านชนิดข้อมูล ขนาด และ aliases
+
+```dev-runtime
+use "std/sqlite"
+use "std/csv"
+use "std/yaml"
+use "std/toml"
+use "std/json"
+
+fn main() {
+    let database = sqlite.open(":memory:")
+    database.execute("CREATE TABLE users(id INTEGER PRIMARY KEY, name TEXT)", Vec<sqlite.Value>())
+    let params = Vec<sqlite.Value>()
+    params.push(sqlite.Value.Text("DevLang"))
+    print(database.execute("INSERT INTO users(name) VALUES (?)", params))
+    let data = database.query("SELECT name FROM users ORDER BY id", Vec<sqlite.Value>())
+    match data.rows[0][0] {
+        Null => {}
+        Integer(value) => {}
+        Real(value) => {}
+        Text(value) => { print(value) }
+        Blob(value) => {}
+    }
+    database.close()
+    let table = csv.parse("name,age\nDev,18\n", ",", true)
+    print(table.headers[0])
+    print(table.rows[0][0])
+    let config = yaml.parse("name: Dev\nenabled: true\n")
+    print(json.string(json.get(config, "name")))
+    let manifest = toml.parse("name = 'DevLang'\nversion = 1\n")
+    print(json.int(json.get(manifest, "version")))
+    print(yaml.valid(yaml.stringify(manifest)))
+}
+main()
+```
+
+อ่าน [API และข้อจำกัด](../../docs/storage-libs.md)
+
+# [secure-network] TLS และ WebSocket
+
+TLS ตรวจ certificate และ hostname ตามปกติ; caFile เพิ่ม CA ที่เชื่อถือได้
+WebSocket รองรับ ws/wss, text/binary, ping/pong และ close แต่ I/O ยัง blocking
+ตัวอย่างนี้ตรวจการตั้งค่าโดยไม่ใช้เครือข่าย อ่านคู่มือสำหรับ client/server จริง
+
+```dev-runtime
+use "std/tls"
+use "std/websocket"
+use "std/result"
+
+fn main() {
+    let options = tls.options()
+    print(options.timeoutMs)
+    let outcome = result.run(fn() {
+        websocket.connect("https://invalid.example", 1000, "")
+    })
+    print(result.isErr(outcome))
+    print("Use ws:// or wss://; TLS verifies certificates")
+}
+main()
+```
+
+อ่าน [API และข้อจำกัด](../../docs/secure-network.md)

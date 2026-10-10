@@ -158,6 +158,11 @@ Measured before/after results and reproduction commands are in
 
 ## Shared language features
 
+Runtime libraries include [error recovery, timers and child processes](control-libs.md),
+[SQLite, CSV, TOML and YAML](storage-libs.md), and [TLS/WS/WSS](secure-network.md).
+Use `std/result` to recover runtime callback errors. These additions are separate
+from the native stdlib; networking remains synchronous within callbacks.
+
 Range `for`, nominal value structs, payload enums with exhaustive `match` and inferred/explicit generics use
 the shared frontend described in [language.md](language.md). Type definitions
 and specialization arguments are validated during load. Supported numerical

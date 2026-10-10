@@ -678,5 +678,41 @@
     "commands": [
       "d examples/system-libs/main.dev"
     ]
+  },
+  {
+    "id": "control-libs",
+    "title": "Result, Timers และ Child Process",
+    "category": "I/O",
+    "path": "examples/control-libs/main.dev",
+    "description": "จับ errors ตั้งเวลา และเรียก executable",
+    "doc": "control-libs",
+    "mode": "runtime",
+    "commands": [
+      "d examples/control-libs/main.dev"
+    ]
+  },
+  {
+    "id": "storage-libs",
+    "title": "SQLite, CSV, TOML และ YAML",
+    "category": "I/O",
+    "path": "examples/storage-libs/main.dev",
+    "description": "ฐานข้อมูลและรูปแบบข้อมูล",
+    "doc": "storage-libs",
+    "mode": "runtime",
+    "commands": [
+      "d examples/storage-libs/main.dev"
+    ]
+  },
+  {
+    "id": "secure-network",
+    "title": "TLS และ WebSocket",
+    "category": "I/O",
+    "path": "examples/secure-network/main.dev",
+    "description": "ตั้งค่า TLS และตรวจ URL ของ WebSocket",
+    "doc": "secure-network",
+    "mode": "runtime",
+    "commands": [
+      "d examples/secure-network/main.dev"
+    ]
   }
 ]

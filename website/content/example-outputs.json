@@ -243,5 +243,20 @@
     "source_sha256": "2424096e3bd85d97f9987f08e8023cd9dcf2a8f302327c579113220dda1a8ed9",
     "validation_sha256": "340117c58f13b04dac05cd5047e68bc218b01ab54e2bf750aa2249b5bce0e4a0",
     "output": "true\n3000\nserve\n--literal\n127.0.0.1\n4\n::1\n0\n"
+  },
+  "control-libs": {
+    "source_sha256": "63389ddb20d53aebbc8792a471cd1b711c0ed162d347992acbdb3b5d5826066d",
+    "validation_sha256": "ab8b4c2e04bd62a92cbe47b382c50c1bbf351321ccba67b086210db7abdfb3f5",
+    "output": "read failed; program continues\nfallback\n42\n30000\nmain finished; timers run next\n1\n2\n3\n"
+  },
+  "storage-libs": {
+    "source_sha256": "8d7109947dd652e86b8e61d339906a891e43370fc3022e49e136d11c11909ff6",
+    "validation_sha256": "13341440629ec6c5c0266d1e4bd3808cdf48c30e5710f37c5e866cf469e1d33c",
+    "output": "1\nDevLang\nname\nDev\nDev\n1\ntrue\n"
+  },
+  "secure-network": {
+    "source_sha256": "59bea272b81483a8c8e63ac2aeea92d1a04d66653ea755b655b943b6ab3ad9b2",
+    "validation_sha256": "2f0d26103807b8e2a6c8a36658064041796adf92aa887b2e46465204e8cda00a",
+    "output": "10000\ntrue\nUse ws:// or wss://; TLS verifies certificates\n"
   }
 }

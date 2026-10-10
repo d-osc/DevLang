@@ -101,7 +101,7 @@ main()
 All return `http.Response`: `status i64`, `ok bool`, `body str`,
 `bytes Vec<u8>` and `headers Map<str,str>`. `ok` means status 200 through 299.
 HTTP 4xx/5xx return a response; connection, TLS, timeout and body-limit failures
-produce runtime errors. The language currently has no catch API for these errors.
+produce runtime errors. Use `std/result` callbacks to recover these errors; see [control-libs.md](control-libs.md).
 
 Headers use lowercase keys in responses; repeated values are joined by newline.
 `body` decodes UTF-8 with replacement for invalid bytes; use `bytes` for exact

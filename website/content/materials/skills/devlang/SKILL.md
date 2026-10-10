@@ -9,6 +9,17 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
 
 ## Choose context and mode
 
+- For catchable runtime failures, timers and executable processes, read
+  `docs/control-libs.md`. Use `result.attempt(fn() T)` or `result.run(fn() void)`;
+  catching errors does not undo side effects. Timer callbacks take a Timer handle.
+  Child process calls launch executables directly and return binary output.
+- For SQLite/CSV/TOML/YAML, read `docs/storage-libs.md`. Bind SQLite parameters
+  as Vec<sqlite.Value>; transactions need explicit rollback. YAML/TOML use the
+  JSON model with documented subset and size limits.
+- For TLS/WS/WSS, read `docs/secure-network.md`. Certificates are verified;
+  add a custom CA with caFile. Calls block, read may be partial, and handlers
+  run on the server event pump. Check WebSocket Origin/path in the application.
+
 - For DNS or command-line options, read `docs/system-libs.md`. `dns.lookup`
   uses a blocking OS resolver with family 0/4/6; it has no custom DNS records,
   timeout or reverse lookup. `cli.args()` excludes the executable/source path;
@@ -21,7 +32,7 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
   imports, not native builds or Node require. Close handles in their owning
   thread. TCP/UDP callbacks run after main statements finish. Network/file
   stream bytes use Vec<u8>; Buffer has toBytes/fromBytes conversions. Do not
-  assume Node overloads, timers, generic streams, Buffer views or Promises.
+  assume Node overloads, generic streams, Buffer views or Promises.
 
 - For filesystem or HTTP clients, consult `docs/fs-http.md`: `std/fs` and `std/http`
   currently require the updated source runtime, not native compilation. Requests
@@ -30,7 +41,8 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
   `std/fs/promises` (Task results) are available. HTTP servers use `createServer`,
   `listen`, `listenOn`, `close` and typed request/response callbacks. Server
   callbacks run after main statements complete, and must call `res.end(text)`.
-  Do not invent JavaScript Promises, streaming, optional arguments or catch APIs.
+  Recover callback runtime errors with std/result; do not invent JavaScript
+  Promises, streaming, optional arguments or try/catch syntax.
 
 - For syntax, core types, modules, collections and functions, read [references/core.md](references/core.md).
 - For recursive data, generic constraints, threads, callbacks or C ABI, read [references/advanced.md](references/advanced.md).

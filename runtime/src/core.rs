@@ -1,5 +1,12 @@
 #[derive(Default)]
 struct CoreState {
+    secure_sockets: HashMap<i64, SecureTransport>,
+    secure_servers: HashMap<i64, SecureServer>,
+    websockets: HashMap<i64, CoreWebSocket>,
+    databases: HashMap<i64, CoreDatabase>,
+    timers: HashMap<i64, CoreTimer>,
+    timer_pumping: bool,
+    children: HashMap<i64, CoreChild>,
     regexes: HashMap<i64, regex::Regex>,
     random: Option<u64>,
     tests: Vec<(String, Value)>,
@@ -35,6 +42,12 @@ impl Engine {
             + c.tcp_servers.len()
             + c.udp.len()
             + c.regexes.len()
+            + c.timers.len()
+            + c.children.len()
+            + c.databases.len()
+            + c.secure_sockets.len()
+            + c.secure_servers.len()
+            + c.websockets.len()
             >= 256
         {
             Err("at most 256 core resource handles per interpreter; close unused resources".into())
@@ -94,6 +107,14 @@ impl Engine {
             .collect::<Result<Vec<_>, _>>()?;
         let ret = function.ret.clone();
         match module {
+            "std/tls" => self.tls_call(name, args, ret),
+            "std/websocket" => self.websocket_call(name, args, ret),
+            "std/sqlite" => self.sqlite_call(name, args, ret),
+            "std/csv" => self.csv_call(name, args, ret),
+            "std/toml" | "std/yaml" => self.config_call(module, name, args, ret),
+            "std/result" => self.result_call(name, args, ret),
+            "std/timers" => self.timers_call(name, args, ret),
+            "std/child_process" => self.child_call(name, args, ret),
             "std/dns" => self.dns_call(name, args, ret),
             "std/cli" => self.cli_call(name, args, ret),
             "std/regex" => self.regex_call(name, args, ret),

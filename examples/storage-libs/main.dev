@@ -1,0 +1,31 @@
+use "std/sqlite"
+use "std/csv"
+use "std/yaml"
+use "std/toml"
+use "std/json"
+
+fn main() {
+    let database = sqlite.open(":memory:")
+    database.execute("CREATE TABLE users(id INTEGER PRIMARY KEY, name TEXT)", Vec<sqlite.Value>())
+    let params = Vec<sqlite.Value>()
+    params.push(sqlite.Value.Text("DevLang"))
+    print(database.execute("INSERT INTO users(name) VALUES (?)", params))
+    let data = database.query("SELECT name FROM users ORDER BY id", Vec<sqlite.Value>())
+    match data.rows[0][0] {
+        Null => {}
+        Integer(value) => {}
+        Real(value) => {}
+        Text(value) => { print(value) }
+        Blob(value) => {}
+    }
+    database.close()
+    let table = csv.parse("name,age\nDev,18\n", ",", true)
+    print(table.headers[0])
+    print(table.rows[0][0])
+    let config = yaml.parse("name: Dev\nenabled: true\n")
+    print(json.string(json.get(config, "name")))
+    let manifest = toml.parse("name = 'DevLang'\nversion = 1\n")
+    print(json.int(json.get(manifest, "version")))
+    print(yaml.valid(yaml.stringify(manifest)))
+}
+main()

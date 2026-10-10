@@ -108,6 +108,11 @@ function, with independent frames for recursion.
 .\target\release\d.exe examples/runtime/compute.dev --engine ast
 ```
 
+Runtime APIs now include `std/result`, `std/timers`, `std/child_process`,
+`std/sqlite`, `std/csv`, `std/toml`, `std/yaml`, `std/tls`, `std/websocket`.
+See [control libraries](../docs/control-libs.md), [storage libraries](../docs/storage-libs.md)
+and [secure networking](../docs/secure-network.md) for contracts and limits.
+
 `--engine auto` is the default; `--engine ast` selects the reference interpreter.
 Both modes run without `devc`, a native toolchain or generated files for pure
 Dev. These plans are runtime-internal instructions, not native compilation.

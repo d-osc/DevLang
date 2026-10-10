@@ -1,6 +1,16 @@
 //! Source-runtime signatures shared by runtime loading and editor checking.
 pub fn module(name: &str) -> Option<&'static str> {
     match name {
+        "std/json" => Some(JSON),
+        "std/tls" => Some(TLS),
+        "std/websocket" => Some(WEBSOCKET),
+        "std/sqlite" => Some(SQLITE),
+        "std/csv" => Some(CSV),
+        "std/toml" => Some(TOML),
+        "std/yaml" => Some(YAML),
+        "std/result" => Some(RESULT),
+        "std/timers" => Some(TIMERS),
+        "std/child_process" => Some(CHILD_PROCESS),
         "std/dns" => Some(DNS),
         "std/cli" => Some(CLI),
         "std/regex" => Some(REGEX),
@@ -36,6 +46,16 @@ include!("core_intrinsics.rs");
 include!("basic_intrinsics.rs");
 include!("data_intrinsics.rs");
 include!("system_intrinsics.rs");
+pub const JSON: &str = r#"
+struct Value {}
+fn parse(text str) Value { return Value() }
+fn get(value Value, key str) Value { return Value() }
+fn at(value Value, index i64) Value { return Value() }
+fn object() Value { return Value() }
+fn array() Value { return Value() }
+fn null_value() Value { return Value() }
+fn remove(value Value, key str) Value { return Value() }
+"#;
 pub const DON: &str = r#"
 struct Value {}
 fn parse(text str) Value { return Value() }
