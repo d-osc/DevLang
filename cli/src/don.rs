@@ -1,8 +1,8 @@
 pub fn command(args: &[String]) -> Result<i32, String> {
     let [mode, file] = args else {
-        return Err("usage: d don check|fmt|to-json|from-json FILE".into());
+        return Err("usage: d don check|fmt|fmt-source|to-json|from-json FILE".into());
     };
-    if !["check", "fmt", "to-json", "from-json"].contains(&mode.as_str()) {
+    if !["check", "fmt", "fmt-source", "to-json", "from-json"].contains(&mode.as_str()) {
         return Err("unknown DON command".into());
     }
     let file_path = std::path::Path::new(file);
@@ -14,6 +14,13 @@ pub fn command(args: &[String]) -> Result<i32, String> {
         return Err("data input exceeds 8 MiB".into());
     }
     let text = std::fs::read_to_string(file_path).map_err(|e| format!("{file}: {e}"))?;
+    if mode == "fmt-source" {
+        print!(
+            "{}",
+            dev_syntax::don_tooling::format(&text).map_err(|e| format!("{file}: {e}"))?
+        );
+        return Ok(0);
+    }
     let value = if mode == "from-json" {
         serde_json::from_str(&text).map_err(|e| format!("{file}: {e}"))?
     } else {

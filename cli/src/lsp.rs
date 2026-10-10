@@ -4,6 +4,8 @@ use dev_syntax::{
     parser,
 };
 use serde_json::{json, Value};
+#[path = "don_lsp.rs"]
+mod don_lsp;
 use std::{
     collections::HashMap,
     io::{BufRead, Write},
@@ -13,6 +15,10 @@ use std::{
 struct Document {
     text: String,
     version: i64,
+    language: String,
+}
+fn is_don(uri: &str, doc: &Document) -> bool {
+    doc.language == "don" || path(uri).extension().is_some_and(|e| e == "don")
 }
 fn position(text: &str, line: usize, col: usize) -> Value {
     let utf16 = text
@@ -38,6 +44,7 @@ fn parsed(uri: &str, doc: &Document) -> Result<Module, String> {
     parser::parse(path(uri), &doc.text)
 }
 fn symbols(uri: &str, doc: &Document) -> Vec<Value> {
+    if is_don(uri, doc) { return don_lsp::symbols(&doc.text); }
     let Ok(module) = parsed(uri, doc) else {
         return vec![];
     };
@@ -85,6 +92,9 @@ fn diagnostics(uri: &str, doc: &Document) -> Value {
     diagnostics_with_documents(uri, doc, &HashMap::new())
 }
 fn diagnostics_with_documents(uri: &str, doc: &Document, documents: &HashMap<String, Document>) -> Value {
+    if is_don(uri, doc) {
+        return json!({"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":uri,"version":doc.version,"diagnostics":don_lsp::diagnostic(&doc.text)}});
+    }
     let errors = match parsed(uri, doc) {
         Ok(module) => {
             let tokens = lex(&doc.text).unwrap_or_default();
@@ -131,7 +141,7 @@ fn semantic_diagnostics(uri: &str, doc: &Document, module: &Module, documents: &
     if module.imports.iter().any(|i| matches!(i.path.as_str(), "std/json" | "std/don")) { return vec![]; }
     let entry = path(uri);
     let entry = entry.canonicalize().unwrap_or(entry);
-    let mut sources: HashMap<PathBuf, String> = documents.iter().map(|(uri, document)| {
+    let mut sources: HashMap<PathBuf, String> = documents.iter().filter(|(uri, doc)| !is_don(uri,doc)).map(|(uri, document)| {
         let file = path(uri);
         (file.canonicalize().unwrap_or(file), document.text.clone())
     }).collect();
@@ -190,7 +200,7 @@ mod unused_tests {
     use super::*;
     #[test]
     fn reports_exact_unused_name_range_and_tag() {
-        let doc = Document { text: "fn main() {\nlet unused = 1\nlet used = 2\nprint(used)\n}\nmain()\n".into(), version: 1 };
+        let doc = Document { text: "fn main() {\nlet unused = 1\nlet used = 2\nprint(used)\n}\nmain()\n".into(), version: 1, language: "devlang".into() };
         let result = diagnostics("file:///test.dev", &doc);
         let items = result["params"]["diagnostics"].as_array().unwrap();
         assert_eq!(items.len(), 1);
@@ -199,16 +209,16 @@ mod unused_tests {
     }
     #[test]
     fn semantic_errors_are_marked_and_clear_after_fix() {
-        let doc = Document {text: "fn main() {\nlet age i64 = \"wrong\"\nprint(age)\n}\nmain()".into(), version: 1};
+        let doc = Document {text: "fn main() {\nlet age i64 = \"wrong\"\nprint(age)\n}\nmain()".into(), version: 1, language: "devlang".into()};
         let result = diagnostics("file:///test.dev", &doc);
         let items = result["params"]["diagnostics"].as_array().unwrap();
         assert!(items.iter().any(|d| d["code"] == "semantic-error" && d["severity"] == 1 && d["range"]["start"]["line"] == 1));
-        let fixed = Document {text: doc.text.replace("\"wrong\"", "18"), version: 2};
+        let fixed = Document {text: doc.text.replace("\"wrong\"", "18"), version: 2, language: "devlang".into()};
         assert_eq!(diagnostics("file:///test.dev", &fixed)["params"]["diagnostics"], json!([]));
     }
     #[test]
     fn valid_runtime_json_is_not_flagged_as_native_error() {
-        let doc = Document {text: "let user = { name: \"Dev\", age: 18 }\nprint(user.name)".into(), version: 1};
+        let doc = Document {text: "let user = { name: \"Dev\", age: 18 }\nprint(user.name)".into(), version: 1, language: "devlang".into()};
         assert_eq!(diagnostics("file:///test.dev", &doc)["params"]["diagnostics"], json!([]));
     }
 }
@@ -282,7 +292,7 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             if let Some(id) = id {
                 send(
                     &mut out,
-                    &json!({"jsonrpc":"2.0","id":id,"result":{"capabilities":{"positionEncoding":"utf-16","textDocumentSync":{"openClose":true,"change":1},"completionProvider":{"triggerCharacters":["."]},"hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"documentFormattingProvider":true},"serverInfo":{"name":"DevLang LSP","version":env!("CARGO_PKG_VERSION")}}}),
+                    &json!({"jsonrpc":"2.0","id":id,"result":{"capabilities":{"positionEncoding":"utf-16","textDocumentSync":{"openClose":true,"change":1},"completionProvider":{"triggerCharacters":[".","@"]},"hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"documentFormattingProvider":true},"serverInfo":{"name":"DevLang + DON LSP","version":env!("CARGO_PKG_VERSION")}}}),
                 )?;
             }
             continue;
@@ -308,6 +318,7 @@ pub fn command(args: &[String]) -> Result<i32, String> {
                         Document {
                             text: text.into(),
                             version,
+                            language: params["textDocument"]["languageId"].as_str().unwrap_or("").to_owned(),
                         },
                     );
                     publish_documents(&mut out, &docs)?;
@@ -351,13 +362,18 @@ pub fn command(args: &[String]) -> Result<i32, String> {
                 let result = match method {
                     "shutdown" => { shutdown=true; Value::Null }
                     "textDocument/completion" => {
+                        if let Some(doc) = docs.get(uri).filter(|d| is_don(uri,d)) {
+                            don_lsp::completion(&doc.text,&params["position"])
+                        } else {
                         let mut items = "fn let if else while for in return break continue struct enum match unsafe use export as true false null i64 i32 u64 f64 bool str Vec Map Ref Slice".split_whitespace().map(|s|json!({"label":s,"kind":14})).collect::<Vec<_>>();
                         if let Some(doc)=docs.get(uri) { for symbol in symbols(uri,doc) { items.push(json!({"label":symbol["name"],"kind":if symbol["kind"]==12 {3} else {22},"detail":symbol["detail"]})); } }
                         json!({"isIncomplete":false,"items":items})
+                        }
                     }
                     "textDocument/documentSymbol" => docs.get(uri).map(|d|json!(symbols(uri,d))).unwrap_or(json!([])),
                     "textDocument/hover" | "textDocument/definition" => {
                         docs.get(uri).and_then(|doc| {
+                            if is_don(uri,doc) { return Some(don_lsp::hover_or_definition(&doc.text,&params["position"],uri,method.ends_with("definition"))); }
                             let name=word(&doc.text,&params["position"])?;
                             let symbol=symbols(uri,doc).into_iter().find(|s|s["name"]==name)?;
                             Some(if method.ends_with("definition") {json!({"uri":uri,"range":symbol["selectionRange"]})} else {json!({"contents":{"kind":"plaintext","value":format!("{} {}",name,symbol["detail"].as_str().unwrap_or(""))}})})
@@ -365,7 +381,8 @@ pub fn command(args: &[String]) -> Result<i32, String> {
                     }
                     "textDocument/formatting" => {
                         if let Some(doc)=docs.get(uri) {
-                            match crate::format::source(&doc.text) {
+                            let formatted = if is_don(uri,doc) { dev_syntax::don_tooling::format(&doc.text) } else { crate::format::source(&doc.text) };
+                            match formatted {
                                 Ok(text) if text!=doc.text => {
                                     let line=doc.text.bytes().filter(|b|*b==b'\n').count();
                                     let column=doc.text.rsplit('\n').next().unwrap_or("").encode_utf16().count();

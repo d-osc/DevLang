@@ -1468,3 +1468,35 @@ Git จะเลือก tag สูงสุดที่ตรงเงื่�
 ค้นหาด้วยชื่อ เช่น `std/fs`, `std/http`, `std/json`, `std/sync` หรือเลือกกลุ่ม Module API ใน sidebar ตัวอย่างของแต่ละหน้ามี ZIP และผลลัพธ์ที่รันตรวจไว้ใน [Examples](#/examples?category=Module%20API)
 
 ชื่อ `std/io`, `std/strings`, `std/time` มีทั้ง runtime และ native API แต่ signature ไม่เหมือนกัน เลือกหน้าที่ระบุ Native เมื่อต้อง build/link stdlib ส่วน `std/memory` เป็น native binding; source runtime ใช้ managed Ref/Vec/Map หรือ C FFI ตามงาน
+
+# [don-editor] DON ใน VS Code
+
+Extension `n-devs.devlang-language` รุ่น 0.2.0 รองรับไฟล์ `.don` แยกจาก `.dev` ทั้ง syntax colors, file icon, Format Document และ language server ต้องตั้ง `devlang.executablePath` ให้ชี้ไปที่ d source build ล่าสุด
+
+## Format Document
+
+กด Shift+Alt+F หรือเลือก Format Document โดยใช้ DevLang เป็น default formatter ของภาษา Dev Object Notation formatter รับข้อความที่ยังไม่บันทึก เก็บ comments, `@references`, ลำดับ keys และเนื้อหา quoted/multiline strings ไว้ ถ้าไฟล์ผิดจะไม่แก้ไขข้อความ
+
+```don
+// เวอร์ชันเดียวกัน
+version: 'v1.0.0'
+dependencies: {
+    utils: { git: 'https://github.com/example/utils.git', rev: @version }
+}
+```
+
+```sh
+d don fmt-source package.don
+```
+
+คำสั่งนี้พิมพ์ source ที่จัดรูปแบบแล้ว ใช้ indentation 4 spaces และ LF นอก literal tokens ส่วน `d don fmt` เดิมเป็นการ serialize ข้อมูล: จะ resolve references และทิ้ง comments
+
+## Diagnostics และ navigation
+
+LSP ตรวจ syntax, duplicate keys, escapes, missing references และ reference cycles ตั้งแต่ข้อความที่ยังไม่บันทึก พร้อม Outline แบบ nested, hover ชนิด value, completion สำหรับ true/false/null และ reference paths และ Go to Definition ของ reference ในไฟล์เดียว ใช้กับ Untitled ที่เลือก language เป็น Dev Object Notation ได้ด้วย
+
+ยังไม่มี schema validation, references ข้ามไฟล์, rename หรือ expression evaluation และ parser แจ้ง error แรกต่อการตรวจแต่ละครั้ง
+
+## File icon และสี code
+
+แยกสี keys, strings, numbers, comments และ `@root.path` ออกจากกันโดยไม่เปลี่ยนธีม editor เมื่อใช้ Material Icon Theme จะเพิ่ม icon `.don` ให้อัตโนมัติ โดยเก็บ association ที่ผู้ใช้ตั้งเองไว้ สำหรับธีมอื่นใช้ language icon ตามที่ธีมรองรับ หรือเลือก DevLang File Icons

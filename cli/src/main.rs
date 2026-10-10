@@ -17,7 +17,7 @@ const HELP: &str = "Dev Lang
   d emit|--emit FILE.dev [options]          Emit C source
   d new NAME                              Create a project with package.don
   d pkg add|install|update|remove|list|workspace  Manage path/Git/workspace dependencies
-  d don check|fmt|to-json|from-json FILE   Validate or convert data (output to stdout)
+  d don check|fmt|fmt-source|to-json|from-json FILE   Validate or convert data (output to stdout)
   d fmt [--check|--stdout] [FILES/DIRS]     Format source (defaults to src/)
   d lsp [--stdio]                         Start the language server
   d debug FILE.dev [--no-launch]           Build with symbols and launch LLDB

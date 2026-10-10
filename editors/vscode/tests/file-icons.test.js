@@ -33,11 +33,12 @@ async function fixture(t, options = {}) {
         global: () => global, updates: () => updates };
 }
 
-test('adds only .dev, copies SVG, preserves associations and is idempotent', async t => {
+test('adds .dev and .don, copies SVGs, preserves associations and is idempotent', async t => {
     const f = await fixture(t);
     await configureMaterialIcons(f.api, f.context);
-    assert.deepEqual(f.global(), { '*.other': 'javascript', '*.dev': '../../devlang-file-icons/file-dev' });
+    assert.deepEqual(f.global(), { '*.other': 'javascript', '*.dev': '../../devlang-file-icons/file-dev', '*.don': '../../devlang-file-icons/file-don' });
     assert.deepEqual(await fs.readFile(f.icon), await fs.readFile(path.join(f.context.extensionPath, 'images/file-dev.svg')));
+    assert.deepEqual(await fs.readFile(path.join(path.dirname(f.icon),'file-don.svg')), await fs.readFile(path.join(f.context.extensionPath,'images/file-don.svg')));
     await configureMaterialIcons(f.api, f.context);
     assert.equal(f.updates(), 1);
 });
@@ -45,7 +46,7 @@ test('respects custom .dev and **.dev mappings', async t => {
     for (const associations of [{ '*.dev': 'custom' }, { '**.dev': 'custom' }]) {
         const f = await fixture(t, { associations });
         await configureMaterialIcons(f.api, f.context);
-        assert.equal(f.updates(), 0);
+        assert.equal(f.updates(), 1); // DON is still integrated independently.
         await assert.rejects(fs.stat(f.icon), { code: 'ENOENT' });
     }
 });
@@ -57,13 +58,20 @@ test('does nothing for other themes or missing Material Icon Theme', async t => 
         await assert.rejects(fs.stat(f.icon), { code: 'ENOENT' });
     }
 });
+test('custom DON association leaves DON untouched and still integrates DevLang', async t => {
+    const f = await fixture(t, {associations:{'*.don':'json-custom'}});
+    await configureMaterialIcons(f.api,f.context);
+    assert.equal(f.global()['*.don'],'json-custom');
+    assert.equal(f.global()['*.dev'],'../../devlang-file-icons/file-dev');
+    await assert.rejects(fs.stat(path.join(path.dirname(f.icon),'file-don.svg')), {code:'ENOENT'});
+});
 test('disabling removes our association and keeps user mappings', async t => {
     const f = await fixture(t);
     await configureMaterialIcons(f.api, f.context);
     f.state.enabled = false;
     await configureMaterialIcons(f.api, f.context);
     assert.deepEqual(f.global(), { '*.other': 'javascript' });
-    const custom = await fixture(t, { enabled: false, associations: { '*.dev': 'custom' } });
+    const custom = await fixture(t, { enabled: false, associations: { '*.dev': 'custom', '*.don': 'custom-don' } });
     await configureMaterialIcons(custom.api, custom.context);
     assert.equal(custom.updates(), 0);
 });

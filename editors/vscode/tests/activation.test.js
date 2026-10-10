@@ -15,7 +15,10 @@ test('startup configures icons without starting LSP; opening DevLang starts once
         window: { showErrorMessage: message => assert.fail(message) },
     };
     class LanguageClient {
-        constructor(id, name, options) { this.command = options.command; }
+        constructor(id, name, options, clientOptions) {
+            this.command = options.command;
+            assert.ok(clientOptions.documentSelector.some(s => s.language === 'don' && s.scheme === 'untitled'));
+        }
         async start() { starts.push(this.command); }
         async dispose() { disposed++; }
         getFeature() { return { clear() {} }; }
@@ -32,7 +35,7 @@ test('startup configures icons without starting LSP; opening DevLang starts once
     await module.exports.activate({ subscriptions: [] });
     assert.equal(icons, 1); assert.equal(formatter, 1); assert.deepEqual(starts, []);
     opened({ languageId: 'javascript' });
-    opened({ languageId: 'devlang' });
+    opened({ languageId: 'don' });
     opened({ languageId: 'devlang' });
     await new Promise(setImmediate);
     assert.deepEqual(starts, ['d']);

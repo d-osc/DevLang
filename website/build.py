@@ -20,7 +20,7 @@ GROUPS = {
     'เริ่มต้น': ['intro', 'install', 'layout', 'cli', 'tooling', 'packages'],
     'พื้นฐานภาษา': ['variables', 'types', 'operators', 'loops', 'functions', 'strings-arrays', 'modules'],
     'ข้อมูลและ abstraction': ['structs', 'enums-match', 'references', 'collections', 'generics', 'closures'],
-    'ระบบและ interoperability': ['module-api-intro', 'tasks', 'sync', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'fs-http', 'node-core', 'limitations', 'ai'],
+    'ระบบและ interoperability': ['module-api-intro', 'tasks', 'sync', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'don-editor', 'fs-http', 'node-core', 'limitations', 'ai'],
 }
 REFERENCES = {
     'packages-reference': ('Workspaces and dependency versions', 'docs/packages.md'),

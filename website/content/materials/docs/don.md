@@ -160,3 +160,23 @@ Formatting and conversion write to stdout and do not change the input file.
 Formatting removes comments and normalizes whitespace. `d fmt` continues to
 format `.dev` source. The LSP avoids native semantic errors for programs importing
 DON, as it does for JSON; full semantic checking of dynamic data is not implemented.
+
+## VS Code support
+
+Extension `n-devs.devlang-language` version 0.2.0 adds `.don` as **Dev Object
+Notation**, including syntax colors, file icons, Format Document (Shift+Alt+F),
+and the shared `d lsp --stdio` server. Set `devlang.executablePath` to the latest
+source-built d; existing installers do not contain these editor additions.
+
+`d don fmt-source FILE` prints formatted source while preserving comments,
+references, quoted string contents and key order. The editor calls this command
+with unsaved text and applies edits only if the document version still matches.
+It uses four spaces and LF outside literal tokens. Invalid input is not rewritten.
+`d don fmt` remains the data serializer: it resolves references and drops comments.
+
+DON LSP supports syntax/reference diagnostics, nested outline, value-kind hover,
+reference completion and same-document Go to Definition. Missing targets,
+cycles, duplicate keys and invalid escapes are errors, including in untitled
+DON documents. Positions use UTF-16. No generic schema validation, external-file
+references, expression evaluation or rename is provided; the parser reports its
+first error. See [extension instructions](../editors/vscode/README.md).

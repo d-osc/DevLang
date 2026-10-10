@@ -1,0 +1,111 @@
+{
+  "name": "Dev Object Notation",
+  "scopeName": "source.don",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#keys"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "name": "variable.other.reference.don",
+      "match": "@[\\p{L}_$][\\p{L}\\p{N}_$-]*(?:\\.[\\p{L}_$][\\p{L}\\p{N}_$-]*)*"
+    },
+    {
+      "name": "constant.language.don",
+      "match": "\\b(?:true|false|null)\\b"
+    },
+    {
+      "name": "constant.numeric.don",
+      "match": "(?<![\\w])[-+]?(?:\\d[\\d_]*)(?:\\.[\\d_]+)?(?:[eE][-+]?[\\d_]+)?\\b"
+    },
+    {
+      "name": "punctuation.separator.key-value.don",
+      "match": "[:=]"
+    },
+    {
+      "name": "punctuation.definition.container.don",
+      "match": "[{}\\[\\],;]"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.don",
+          "match": "(?://|#).*?$"
+        },
+        {
+          "name": "comment.block.don",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "keys": {
+      "patterns": [
+        {
+          "name": "support.type.property-name.don",
+          "match": "[\\p{L}_$][\\p{L}\\p{N}_-]*(?=\\s*[:=])"
+        },
+        {
+          "name": "support.type.property-name.don",
+          "begin": "\"(?=(?:[^\"\\\\]|\\\\.)*\"\\s*[:=])",
+          "end": "\"",
+          "patterns": [
+            {
+              "include": "#escape"
+            }
+          ]
+        },
+        {
+          "name": "support.type.property-name.don",
+          "begin": "'(?=(?:[^'\\\\]|\\\\.)*'\\s*[:=])",
+          "end": "'",
+          "patterns": [
+            {
+              "include": "#escape"
+            }
+          ]
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.triple.don",
+          "begin": "\"\"\"",
+          "end": "\"\"\""
+        },
+        {
+          "name": "string.quoted.double.don",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "include": "#escape"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.don",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "include": "#escape"
+            }
+          ]
+        }
+      ]
+    },
+    "escape": {
+      "name": "constant.character.escape.don",
+      "match": "\\\\(?:[\"\\'\\\\/bfnrt]|u[0-9a-fA-F]{4})"
+    }
+  }
+}

@@ -184,3 +184,6 @@ and native execution, formatter idempotence/token preservation, LSP requests and
 notifications, non-overwriting VS Code templates, and debug symbols when
 llvm-dwarfdump is available. Add `--lldb` to require an actual source breakpoint
 and local-value inspection through the CLI with an installed working LLDB.
+
+DON editor support: [VS Code and lossless formatting](don.md#vs-code-support).
+The LSP dispatches `.don` to the DON parser and keeps DevLang semantic checks separate.

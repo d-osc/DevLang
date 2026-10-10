@@ -1,5 +1,6 @@
 pub mod ast;
 pub mod don;
+pub mod don_tooling;
 pub mod expand;
 pub mod intrinsics;
 pub mod lexer;

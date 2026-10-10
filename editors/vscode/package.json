@@ -1,8 +1,8 @@
 {
   "name": "devlang-language",
   "displayName": "DevLang",
-  "description": "DevLang syntax, formatting, language server and native breakpoint support.",
-  "version": "0.1.9",
+  "description": "DevLang and DON syntax, formatting, file icons, language server and native breakpoint support.",
+  "version": "0.2.0",
   "publisher": "n-devs",
   "license": "MIT",
   "repository": {
@@ -19,6 +19,7 @@
   "main": "./extension.js",
   "activationEvents": [
     "onLanguage:devlang",
+    "onLanguage:don",
     "onStartupFinished"
   ],
   "capabilities": {
@@ -29,13 +30,16 @@
   },
   "scripts": {
     "check": "node --check extension.js && node --check file-icons.js",
-    "package": "vsce package"
+    "package": "vsce package",
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "vscode-languageclient": "10.1.2"
   },
   "devDependencies": {
-    "@vscode/vsce": "4.0.0"
+    "@vscode/vsce": "4.0.0",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
   },
   "contributes": {
     "languages": [
@@ -53,6 +57,22 @@
           "light": "./images/file-dev.svg",
           "dark": "./images/file-dev.svg"
         }
+      },
+      {
+        "id": "don",
+        "aliases": [
+          "Dev Object Notation",
+          "DON",
+          "don"
+        ],
+        "extensions": [
+          ".don"
+        ],
+        "configuration": "./don-language-configuration.json",
+        "icon": {
+          "light": "./images/file-don.svg",
+          "dark": "./images/file-don.svg"
+        }
       }
     ],
     "grammars": [
@@ -60,6 +80,11 @@
         "language": "devlang",
         "scopeName": "source.devlang",
         "path": "./syntaxes/devlang.tmLanguage.json"
+      },
+      {
+        "language": "don",
+        "scopeName": "source.don",
+        "path": "./syntaxes/don.tmLanguage.json"
       }
     ],
     "breakpoints": [
@@ -80,7 +105,7 @@
           "type": "boolean",
           "default": true,
           "scope": "application",
-          "description": "Automatically add the DevLang .dev file icon to the active Material Icon Theme. Keeps other icons and existing custom .dev associations. Disable to remove the automatic association."
+          "description": "Automatically add .dev and .don file icons to the active Material Icon Theme. Preserves other icons and custom associations."
         }
       }
     },
@@ -159,8 +184,71 @@
             "settings": {
               "foreground": "#9FCBE5"
             }
+          },
+          {
+            "scope": "comment.line.don",
+            "settings": {
+              "foreground": "#82958A"
+            }
+          },
+          {
+            "scope": "comment.block.don",
+            "settings": {
+              "foreground": "#82958A"
+            }
+          },
+          {
+            "scope": "support.type.property-name.don",
+            "settings": {
+              "foreground": "#91DCC6"
+            }
+          },
+          {
+            "scope": [
+              "string.quoted.double.don",
+              "string.quoted.single.don",
+              "string.quoted.triple.don"
+            ],
+            "settings": {
+              "foreground": "#B5D99A"
+            }
+          },
+          {
+            "scope": "constant.numeric.don",
+            "settings": {
+              "foreground": "#ECB78F"
+            }
+          },
+          {
+            "scope": "constant.language.don",
+            "settings": {
+              "foreground": "#C6AEED"
+            }
+          },
+          {
+            "scope": "variable.other.reference.don",
+            "settings": {
+              "foreground": "#E5CE94"
+            }
+          },
+          {
+            "scope": "punctuation.separator.key-value.don",
+            "settings": {
+              "foreground": "#9FCBE5"
+            }
+          },
+          {
+            "scope": "constant.character.escape.don",
+            "settings": {
+              "foreground": "#E9CB8B"
+            }
           }
         ]
+      },
+      "[don]": {
+        "editor.defaultFormatter": "n-devs.devlang-language",
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4
       }
     },
     "commands": [

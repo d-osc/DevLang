@@ -2,12 +2,17 @@
   "iconDefinitions": {
     "devlang": {
       "iconPath": "./images/file-dev.svg"
+    },
+    "don": {
+      "iconPath": "./images/file-don.svg"
     }
   },
   "fileExtensions": {
-    "dev": "devlang"
+    "dev": "devlang",
+    "don": "don"
   },
   "languageIds": {
-    "devlang": "devlang"
+    "devlang": "devlang",
+    "don": "don"
   }
 }
