@@ -1,0 +1,5 @@
+fn main() {
+    print("Use --package demo_app to run the application")
+    return 0
+}
+return main()

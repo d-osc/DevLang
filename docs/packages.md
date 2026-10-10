@@ -1,5 +1,7 @@
 # Workspaces and version requirements
 
+For a complete runnable `package.don` example covering manifest fields, workspace and path dependencies, Git templates, DON references and lock commands, see [the full package example](../examples/package-don/README.md).
+
 Use the current source-built `d`, `devrun` and `devc`. These additions extend the existing path/Git package manager; there is no public package registry or publish command yet.
 
 ## Workspace layout

@@ -1,0 +1,7 @@
+version: '1.0.0'
+package: {
+    name: 'greetings'
+    entry: 'src/lib.dev'
+    modules: 'src'
+}
+dependencies: {}

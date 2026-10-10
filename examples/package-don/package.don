@@ -1,0 +1,11 @@
+// Workspace root: select the app with --package demo_app.
+version: 'v1.0.0'
+package: {
+    name: 'package_don_demo'
+    entry: 'src/main.dev'
+    modules: 'src'
+}
+workspace: {
+    members: ['apps/demo', 'libs/math']
+}
+dependencies: {}

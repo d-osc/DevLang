@@ -1,0 +1,7 @@
+version: '1.2.0'
+package: {
+    name: 'math'
+    entry: 'src/lib.dev'
+    modules: 'src'
+}
+dependencies: {}

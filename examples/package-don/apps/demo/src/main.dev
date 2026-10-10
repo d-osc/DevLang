@@ -1,0 +1,10 @@
+use "math/lib" as math
+use "greetings/lib" as greetings
+use "std/io"
+
+fn main() {
+    io.writeln(greetings.message())
+    print(math.add(19, 23))
+    return 0
+}
+return main()
