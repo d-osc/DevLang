@@ -64,6 +64,42 @@ fn path_string(path: &Path) -> Result<String, String> {
         .ok_or_else(|| "path is not valid Unicode".into())
 }
 pub(crate) fn call(name: &str, args: Vec<Value>) -> Result<Value, String> {
+    match name {
+        "readFileSync" => {
+            if args.len() != 2 {
+                return Err("fs.readFileSync expects path and encoding".into());
+            }
+            if !matches!(args[1].string()?, "utf8" | "utf-8") {
+                return Err("fs.readFileSync currently supports utf8 encoding only".into());
+            }
+            return call("read_text", vec![args[0].clone()]);
+        }
+        "mkdirSync" => {
+            let [path, Value::Bool(recursive)] = args.as_slice() else {
+                return Err("fs.mkdirSync expects path str and recursive bool".into());
+            };
+            return call(
+                if *recursive {
+                    "create_dirs"
+                } else {
+                    "create_dir"
+                },
+                vec![path.clone()],
+            );
+        }
+        _ => {}
+    }
+    let name = match name {
+        "writeFileSync" => "write_text",
+        "appendFileSync" => "append_text",
+        "existsSync" => "exists",
+        "readdirSync" => "read_dir",
+        "unlinkSync" => "remove_file",
+        "rmdirSync" => "remove_dir",
+        "copyFileSync" => "copy",
+        "renameSync" => "rename",
+        other => other,
+    };
     let count = match name {
         "current_dir" => 0,
         "write_text" | "append_text" | "write_bytes" | "copy" | "rename" | "join" => 2,

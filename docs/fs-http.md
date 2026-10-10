@@ -6,7 +6,44 @@ these modules without a C compiler. These modules are not yet available to
 `d build`; native file operations remain available through `std/io` and C FFI.
 Older release installers do not include these new runtime modules.
 
-## Filesystem
+## Node-style filesystem API
+
+These APIs follow Node's naming, with explicit typed arguments in DevLang.
+They are a subset, not a Node.js compatibility runtime.
+
+| Synchronous API | Arguments / result |
+| --- | --- |
+| `fs.readFileSync(path str, encoding str)` | `str`; encoding must be `utf8` or `utf-8` |
+| `fs.writeFileSync(path str, data str)` | `bool`, create/truncate |
+| `fs.appendFileSync(path str, data str)` | `bool`, create/append |
+| `fs.existsSync(path str)` | `bool` |
+| `fs.mkdirSync(path str, recursive bool)` | `bool`; pass true for parent directories |
+| `fs.readdirSync(path str)` | `Vec<str>`, sorted names |
+| `fs.unlinkSync(path str)`, `fs.rmdirSync(path str)` | `bool`; directory must be empty |
+| `fs.copyFileSync(from str, to str)`, `fs.renameSync(from str, to str)` | `bool` |
+
+Import `std/fs/promises` to use `promises.readFile(path, encoding)`,
+`writeFile(path, data)`, `appendFile(path, data)`, `mkdir(path, recursive)`,
+`readdir(path)`, `unlink(path)` and `rename(from, to)`. Each starts a worker
+thread and returns `Task<T>`. Use `await(task)` to observe the result or error.
+Awaiting blocks the calling thread; this is not a JavaScript Promise/event loop.
+There are no optional arguments, callback filesystem APIs, Buffer, streaming,
+file descriptors or file watchers in this subset. Binary APIs remain
+`fs.read_bytes` and `fs.write_bytes` with `Vec<u8>`.
+
+```dev
+use "std/fs"
+use "std/fs/promises"
+fn main() {
+    fs.writeFileSync("hello.txt", "Hello")
+    print(fs.readFileSync("hello.txt", "utf8"))
+    print(await(promises.readFile("hello.txt", "utf8")))
+    await(promises.unlink("hello.txt"))
+}
+main()
+```
+
+## Original filesystem API
 
 Paths and text use UTF-8. Relative paths resolve against the process working
 directory, not the source file directory. Operations have normal OS permissions.
@@ -87,7 +124,65 @@ fn main() {
 main()
 ```
 
-Requests block the calling thread. This is a client API; HTTP servers, streaming,
-multipart upload and an async I/O event loop are not implemented.
+Client requests block the calling thread. The client `get`/`request` APIs retain
+their original signatures; Node's ClientRequest/event callbacks are not implemented.
+Streaming, multipart upload and an async I/O event loop are not implemented.
+
+## Node-style HTTP server
+
+```dev
+use "std/http"
+fn main() {
+    let server = http.createServer(fn(req http.IncomingMessage, res http.ServerResponse) {
+        res.setHeader("Content-Type", "text/plain; charset=utf-8")
+        if req.url == "/" {
+            res.end("Hello DevLang!\n")
+        } else {
+            res.statusCode = 404
+            res.end("Not found\n")
+        }
+    })
+    server.listen(3000)
+    print("Listening on http://localhost:3000")
+}
+main()
+```
+
+`http.createServer(handler fn(http.IncomingMessage,http.ServerResponse) void)`
+returns `http.Server`. `server.listen(port i64)` binds all IPv4 interfaces;
+`server.listenOn(port i64, host str)` selects a bind address. A port of zero
+allows the OS to select a port, though no address-query API exists yet.
+`listen` returns after binding; the runtime then services listening servers after
+the file's statements finish successfully. It stays alive until all listeners are
+closed or the process is stopped. `server.close()` removes the listener and lets
+the active callback finish. `server.on("request", handler)` replaces the handler;
+other events are not implemented. Handles belong to the interpreter thread that
+created them; do not pass them into spawned tasks.
+
+IncomingMessage exposes `method str`, `url str` (path plus query),
+`headers Map<str,str>` (lowercase keys), `body str` (lossy UTF-8), and
+`bytes Vec<u8>`. The complete request body is buffered before callback invocation.
+
+ServerResponse supports `setHeader(name str, value str)`,
+`writeHead(status i64, headers Map<str,str>)`, `write(text str)` and `end(text str)`.
+Use `end("")` to finish without extra text. `write` buffers until `end`; this is
+not a streaming response. `res.statusCode = 404` sets the status on the next
+response-method call. Status codes must be 200 through 599. Since DevLang uses
+value receivers, `writeHead` does not update the local `res.statusCode` field;
+prefer `writeHead` for explicit status/headers. Response framing headers are
+managed by the runtime; explicit Content-Length/Transfer-Encoding are rejected.
+Invalid header names/values and writes after `end` produce errors.
+
+Handlers must call `end` before returning. Missing `end` produces HTTP 500.
+A handler error produces HTTP 500 if the response has not been sent, then aborts
+the runtime with a located error. Bodies are limited to 8 MiB, and at most 64
+server handles may exist in an interpreter. Callbacks are served serially, so
+blocking work or slow body reads delay other requests. This initial HTTP/1.x
+server does not provide configurable read/header timeouts, HTTPS serving,
+WebSockets, HTTP/2 or a general Node event loop; use a reverse proxy when needed.
+
+See `examples/node-io/main.dev` and
+`d examples/http-server/main.dev -- serve` (port 3000), with real server coverage
+in `python scripts/smoke_node_io.py --bin-dir target/release`.
 See `examples/filesystem/main.dev`, `examples/http/main.dev` and
 `python scripts/smoke_fs_http.py --bin-dir target/release` for runnable coverage.

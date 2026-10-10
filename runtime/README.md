@@ -1,7 +1,9 @@
 # Dev source runtime
 
 Source runtime modules `std/fs` and `std/http` provide filesystem operations and
-a blocking HTTP/HTTPS client without a C compiler. See [API documentation](../docs/fs-http.md).
+a blocking HTTP/HTTPS client without a C compiler. Node-style filesystem Sync APIs,
+`std/fs/promises` with Task results and `http.createServer` are also available.
+See [API documentation](../docs/fs-http.md) for the supported subset and limits.
 
 `devrun` interprets `.dev` source directly. Pure Dev execution needs no compiler or build artifacts. Source-only C FFI
 dependencies are prepared automatically by the separate `devc` executable.

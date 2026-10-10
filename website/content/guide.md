@@ -977,7 +977,8 @@ d debug --vscode
 # [fs-http] Filesystem และ HTTP
 
 Runtime ปัจจุบันอ่านเขียนไฟล์และเรียก HTTP/HTTPS ได้โดยไม่ต้องใช้ C compiler
-API ใหม่นี้ยังไม่รองรับ native build และ HTTP เป็น client แบบ blocking ยังไม่มี server
+API ใหม่นี้ยังไม่รองรับ native build ส่วน HTTP client ทำงานแบบ blocking
+มี HTTP server แบบ `http.createServer` แล้ว โดยใช้ callback ที่ระบุชนิด `http.IncomingMessage` และ `http.ServerResponse`
 
 ```dev-runtime
 use "std/fs"
@@ -992,5 +993,14 @@ main()
 ใช้ `http.get(url)` เพื่อรับ response แล้วอ่าน `status`, `ok`, `body`, `bytes` และ `headers`
 ใช้ `http.request(method, url, headers, body, timeout_ms)` สำหรับ headers และ timeout
 ตัวอย่างออนไลน์: `d examples/http/main.dev -- https://example.com/`
+
+ชื่อ API แบบ Node ใช้ `fs.readFileSync(path, "utf8")`, `writeFileSync(path, text)` และ `mkdirSync(path, recursive)`
+ส่วน `use "std/fs/promises"` คืน `Task` เช่น `await(promises.readFile(path, "utf8"))`
+Task ใช้ worker thread และ await รอแบบ blocking ยังไม่ใช่ Promise/event loop ของ JavaScript
+
+เริ่ม server ด้วย `d examples/http-server/main.dev -- serve` แล้วเปิด `http://localhost:3000`
+`server.listen(3000)` คืนค่าหลัง bind และ runtime รับ request หลังโค้ดหลักจบ
+callback ใช้ `res.setHeader`, `writeHead`, `write`, `end` โดยต้อง `end(text)` ก่อน return
+ใช้ Ctrl+C เพื่อหยุด ดูข้อจำกัดและ API ทุกตัวในคู่มือเต็มด้านล่าง
 
 ดู [คู่มือ API เต็ม](../../docs/fs-http.md) สำหรับทุกฟังก์ชัน ชนิดข้อมูล ข้อผิดพลาด และข้อจำกัด

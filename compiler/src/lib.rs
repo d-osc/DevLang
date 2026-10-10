@@ -35,9 +35,18 @@ mod tests {
     }
     #[test]
     fn runtime_io_signatures_are_checked_without_execution() {
+        for source in [
+            "use \"std/fs/promises\"\nfn main() { let text = await(promises.readFile(\"missing\", \"utf8\")); print(text) }\nmain()",
+            "use \"std/http\"\nfn main() { let server = http.createServer(fn(req http.IncomingMessage, res http.ServerResponse) { res.end(req.url) }); server.listen(3000) }\nmain()",
+        ] {
+            assert!(errors(source).is_empty(), "{:?}", errors(source));
+        }
         let valid = "use \"std/fs\"\nuse \"std/http\"\nfn main() {\nlet text str = fs.read_text(\"missing-file\")\nlet response = http.get(\"https://invalid.example\")\nlet status i64 = response.status\nlet ok bool = response.ok\nprint(text)\nprint(status)\nprint(ok)\n}\nmain()";
         assert!(errors(valid).is_empty(), "{:?}", errors(valid));
         for source in [
+            "use \"std/fs\"\nfs.readFileSync(\"missing\", 42)",
+            "use \"std/fs/promises\"\nlet text str = promises.readFile(\"missing\", \"utf8\")",
+            "use \"std/http\"\nhttp.createServer(fn(req i64, res i64) {})",
             "use \"std/fs\"\nfs.read_text(12)",
             "use \"std/http\"\nhttp.get(12)",
             "use \"std/http\"\nlet r = http.get(\"https://invalid.example\")\nlet status str = r.status",

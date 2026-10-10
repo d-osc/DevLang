@@ -1,0 +1,13 @@
+use "std/fs"
+use "std/fs/promises"
+
+fn main() {
+    let path = "devlang-node-example.txt"
+    fs.writeFileSync(path, "Hello")
+    fs.appendFileSync(path, " DevLang")
+    print(fs.readFileSync(path, "utf8"))
+    let task = promises.readFile(path, "utf8")
+    print(await(task))
+    await(promises.unlink(path))
+}
+main()

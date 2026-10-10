@@ -28,6 +28,7 @@ pub(crate) enum Value {
     Slice(Arc<Vec<Value>>, usize, usize, Type),
 }
 include!("map.rs");
+include!("server.rs");
 
 impl Value {
     pub(crate) fn ty(&self) -> Type {
@@ -235,6 +236,8 @@ pub struct Engine {
     native: Native,
     numeric: bool,
     http: Option<ureq::Agent>,
+    servers: HashMap<i64, DevServer>,
+    responses: HashMap<i64, DevResponse>,
 }
 impl Engine {
     pub fn load_with_modules(
@@ -256,6 +259,8 @@ impl Engine {
             native: Native::new(libraries)?,
             numeric,
             http: None,
+            servers: HashMap::new(),
+            responses: HashMap::new(),
         };
         e.entry = e.load_module(path, source)?;
         let mut keys = e.modules.keys().cloned().collect::<Vec<_>>();
@@ -420,6 +425,13 @@ impl Engine {
         ))
     }
     pub fn run(&mut self) -> Result<i32, String> {
+        let code = self.run_script()?;
+        if code == 0 {
+            self.serve_http()?;
+        }
+        Ok(code)
+    }
+    fn run_script(&mut self) -> Result<i32, String> {
         let key = self.entry.clone();
         let statements = self.modules[&key].module.statements.clone();
         if self.numeric {
@@ -504,7 +516,7 @@ impl Engine {
         let (target, n) = self
             .resolve(key, name)
             .map_err(|e| self.located(key, span, e))?;
-        if target.starts_with("std/") {
+        if target.starts_with("std/") && target != "std/fs/promises" {
             return self
                 .builtin(&target, &n, args)
                 .map_err(|e| self.located(key, span, e));
@@ -619,6 +631,8 @@ impl Engine {
                     }
                     let mut worker = Engine {
                         http: None,
+                        servers: HashMap::new(),
+                        responses: HashMap::new(),
                         module_dirs: HashMap::new(),
                         libraries: libraries.clone(),
                         modules,
@@ -716,6 +730,8 @@ impl Engine {
                 }
                 let mut worker = Engine {
                     http: None,
+                    servers: HashMap::new(),
+                    responses: HashMap::new(),
                     module_dirs: HashMap::new(),
                     libraries,
                     modules,
@@ -2007,8 +2023,16 @@ impl Engine {
         }
     }
     fn builtin(&mut self, module: &str, name: &str, args: Vec<Value>) -> Result<Value, String> {
-        if module == "std/fs" { return crate::filesystem::call(name, args); }
+        if module == "std/fs" {
+            return crate::filesystem::call(name, args);
+        }
         if module == "std/http" {
+            if name == "createServer"
+                || name.starts_with("method_Server_")
+                || name.starts_with("method_ServerResponse_")
+            {
+                return self.server_call(name, args);
+            }
             let ty = self.modules[module].functions["get"].ret.clone();
             return crate::http::call(name, args, ty, &mut self.http);
         }

@@ -18,6 +18,7 @@ pub struct Token {
 pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
     let chars: Vec<char> = source.chars().collect();
     let (mut i, mut line, mut col, mut nesting) = (0, 1, 1, 0usize);
+    let mut brace_nesting = Vec::new();
     let mut tokens = Vec::new();
     while i < chars.len() {
         let c = chars[i];
@@ -171,6 +172,12 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
             continue;
         }
         if "(){}[],;:.+-*/%=!<>&|^~".contains(c) {
+            if c == '{' {
+                brace_nesting.push(nesting);
+                nesting = 0;
+            } else if c == '}' {
+                nesting = brace_nesting.pop().unwrap_or(0);
+            }
             if c == '(' || c == '[' {
                 nesting += 1;
             }
@@ -192,4 +199,14 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
         span: Span { line, col },
     });
     Ok(tokens)
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn callback_blocks_keep_newline_statement_boundaries() {
+        let source = "fn call(handler fn() void) {}\ncall(fn() {\nlet x = 1\nprint(x)\n})";
+        assert!(crate::parser::parse("callback.dev".into(), source).is_ok());
+        assert!(crate::parser::parse("call.dev".into(), "print(\n1 +\n2\n)").is_ok());
+    }
 }

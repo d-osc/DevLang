@@ -12,7 +12,11 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
 - For filesystem or HTTP clients, consult `docs/fs-http.md`: `std/fs` and `std/http`
   currently require the updated source runtime, not native compilation. Requests
   block; failures abort with located runtime errors. Use `Response.bytes` for binary
-  payloads and `Response.body` for text. Do not invent a server or catch API.
+  payloads and `Response.body` for text. Node-style Sync filesystem names and
+  `std/fs/promises` (Task results) are available. HTTP servers use `createServer`,
+  `listen`, `listenOn`, `close` and typed request/response callbacks. Server
+  callbacks run after main statements complete, and must call `res.end(text)`.
+  Do not invent JavaScript Promises, streaming, optional arguments or catch APIs.
 
 - For syntax, core types, modules, collections and functions, read [references/core.md](references/core.md).
 - For recursive data, generic constraints, threads, callbacks or C ABI, read [references/advanced.md](references/advanced.md).

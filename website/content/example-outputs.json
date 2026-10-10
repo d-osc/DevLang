@@ -198,5 +198,15 @@
     "source_sha256": "36324bb4ae186e043f1c8bed00e125f40294a4af836d39bff591226be25724e3",
     "validation_sha256": "4d367be12be7363e05f67536a13251c12dc6fdf08fc64077fb9964f431eb01e5",
     "output": "Usage: d examples/http/main.dev -- https://example.com/\n"
+  },
+  "node-io": {
+    "source_sha256": "32ba5fb70a4b1ce87a0786a35a2079b30827a37cbc7a3578f929a409283deb6e",
+    "validation_sha256": "1e85c787bee28b40d24af528c39c976a8295760ffd29afb37b36ceabf3072a1c",
+    "output": "Hello DevLang\nHello DevLang\n"
+  },
+  "http-server": {
+    "source_sha256": "cd839b1e1ea20db9a877a14c4f22148b716b12cf81db6d13285e4c400520bfcf",
+    "validation_sha256": "063a639bf0f22e6d24b6addd5588fdc7a71b73773d9d86a6547ab93ee958a544",
+    "output": "Usage: d examples/http-server/main.dev -- serve\n"
   }
 }

@@ -1,0 +1,21 @@
+use "std/http"
+use "std/args"
+
+fn main() {
+    if args.len() == 0 as usize {
+        print("Usage: d examples/http-server/main.dev -- serve")
+        return 0 as i32
+    }
+    let server = http.createServer(fn(req http.IncomingMessage, res http.ServerResponse) {
+        res.setHeader("Content-Type", "text/plain; charset=utf-8")
+        if req.url == "/" {
+            res.end("Hello DevLang!\n")
+        } else {
+            res.statusCode = 404
+            res.end("Not found\n")
+        }
+    })
+    server.listen(3000)
+    print("Listening on http://localhost:3000 (Ctrl+C to stop)")
+}
+main()

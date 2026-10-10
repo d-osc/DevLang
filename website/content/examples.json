@@ -570,5 +570,29 @@
     "commands": [
       "d examples/http/main.dev -- https://example.com/"
     ]
+  },
+  {
+    "id": "node-io",
+    "title": "Filesystem แบบ Node",
+    "category": "I/O",
+    "path": "examples/node-io/main.dev",
+    "description": "Sync API และ Task จาก std/fs/promises",
+    "doc": "fs-http",
+    "mode": "runtime",
+    "commands": [
+      "d examples/node-io/main.dev"
+    ]
+  },
+  {
+    "id": "http-server",
+    "title": "HTTP server แบบ Node",
+    "category": "I/O",
+    "path": "examples/http-server/main.dev",
+    "description": "createServer, listen และ callback request/response",
+    "doc": "fs-http",
+    "mode": "runtime",
+    "commands": [
+      "d examples/http-server/main.dev -- serve"
+    ]
   }
 ]
