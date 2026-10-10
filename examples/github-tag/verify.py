@@ -35,4 +35,28 @@ with tempfile.TemporaryDirectory(prefix="dev-github-tag-") as temporary:
     lock = tomllib.loads((app / "dev.lock").read_text(encoding="utf-8"))
     assert lock["packages"]["math"]["source"]["tag"] == "v1.2.0"
     assert "rev" not in lock["packages"]["math"]["source"]
+    # A branch and tag with the same name must resolve to the branch.
+    git("branch", "develop")
+    git("tag", "develop")
+    git("checkout", "develop")
+    (lib / "src/lib.dev").write_text('fn add(a i64, b i64) i64 { return a + b + 1 }\n', encoding="utf-8")
+    git("add", ".")
+    git("-c", "user.name=Example Test", "-c", "user.email=test@example.com", "commit", "-m", "branch update")
+    command("pkg", "add", "math", "--git", lib.as_uri(), "--branch", "develop")
+    assert command("run").strip() == "43"
+    (lib / "src/lib.dev").write_text('fn add(a i64, b i64) i64 { return a + b + 2 }\n', encoding="utf-8")
+    git("add", ".")
+    git("-c", "user.name=Example Test", "-c", "user.email=test@example.com", "commit", "-m", "next branch update")
+    command("pkg", "install")
+    command("pkg", "install", "--locked")
+    assert command("run").strip() == "43"
+    command("pkg", "update")
+    assert command("run").strip() == "44"
+    assert command("run", "--engine", "ast").strip() == "44"
+    for options in [("--branch", "missing"), ("--branch", "../bad"), ("--branch", "develop", "--tag", "v1.2.0"), ("--branch", "develop", "--version", "^1")]:
+        before = (app / "package.don").read_bytes()
+        failure = subprocess.run([str(d), "-C", str(app), "pkg", "add", "math", "--git", lib.as_uri(), *options], capture_output=True, timeout=45)
+        assert failure.returncode != 0
+        assert (app / "package.don").read_bytes() == before
+    print("PASS: explicit branch, ambiguous tag name, pinned install, branch update and invalid selectors")
     print("PASS: exact Git tag, SemVer tag, both engines and locked installs")

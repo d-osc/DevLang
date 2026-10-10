@@ -53,6 +53,8 @@ Group installation is not a transaction across all packages: an error in a later
 
 ## SemVer dependencies
 
+Git dependencies may select an explicit remote branch with `branch: 'main'` or `pkg add NAME --git URL --branch main`. Branch names such as `feature/new-api` are supported; invalid or missing branches fail. Branch selection resolves the remote branch even when a tag has the same name. `branch`, `tag` and dependency `version` are mutually exclusive. Initial install locks the branch commit; regular and locked installs preserve it, while `pkg update` selects the current branch commit.
+
 Use `tag: 'v1.2.0'` or `pkg add NAME --git URL --tag v1.2.0` to select a Git ref. `rev` and `--rev` remain legacy aliases for existing manifests and locks; newly written manifests and locks use `tag`. Do not specify both names or combine `tag` with a dependency `version`.
 
 The optional root manifest `version` supplies the package's version. A dependency may add `version` to path, Git or workspace sources:

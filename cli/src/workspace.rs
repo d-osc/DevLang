@@ -129,6 +129,15 @@ fn validate_dependency(dep: &Dependency) -> Result<(), String> {
     if dep.rev.is_some() && (dep.git.is_none() || dep.version.is_some()) {
         return Err("tag is Git-only and cannot be combined with version".into());
     }
+    if let Some(branch) = &dep.branch {
+        if dep.git.is_none() || dep.rev.is_some() || dep.version.is_some() {
+            return Err("branch is Git-only and cannot be combined with tag or version".into());
+        }
+        if branch.is_empty() || branch.starts_with('-') || branch == "HEAD"
+            || git(None, &["check-ref-format", &format!("refs/heads/{branch}")]).is_err() {
+            return Err("invalid Git branch name".into());
+        }
+    }
     requirement(dep)?;
     Ok(())
 }
@@ -151,6 +160,7 @@ fn compatible_source(
     if a.path != b.path
         || a.git != b.git
         || a.rev != b.rev
+        || a.branch != b.branch
         || a.workspace != b.workspace
         || a.version.is_none()
         || b.version.is_none()

@@ -1,0 +1,8 @@
+// Template: copy this content to package.don and replace YOUR_USER.
+package: { name: 'github_tag_app' }
+dependencies: {
+    math: {
+        git: 'https://github.com/YOUR_USER/dev-math.git'
+        branch: 'main'
+    }
+}

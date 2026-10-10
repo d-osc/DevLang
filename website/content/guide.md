@@ -1459,6 +1459,8 @@ d pkg update
 
 Git จะเลือก tag สูงสุดที่ตรงเงื่อนไข เช่น `v1.2.3` และตรวจ version ใน manifest ด้วย `install` รักษา commit เดิม ส่วน `update` เลือก tag ใหม่ `--locked` ตรวจ source/requirements/content และกู้ checkout ที่ขาดโดยใช้ commit เดิม ระบุ `tag` พร้อม `version` ไม่ได้
 
+หากต้องการเลือก branch โดยตรง ใช้ `branch: 'main'` ใน Git dependency หรือ `d pkg add math --git URL --branch main` รองรับชื่อเช่น `feature/new-api` เลือก remote branch แม้มี tag ชื่อเดียวกัน `branch` ใช้พร้อม `tag` หรือ dependency `version` ไม่ได้ `install` ล็อก commit เดิม และ `pkg update` เลือก commit ล่าสุดของ branch
+
 ยังเป็น namespace เดียว: constraints ที่ใช้ version ที่เลือกเดียวกันได้จะแชร์ package แต่ไม่มี backtracking หรือหลาย version ของชื่อเดียวกัน และยังไม่มี public registry/publish ถ้า add/remove ติดตั้งไม่สำเร็จจะคืน manifest เดิม การติดตั้ง `--workspace` ไม่เป็น transaction ทั้งกลุ่ม
 
 # [module-api-intro] คู่มือแต่ละ Module

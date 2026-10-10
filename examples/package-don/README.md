@@ -51,6 +51,7 @@ Hello from package.don
 | `dependencies.NAME.path` | พาธ relative จากโฟลเดอร์ที่มี manifest ของผู้ใช้ dependency; อนุญาต `..` |
 | `dependencies.NAME.git` | URL Git repository |
 | `dependencies.NAME.tag` | Git tag, branch หรือ commit; ใช้ร่วมกับ dependency `version` ไม่ได้ |
+| `dependencies.NAME.branch` | ชื่อ remote branch เช่น `main` หรือ `feature/new-api`; ใช้พร้อม `tag`/`version` ไม่ได้ |
 | `dependencies.NAME.version` | SemVer requirement สำหรับตรวจ local/workspace หรือเลือก Git tag |
 | `dependencies.NAME.workspace` | `true` เพื่อใช้ member ที่ชื่อ package ตรงกัน |
 | `workspace.members` | รายการโฟลเดอร์ member แบบ explicit relative paths; ไม่รับ `..` หรือ glob |

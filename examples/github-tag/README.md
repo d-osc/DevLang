@@ -115,4 +115,27 @@ dependencies: {
 
 `@version` อ่านค่า root version ของ manifest แอป และส่ง `v1.2.0` ให้ Git; `tag: version` เป็น string ชื่อ `version`
 
+## 6. เลือก branch โดยตรง
+
+ใช้ `branch` แทน `tag` หรือ `version` เช่น (แม่แบบอยู่ใน `app/package.branch.don`; ต้องนำไปใช้เป็น `package.don`):
+
+```don
+package: { name: 'github_tag_app' }
+dependencies: {
+    math: {
+        git: 'https://github.com/YOUR_USER/dev-math.git'
+        branch: 'main'
+    }
+}
+```
+
+```powershell
+.\target\release\d.exe -C examples/github-tag/app pkg add math --git https://github.com/YOUR_USER/dev-math.git --branch main
+.\target\release\d.exe -C examples/github-tag/app pkg update
+```
+
+`branch` เลือก remote branch โดยตรง แม้มี tag ชื่อเดียวกันก็ไม่สับสน รองรับชื่อเช่น `feature/new-api` ต้องมี branch จริง ใช้พร้อม `tag`/`version` หรือ dependency แบบ path/workspace ไม่ได้
+
+`install` ครั้งแรกเลือก commit ปัจจุบันของ branch แล้วบันทึกใน `dev.lock`; install ครั้งต่อไปคง commit เดิม ใช้ `pkg update` เพื่อเลือก commit ใหม่ และ `install --locked` เพื่อใช้ commit เดิมตาม lock
+
 ตัวอย่างนี้ทดสอบการ install tag, run ทั้งสอง source engines และ locked install ด้วย Git repository ในเครื่อง การเข้าถึง GitHub จริงต้องเปลี่ยน URL และเผยแพร่ library/tag ตามขั้นตอนข้างต้น
