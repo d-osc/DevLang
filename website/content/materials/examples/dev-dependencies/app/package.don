@@ -1,0 +1,7 @@
+package: { name: 'dev_dependencies_app' }
+dependencies: {
+    math: { path: '../math' }
+}
+devDependencies: {
+    testkit: { path: '../testkit' }
+}

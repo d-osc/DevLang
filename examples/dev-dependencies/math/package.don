@@ -1,0 +1,5 @@
+package: { name: 'math', entry: 'src/lib.dev' }
+// Consumers must not install this library's development tools.
+devDependencies: {
+    private_tool: { path: '../not-published' }
+}

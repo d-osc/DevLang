@@ -1,0 +1,8 @@
+use "math/lib" as math
+use "testkit/lib" as testkit
+fn main() {
+    if not testkit.equal(math.add(19, 23), 42) { return 1 }
+    print("PASS")
+    return 0
+}
+return main()

@@ -92,6 +92,20 @@ Within one package graph, namespaces remain flat. Different version declarations
 
 `pkg add` / `pkg remove` restore the original manifest bytes if dependency installation fails. Completed cache fetches may remain; failed/verification fetch directories are retained for inspection. Successful mutation still rewrites DON formatting/comments as before.
 
+## Development dependencies
+
+`devDependencies` uses the same dependency source objects as `dependencies`:
+
+```don
+package: { name: 'app' }
+dependencies: { math: { path: '../math' } }
+devDependencies: { testkit: { path: '../testkit' } }
+```
+
+Normal `pkg install/update` includes the current package's development dependencies. Dependencies' own development dependencies are not installed transitively. `pkg install/update --production` excludes them. Each mode writes its graph to `package-lock.don`; production locks include `production: true`. `--locked` requires a matching mode, so switching modes needs an ordinary install first. Run/build/check and LSP mappings follow the lock's mode. Existing cached downloads are retained when switching to production.
+
+Use `pkg add NAME SOURCE_OPTIONS --dev` and `pkg remove NAME --dev` to edit the development section. Add/remove installs in development mode and preserves manifest rollback on failure. Namespaces cannot appear in both sections. Workspace install/update supports `--production` for all packages. Peer dependencies remain unsupported. See [the runnable devDependencies example](../examples/dev-dependencies/README.md).
+
 ## Lock and content hashes
 
 The canonical lock is `package-lock.don`, serialized as DON. Old `dev.lock` TOML files remain readable. A successful install (including `--locked`) creates the new DON file when migrating from the legacy lock, preserving resolved commits and content checks. The old file is retained; when both exist the new name takes precedence. New hashes exclude both lock names.

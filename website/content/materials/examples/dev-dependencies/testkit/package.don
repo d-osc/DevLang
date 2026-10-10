@@ -1,0 +1,1 @@
+package: { name: 'testkit', entry: 'src/lib.dev' }

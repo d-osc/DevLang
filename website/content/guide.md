@@ -1476,6 +1476,8 @@ dependencies: {
 
 CLI ใช้ `d pkg add math --url URL --sha256 HASH` ไฟล์ archive ต้องมี manifest ที่ root หรือ wrapper directory เดียว `install --locked` ตรวจเนื้อหา cache และกู้ไฟล์ที่ขาดจากดาวน์โหลดที่ checksum ตรงกันได้ ตัวอย่างรันจริงด้วย HTTP localhost อยู่ใน `examples/archive-url/verify.py`
 
+รองรับ `devDependencies` สำหรับเครื่องมือพัฒนา เช่น `devDependencies: { testkit: { path: '../testkit' } }` install ปกติรวมเครื่องมือของโปรเจกต์ปัจจุบัน แต่ไม่โหลด devDependencies ของ dependencies ต่อกัน ใช้ `pkg install --production` เพื่อข้ามเครื่องมือพัฒนา lock จะบันทึก `production: true` และ `--locked` ต้องใช้โหมดเดียวกับ lock เปลี่ยนโหมดด้วย install ปกติก่อน เพิ่ม/ลบด้วย `pkg add NAME SOURCE_OPTIONS --dev` และ `pkg remove NAME --dev` ไม่สามารถใช้ namespace ซ้ำในสองส่วนได้ `peerDependencies` ยังไม่รองรับ
+
 ยังเป็น namespace เดียว: constraints ที่ใช้ version ที่เลือกเดียวกันได้จะแชร์ package แต่ไม่มี backtracking หรือหลาย version ของชื่อเดียวกัน และยังไม่มี public registry/publish ถ้า add/remove ติดตั้งไม่สำเร็จจะคืน manifest เดิม การติดตั้ง `--workspace` ไม่เป็น transaction ทั้งกลุ่ม
 
 # [module-api-intro] คู่มือแต่ละ Module

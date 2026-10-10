@@ -10,6 +10,7 @@ Run commands from the repository root with the current source-built `d`. On Wind
 | `tooling/` | [Local dependency and native build](tooling/README.md) |
 | `workspace/` | [Workspace members and version requirements](workspace/README.md) |
 | `package-don/` | [Complete manifest and dependency example](package-don/README.md) |
+| `dev-dependencies/` | [Development tools and production-only installation](dev-dependencies/README.md) |
 | `github-tag/` | [Git tag/branch example](github-tag/README.md); replace GitHub placeholder URL before install, or run its local Git verification script |
 | `archive-url/` | [ZIP/TAR URL example](archive-url/README.md); replace URL and hash before install, or run its localhost HTTP verification script |
 | `ffi/` | [C FFI](ffi/README.md); first run may need a C compiler for the adjacent C dependency |

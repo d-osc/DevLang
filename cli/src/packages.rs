@@ -99,6 +99,8 @@ pub struct Manifest {
     pub package: Package,
     #[serde(default)]
     pub dependencies: BTreeMap<String, Dependency>,
+    #[serde(default, rename = "devDependencies", alias = "dev-dependencies", skip_serializing_if = "BTreeMap::is_empty")]
+    pub dev_dependencies: BTreeMap<String, Dependency>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub workspace: Option<Workspace>,
 }
@@ -111,6 +113,8 @@ pub struct Workspace {
 #[serde(deny_unknown_fields)]
 struct Lock {
     version: u32,
+    #[serde(default, skip_serializing_if = "is_false")]
+    production: bool,
     packages: BTreeMap<String, Locked>,
 }
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -494,6 +498,17 @@ fn resolve(
 }
 
 pub fn install(project: &Path, locked: bool, refresh: bool) -> Result<(), String> {
+    install_mode(project, locked, refresh, false)
+}
+fn root_dependencies(m: &Manifest, production: bool) -> Result<BTreeMap<String, Dependency>, String> {
+    if m.dependencies.keys().any(|name| m.dev_dependencies.contains_key(name)) {
+        return Err("dependency namespace cannot appear in both dependencies and devDependencies".into());
+    }
+    let mut dependencies = m.dependencies.clone();
+    if !production { dependencies.extend(m.dev_dependencies.clone()); }
+    Ok(dependencies)
+}
+fn install_mode(project: &Path, locked: bool, refresh: bool, production: bool) -> Result<(), String> {
     let old_path = lock_path(project);
     let previous: Lock = if old_path.exists() {
         read(&old_path)?
@@ -503,11 +518,15 @@ pub fn install(project: &Path, locked: bool, refresh: bool) -> Result<(), String
     if locked && previous.version != 1 {
         return Err("--locked needs an existing version 1 package-lock.don".into());
     }
+    if locked && previous.production != production {
+        return Err("lock installation mode differs; run pkg install with the requested --production mode first".into());
+    }
     let mut result = Lock {
         version: 1,
+        production,
         packages: BTreeMap::new(),
     };
-    let mut pending = vec![(project.to_owned(), manifest(project)?.dependencies)];
+    let mut pending = vec![(project.to_owned(), root_dependencies(&manifest(project)?, production)?)];
     while let Some((parent, dependencies)) = pending.pop() {
         for (name, dep) in dependencies {
             if let Some(old) = result.packages.get_mut(&name) {
@@ -584,7 +603,7 @@ pub fn install(project: &Path, locked: bool, refresh: bool) -> Result<(), String
 }
 pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
     let m = manifest(project)?;
-    if m.dependencies.is_empty() && !lock_path(project).exists() {
+    if m.dependencies.is_empty() && m.dev_dependencies.is_empty() && !lock_path(project).exists() {
         return Ok(Vec::new());
     }
     let lock: Lock =
@@ -592,7 +611,7 @@ pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
     if lock.version != 1 {
         return Err("unsupported package-lock.don version".into());
     }
-    let mut pending = vec![(project.to_owned(), m.dependencies)];
+    let mut pending = vec![(project.to_owned(), root_dependencies(&m, lock.production)?)];
     let mut visited = BTreeSet::new();
     let mut dirs = Vec::new();
     let mut declarations = BTreeMap::<String, BTreeSet<Dependency>>::new();
@@ -698,6 +717,7 @@ pub fn new(path: &Path) -> Result<i32, String> {
                 modules: modules(),
             },
             dependencies: BTreeMap::new(),
+            dev_dependencies: BTreeMap::new(),
             workspace: None,
         },
     )?;
@@ -720,20 +740,21 @@ pub fn command(args: &[String]) -> Result<i32, String> {
         .ok_or("no package.don or dev.toml; use d new NAME")?;
     match args.first().map(String::as_str) {
         Some("install") | Some("update") => {
-            let mut locked=false; let mut all=false;
+            let mut locked=false; let mut all=false; let mut production=false;
             for option in &args[1..] {
                 match option.as_str() {
                     "--locked" if !locked && args[0] == "install" => locked=true,
                     "--workspace" if !all => all=true,
-                    _ => return Err("pkg install [--locked] [--workspace]; pkg update [--workspace]".into()),
+                    "--production" if !production => production=true,
+                    _ => return Err("pkg install [--locked] [--workspace] [--production]; pkg update [--workspace] [--production]".into()),
                 }
             }
             if all {
                 let root=workspace_root(&project)?.ok_or("--workspace needs workspace.members")?;
                 let members=workspace_members(&root)?;
-                install(&root,locked,args[0]=="update")?;
-                for (name,at) in members { println!("package {name}"); install(&at,locked,args[0]=="update")?; }
-            } else { install(&project, locked, args[0] == "update")?; }
+                install_mode(&root,locked,args[0]=="update",production)?;
+                for (name,at) in members { println!("package {name}"); install_mode(&at,locked,args[0]=="update",production)?; }
+            } else { install_mode(&project, locked, args[0] == "update", production)?; }
         }
         Some("workspace") if args.len()==1 => {
             let root=workspace_root(&project)?.ok_or("no workspace.members")?;
@@ -744,21 +765,32 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             if !identifier(name) { return Err("invalid dependency name".into()); }
             let mut dep = Dependency { path: None, git: None, rev: None, branch: None, url: None, sha256: None, version: None, workspace: false };
             let mut at = 2;
+            let mut development = false;
             let mut seen=BTreeSet::new();
             while at < args.len() {
                 let option = if args[at] == "--rev" { "--tag" } else { args[at].as_str() };
                 if !seen.insert(option.to_owned()) { return Err("duplicate dependency option".into()); }
                 if args[at] == "--workspace" { dep.workspace=true; at+=1; continue; }
+                if args[at] == "--dev" { development=true; at+=1; continue; }
                 let value = args.get(at + 1).ok_or("dependency option needs value")?.clone();
                 match args[at].as_str() { "--path" => { let absolute = dunce::canonicalize(&value).map_err(|e| e.to_string())?; dep.path = Some(pathdiff::diff_paths(&absolute,&project).unwrap_or(absolute).to_string_lossy().replace('\\', "/")); }, "--git" => dep.git = Some(value), "--tag" | "--rev" => dep.rev = Some(value), "--url" => dep.url = Some(value), "--sha256" => dep.sha256 = Some(value), "--branch" => dep.branch = Some(value), "--version" => dep.version=Some(value), _ => return Err("unknown dependency option".into()) }
                 at += 2;
             }
             validate_dependency(&dep)?;
-            let mut m = manifest(&project)?; m.dependencies.insert(name.clone(), dep); change_manifest(&project,&m)?;
+            let mut m = manifest(&project)?;
+            if development { m.dev_dependencies.insert(name.clone(), dep); }
+            else { m.dependencies.insert(name.clone(), dep); }
+            root_dependencies(&m, false)?;
+            change_manifest(&project,&m)?;
         }
-        Some("remove") if args.len() == 2 => { let mut m = manifest(&project)?; m.dependencies.remove(&args[1]).ok_or("dependency does not exist")?; change_manifest(&project,&m)?; }
+        Some("remove") if args.len() == 2 || (args.len() == 3 && args[2] == "--dev") => {
+            let mut m = manifest(&project)?;
+            let dependencies = if args.len() == 3 { &mut m.dev_dependencies } else { &mut m.dependencies };
+            dependencies.remove(&args[1]).ok_or("dependency does not exist")?;
+            change_manifest(&project,&m)?;
+        }
         Some("list") if args.len() == 1 => { for (name, dir) in mappings(&project)? { println!("{name} {}", dir.display()); } }
-        _ => return Err("pkg add NAME --path DIR | --url URL --sha256 HEX | --git URL | --workspace [--tag TAG | --branch NAME | --version REQUIREMENT]; pkg install [--locked] [--workspace]; pkg update [--workspace]; pkg workspace; pkg remove NAME; pkg list".into()),
+        _ => return Err("pkg add NAME --path DIR | --url URL --sha256 HEX | --git URL | --workspace [--tag TAG | --branch NAME | --version REQUIREMENT]; pkg install [--locked] [--workspace] [--production]; pkg update [--workspace] [--production]; pkg workspace; pkg remove NAME [--dev]; pkg list".into()),
     }
     Ok(0)
 }
