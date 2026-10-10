@@ -1,0 +1,27 @@
+use "std/net"
+use "std/buffer"
+use "std/io"
+
+fn main() {
+    let server = net.createServer(fn(socket net.Socket) {
+        socket.on("data", fn(bytes Vec<u8>) {
+            socket.write(bytes)
+        })
+    })
+    server.listenOn(0, "127.0.0.1")
+    let client = net.connect(server.address().port, "127.0.0.1", 1000)
+    client.on("data", fn(bytes Vec<u8>) {
+        let reply = buffer.fromBytes(bytes)
+        io.write(reply.toString("utf8"))
+        reply.close()
+    })
+    client.on("end", fn(bytes Vec<u8>) {
+        print("")
+        client.destroy()
+        server.close()
+    })
+    let message = buffer.from("TCP hello", "utf8")
+    client.end(message.toBytes())
+    message.close()
+}
+main()

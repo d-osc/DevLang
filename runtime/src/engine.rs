@@ -29,6 +29,8 @@ pub(crate) enum Value {
 }
 include!("map.rs");
 include!("server.rs");
+include!("core.rs");
+include!("network.rs");
 
 impl Value {
     pub(crate) fn ty(&self) -> Type {
@@ -238,6 +240,7 @@ pub struct Engine {
     http: Option<ureq::Agent>,
     servers: HashMap<i64, DevServer>,
     responses: HashMap<i64, DevResponse>,
+    core: CoreState,
 }
 impl Engine {
     pub fn load_with_modules(
@@ -261,6 +264,7 @@ impl Engine {
             http: None,
             servers: HashMap::new(),
             responses: HashMap::new(),
+            core: CoreState::default(),
         };
         e.entry = e.load_module(path, source)?;
         let mut keys = e.modules.keys().cloned().collect::<Vec<_>>();
@@ -633,6 +637,7 @@ impl Engine {
                         http: None,
                         servers: HashMap::new(),
                         responses: HashMap::new(),
+                        core: CoreState::default(),
                         module_dirs: HashMap::new(),
                         libraries: libraries.clone(),
                         modules,
@@ -732,6 +737,7 @@ impl Engine {
                     http: None,
                     servers: HashMap::new(),
                     responses: HashMap::new(),
+                    core: CoreState::default(),
                     module_dirs: HashMap::new(),
                     libraries,
                     modules,
@@ -2023,6 +2029,24 @@ impl Engine {
         }
     }
     fn builtin(&mut self, module: &str, name: &str, args: Vec<Value>) -> Result<Value, String> {
+        if [
+            "std/net",
+            "std/path",
+            "std/os",
+            "std/stream",
+            "std/url",
+            "std/module",
+            "std/process",
+            "std/events",
+            "std/buffer",
+            "std/dgram",
+        ]
+        .contains(&module)
+        {
+            return self
+                .core_call(module, name, args)
+                .map_err(|e| format!("{module}.{name}: {e}"));
+        }
         if module == "std/fs" {
             return crate::filesystem::call(name, args);
         }

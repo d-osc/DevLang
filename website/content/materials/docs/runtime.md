@@ -1,5 +1,9 @@
 # Interpreter API
 
+Node-style core modules are also available under `std/`: `net`, `path`, `os`,
+`stream`, `url`, `module`, `process`, `events`, `buffer`, `dgram`.
+See [Core runtime APIs and contracts](node-core.md).
+
 Filesystem and HTTP/HTTPS clients are available through `std/fs` and `std/http`
 in the current source runtime. See [Filesystem and HTTP](fs-http.md) for APIs,
 examples, errors and limits. These modules currently support runtime execution only.

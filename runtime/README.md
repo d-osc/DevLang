@@ -1,5 +1,11 @@
 # Dev source runtime
 
+Additional `std/net`, `std/path`, `std/os`, `std/stream`, `std/url`, `std/module`,
+`std/process`, `std/events`, `std/buffer`, `std/dgram` provide TCP/UDP, file
+streams, events, byte buffers and system utilities. See
+[core APIs](../docs/node-core.md) for signatures, ownership and differences from
+Node. These modules are runtime-only.
+
 Source runtime modules `std/fs` and `std/http` provide filesystem operations and
 a blocking HTTP/HTTPS client without a C compiler. Node-style filesystem Sync APIs,
 `std/fs/promises` with Task results and `http.createServer` are also available.

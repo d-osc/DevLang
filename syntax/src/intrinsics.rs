@@ -4,9 +4,20 @@ pub fn module(name: &str) -> Option<&'static str> {
         "std/fs" => Some(FS),
         "std/http" => Some(HTTP),
         "std/fs/promises" => Some(FS_PROMISES),
+        "std/net" => Some(NET),
+        "std/path" => Some(PATH),
+        "std/os" => Some(OS),
+        "std/stream" => Some(STREAM),
+        "std/url" => Some(URL),
+        "std/module" => Some(MODULE),
+        "std/process" => Some(PROCESS),
+        "std/events" => Some(EVENTS),
+        "std/buffer" => Some(BUFFER),
+        "std/dgram" => Some(DGRAM),
         _ => None,
     }
 }
+include!("core_intrinsics.rs");
 pub const FS: &str = r#"
 fn readFileSync(path str, encoding str) str { return "" }
 fn writeFileSync(path str, data str) bool { return true }

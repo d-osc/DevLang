@@ -1,0 +1,23 @@
+use "std/dgram"
+use "std/buffer"
+
+fn main() {
+    let server = dgram.createSocket("udp4")
+    server.bind(0, "127.0.0.1")
+    server.on("message", fn(message dgram.Message) {
+        server.send(message.data, message.port, message.address)
+    })
+    let client = dgram.createSocket("udp4")
+    client.bind(0, "127.0.0.1")
+    client.on("message", fn(message dgram.Message) {
+        let reply = buffer.fromBytes(message.data)
+        print(reply.toString("utf8"))
+        reply.close()
+        client.close()
+        server.close()
+    })
+    let message = buffer.from("UDP hello", "utf8")
+    client.send(message.toBytes(), server.address().port, "127.0.0.1")
+    message.close()
+}
+main()

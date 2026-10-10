@@ -2,6 +2,7 @@ mod engine;
 mod json;
 mod filesystem;
 mod http;
+mod platform;
 mod memory;
 mod native;
 mod numeric;

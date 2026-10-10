@@ -594,5 +594,41 @@
     "commands": [
       "d examples/http-server/main.dev -- serve"
     ]
+  },
+  {
+    "id": "core-modules",
+    "title": "Core modules แบบ Node",
+    "category": "I/O",
+    "path": "examples/core-modules/main.dev",
+    "description": "path, os, url, module, process, events, buffer, stream และ sockets",
+    "doc": "node-core",
+    "mode": "runtime",
+    "commands": [
+      "d examples/core-modules/main.dev"
+    ]
+  },
+  {
+    "id": "tcp",
+    "title": "TCP echo client และ server",
+    "category": "I/O",
+    "path": "examples/tcp/main.dev",
+    "description": "net.createServer, connect, data/end callbacks และ half-close",
+    "doc": "node-core",
+    "mode": "runtime",
+    "commands": [
+      "d examples/tcp/main.dev"
+    ]
+  },
+  {
+    "id": "udp",
+    "title": "UDP echo client และ server",
+    "category": "I/O",
+    "path": "examples/udp/main.dev",
+    "description": "dgram bind, send, message callback และ close",
+    "doc": "node-core",
+    "mode": "runtime",
+    "commands": [
+      "d examples/udp/main.dev"
+    ]
   }
 ]

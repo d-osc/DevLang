@@ -1,0 +1,50 @@
+use "std/path"
+use "std/os"
+use "std/url"
+use "std/module"
+use "std/process"
+use "std/events"
+use "std/buffer"
+use "std/stream"
+use "std/fs"
+use "std/net"
+use "std/dgram"
+
+fn main() {
+    print(path.basename("folder/example.dev"))
+    print(os.platform() == process.platform())
+    print(os.availableParallelism() > 0)
+    print(module.isBuiltin("std/net"))
+    print(module.entry() == process.argv()[1])
+    let address = url.parse("https://example.com/docs?q=DevLang")
+    print(address.hostname)
+    let query = url.searchParams("q=hello+world")
+    print(query.get("q"))
+    query.close()
+
+    let emitter = events.createEmitter()
+    emitter.once("ready", fn(value str) { print("event:" + value) })
+    emitter.emit("ready", "ready")
+    print(emitter.listenerCount("ready"))
+    emitter.close()
+
+    let bytes = buffer.from("DevLang", "utf8")
+    let writer = stream.createWriteStream("devlang-stream-example.tmp", false)
+    writer.write(bytes.toBytes())
+    writer.end()
+    let reader = stream.createReadStream("devlang-stream-example.tmp")
+    let read = buffer.fromBytes(reader.read(1024))
+    print(read.toString("utf8"))
+    print(reader.read(1).len())
+    reader.close()
+    bytes.close()
+    read.close()
+    fs.unlinkSync("devlang-stream-example.tmp")
+
+    print(net.isIP("127.0.0.1"))
+    let udp = dgram.createSocket("udp4")
+    udp.bind(0, "127.0.0.1")
+    print(udp.address().port > 0)
+    udp.close()
+}
+main()

@@ -208,5 +208,20 @@
     "source_sha256": "cd839b1e1ea20db9a877a14c4f22148b716b12cf81db6d13285e4c400520bfcf",
     "validation_sha256": "063a639bf0f22e6d24b6addd5588fdc7a71b73773d9d86a6547ab93ee958a544",
     "output": "Usage: d examples/http-server/main.dev -- serve\n"
+  },
+  "core-modules": {
+    "source_sha256": "d914eebc55edc3701530d4e234a32da121c96dd8a54de238b40956d5e994e540",
+    "validation_sha256": "46f1c110cb71faa4975edd2afd45cbe23eacae8fc5a4d646f9ef23dbaaa0fe88",
+    "output": "example.dev\ntrue\ntrue\ntrue\ntrue\nexample.com\nhello world\nevent:ready\n0\nDevLang\n0\n4\ntrue\n"
+  },
+  "tcp": {
+    "source_sha256": "1be3fcfcdb4dd4c39ea278b66506f3378417ac8870ad4e6f2abf11930a024fe7",
+    "validation_sha256": "ebc7a97fc561cfb86c09797a693686ca000bad22766488a34be1b8193dbbcee7",
+    "output": "TCP hello\n"
+  },
+  "udp": {
+    "source_sha256": "f26c13784099df62189a617c14fd7f686251ffa38d16bf6d39bc06cdd02c0db0",
+    "validation_sha256": "bde2f9555a8d62aefb4fc35e5701f01c30480e496236bc9c02d0251d624a6485",
+    "output": "UDP hello\n"
   }
 }

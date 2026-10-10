@@ -34,6 +34,27 @@ mod tests {
         )
     }
     #[test]
+    fn core_modules_have_valid_editor_signatures() {
+        for module in [
+            "net", "path", "os", "stream", "url", "module", "process", "events", "buffer", "dgram",
+        ] {
+            let source = format!("use \"std/{module}\"\nfn main() {{}}\nmain()");
+            assert!(
+                errors(&source).is_empty(),
+                "{module}: {:?}",
+                errors(&source)
+            );
+        }
+        for source in [
+            "use \"std/path\"\npath.join(42, \"x\")",
+            "use \"std/net\"\nnet.connect(80, 42, 1000)",
+            "use \"std/buffer\"\nbuffer.alloc(\"4\", 0 as u8)",
+            "use \"std/events\"\nlet e = events.createEmitter()\ne.on(\"x\", fn(value i64) {})",
+        ] {
+            assert!(!errors(source).is_empty(), "accepted: {source}");
+        }
+    }
+    #[test]
     fn runtime_io_signatures_are_checked_without_execution() {
         for source in [
             "use \"std/fs/promises\"\nfn main() { let text = await(promises.readFile(\"missing\", \"utf8\")); print(text) }\nmain()",

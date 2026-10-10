@@ -1004,3 +1004,49 @@ callback ใช้ `res.setHeader`, `writeHead`, `write`, `end` โดยต้�
 ใช้ Ctrl+C เพื่อหยุด ดูข้อจำกัดและ API ทุกตัวในคู่มือเต็มด้านล่าง
 
 ดู [คู่มือ API เต็ม](../../docs/fs-http.md) สำหรับทุกฟังก์ชัน ชนิดข้อมูล ข้อผิดพลาด และข้อจำกัด
+
+# [node-core] Core modules แบบ Node
+
+Runtime ปัจจุบันเพิ่มโมดูลพื้นฐานทั้ง 10 ตัวแล้ว ใช้ `use "std/ชื่อโมดูล"` และรันด้วย `d file.dev` ได้โดยไม่ต้องใช้ C compiler
+โมดูลเหล่านี้ยังไม่รองรับ native build และเป็น API แบบ typed ของ DevLang ไม่ใช่ Node compatibility เต็มรูปแบบ
+
+| โมดูล | การใช้งาน |
+| --- | --- |
+| net | TCP client/server, data/end callbacks, timeout และปิด socket |
+| path | join, resolve, normalize, parse/format และแยกชื่อไฟล์ |
+| os | platform, arch, hostname, home/temp, memory และ uptime |
+| stream | อ่าน/เขียนไฟล์เป็นช่วง และ pipe ไฟล์ใหญ่โดยไม่โหลดทั้งหมด |
+| url | WHATWG URL, file URL, IDN และ URLSearchParams |
+| module | ตรวจ builtin, resolve path, entry และรายการโมดูลที่โหลด |
+| process | cwd, argv, env, pid และเวลาของ runtime |
+| events | EventEmitter แบบ synchronous, on/once/off/emit |
+| buffer | UTF-8/hex/base64, binary read/write พร้อมตรวจ bounds |
+| dgram | UDP4/UDP6, send/recv และ message callback |
+
+```dev-runtime
+use "std/path"
+use "std/url"
+use "std/buffer"
+use "std/events"
+
+fn main() {
+    print(path.basename("folder/main.dev"))
+    print(url.parse("https://example.com/docs").hostname)
+    let bytes = buffer.from("DevLang", "utf8")
+    print(bytes.toString("hex"))
+    bytes.close()
+    let emitter = events.createEmitter()
+    emitter.once("ready", fn(value str) { print(value) })
+    emitter.emit("ready", "ready")
+    emitter.close()
+}
+main()
+```
+
+ลอง `d examples/core-modules/main.dev`, `d examples/tcp/main.dev` และ `d examples/udp/main.dev`
+ตัวอย่าง TCP/UDP ใช้ loopback และ port ว่างจากระบบ พร้อมปิดทรัพยากรเองหลังส่งข้อมูลเสร็จ
+TCP เป็น byte stream ต้องจัดการหลาย chunk ไม่ควรถือว่า callback หนึ่งครั้งคือข้อความหนึ่งชุด
+
+callback รับข้อมูลของ TCP/UDP ทำงานหลังโค้ดหลักจบ ส่วน `read`/`recv` และ file streams เป็น blocking
+handle ต้องใช้และปิดใน thread ที่สร้างมัน และ API ไม่มี optional arguments, Promise หรือ timer แบบ JavaScript
+อ่าน [signatures และข้อจำกัดครบทุกตัว](../../docs/node-core.md) ก่อนใช้ API ที่ชื่อคล้าย Node

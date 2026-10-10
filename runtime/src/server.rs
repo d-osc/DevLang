@@ -201,10 +201,10 @@ impl Engine {
                         .map(|l| (*id, l.clone(), s.handler.clone()))
                 })
                 .collect();
-            if active.is_empty() {
+            if active.is_empty() && !self.core_network_active() {
                 return Ok(());
             }
-            let mut handled = false;
+            let mut handled = self.core_network_tick()?;
             for (server_id, listener, handler) in active {
                 if !self.servers.contains_key(&server_id) {
                     continue;

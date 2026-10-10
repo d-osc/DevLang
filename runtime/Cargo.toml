@@ -15,3 +15,7 @@ libloading = "0.8"
 serde_json = { version = "1", features = ["arbitrary_precision"] }
 ureq = { version = "3.4.2", default-features = false, features = ["rustls", "gzip"] }
 tiny_http = "0.12"
+url = "2"
+base64 = "0.23"
+pathdiff = "0.2"
+sysinfo = { version = "0.37", default-features = false, features = ["system"] }

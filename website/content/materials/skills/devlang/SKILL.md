@@ -9,6 +9,13 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
 
 ## Choose context and mode
 
+- For Node-style net/path/os/stream/url/module/process/events/buffer/dgram,
+  read `docs/node-core.md`. Use the updated source runtime with `std/NAME`
+  imports, not native builds or Node require. Close handles in their owning
+  thread. TCP/UDP callbacks run after main statements finish. Network/file
+  stream bytes use Vec<u8>; Buffer has toBytes/fromBytes conversions. Do not
+  assume Node overloads, timers, generic streams, Buffer views or Promises.
+
 - For filesystem or HTTP clients, consult `docs/fs-http.md`: `std/fs` and `std/http`
   currently require the updated source runtime, not native compilation. Requests
   block; failures abort with located runtime errors. Use `Response.bytes` for binary
