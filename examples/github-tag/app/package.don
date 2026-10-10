@@ -1,0 +1,12 @@
+package: {
+    name: 'github_tag_app'
+    entry: 'src/main.dev'
+    modules: 'src'
+}
+dependencies: {
+    math: {
+        // Replace YOUR_USER with the owner of your library repository.
+        git: 'https://github.com/YOUR_USER/dev-math.git'
+        rev: 'v1.2.0'
+    }
+}
