@@ -1,7 +1,7 @@
 {
   "iconDefinitions": {
     "devlang": {
-      "iconPath": "./images/icon.png"
+      "iconPath": "./images/file-dev.svg"
     }
   },
   "fileExtensions": {
