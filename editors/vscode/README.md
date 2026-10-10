@@ -9,6 +9,12 @@ From this folder with Node.js 22 or newer: `npm ci`, `npm run check`, `npm run p
 Install the resulting `.vsix` with VS Code's **Extensions: Install from VSIX**.
 Open a trusted project folder and a `.dev` file to start `d lsp --stdio`.
 Use Format Document, completion, hover, Go to Definition and Outline.
+On Windows, Shift+Alt+F runs Format Document using DevLang by default.
+Formatting calls `d fmt --stdout` independently of the language server and
+includes unsaved edits. Configure `devlang.executablePath` to a current CLI
+with `fmt` support; the CLI is not bundled in this extension.
+For file icons, select **Preferences: File Icon Theme** → **DevLang File Icons**.
+The language also supplies a default .dev icon; other icon themes may override it.
 Diagnostics currently cover lexer/parser errors only. Symbols, hover and
 definition cover top-level functions and types in the current open document;
 there is no workspace type checker, cross-file navigation or rename yet.

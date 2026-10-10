@@ -1,0 +1,13 @@
+{
+  "iconDefinitions": {
+    "devlang": {
+      "iconPath": "./images/icon.png"
+    }
+  },
+  "fileExtensions": {
+    "dev": "devlang"
+  },
+  "languageIds": {
+    "devlang": "devlang"
+  }
+}

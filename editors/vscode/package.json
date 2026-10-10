@@ -2,7 +2,7 @@
   "name": "devlang-language",
   "displayName": "DevLang",
   "description": "DevLang syntax, formatting, language server and native breakpoint support.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "n-devs",
   "license": "MIT",
   "repository": {
@@ -47,7 +47,11 @@
         "extensions": [
           ".dev"
         ],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./images/icon.png",
+          "dark": "./images/icon.png"
+        }
       }
     ],
     "grammars": [
@@ -84,6 +88,13 @@
       {
         "command": "devlang.restartServer",
         "title": "DevLang: Restart Language Server"
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "devlang-icons",
+        "label": "DevLang File Icons",
+        "path": "./devlang-icons.json"
       }
     ]
   },
