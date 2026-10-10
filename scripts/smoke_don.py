@@ -55,10 +55,14 @@ print(don.valid("x:'\\\\uD800'"))
 print(don.fromJSON(don.toJSON(data)).port)
 print(json.parse(don.toJSON(data)).name)
 print(don.toJSON({message: "hello", numbers: [1, 2]}))
+let refs = don.parse("version:'v1.0.0'\\nutils:{rev:@version}\\nport:3000\\ncopy:@port")
+print(refs.utils.rev)
+print(refs.copy)
 ''',encoding='utf-8')
             lines = run(source,'--engine',engine).splitlines()
             assert lines[:10] == ['Dev','2','8080','8080','false','true','false','false','8080','Dev'], lines
             assert json.loads(lines[10]) == {'message':'hello','numbers':[1,2]}
+            assert lines[11:] == ['v1.0.0','3000'], lines
             for text,error in [("a:1\\na:2","duplicate"),("a:'unterminated","unterminated"),("a:word","quoted"),("[1 2]","separator"),("x:1__0","numeric")]:
                 source.write_text('use "std/don"\ndon.parse("'+text+'")\n',encoding='utf-8')
                 run(source,'--engine',engine,error=error if error!='separator' else 'between entries')
@@ -69,6 +73,9 @@ print(don.toJSON({message: "hello", numbers: [1, 2]}))
         (lib/'package.don').write_text("package:{name:'lib'\\nentry:'src/main.dev'\\nmodules:'src'}\\ndependencies:{}".replace('\\n','\n'),encoding='utf-8')
         (lib/'src/lib.dev').write_text('fn answer() i64 { return 42 }\n',encoding='utf-8')
         run('pkg','add','math','--path',lib,cwd=app)
+        manifest = app/'package.don'
+        content = manifest.read_text(encoding='utf-8')
+        assert 'version:' in content and '0.1.0' in content
         (app/'src/main.dev').write_text('use "math/lib"\nprint(lib.answer())\n',encoding='utf-8')
         for engine in ('auto','ast'): assert run('run','--engine',engine,cwd=app)=='42\n'
         run('pkg','install','--locked',cwd=app)

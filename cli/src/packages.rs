@@ -28,12 +28,29 @@ pub struct Package {
 fn entry() -> String {
     "src/main.dev".into()
 }
+
+#[cfg(test)]
+mod manifest_tests {
+    use super::*;
+    #[test]
+    fn don_version_and_dependency_reference() {
+        let text = "version:'v1.0.0'\npackage:{name:'app'}\ndependencies:{utils:{git:'https://github.com/example/utils.git'\nrev:@version}}";
+        let manifest: Manifest = serde_json::from_value(dev_syntax::don::parse(text).unwrap()).unwrap();
+        assert_eq!(manifest.version.as_deref(), Some("v1.0.0"));
+        assert_eq!(manifest.dependencies["utils"].rev, manifest.version);
+        assert_eq!(manifest.package.entry, "src/main.dev");
+        let legacy: Manifest = toml::from_str("[package]\nname='app'").unwrap();
+        assert!(legacy.version.is_none());
+    }
+}
 fn modules() -> String {
     "src".into()
 }
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
     pub package: Package,
     #[serde(default)]
     pub dependencies: BTreeMap<String, Dependency>,
@@ -465,6 +482,7 @@ pub fn new(path: &Path) -> Result<i32, String> {
     write(
         &path.join("package.don"),
         &Manifest {
+            version: Some("0.1.0".into()),
             package: Package {
                 name: name.into(),
                 entry: entry(),

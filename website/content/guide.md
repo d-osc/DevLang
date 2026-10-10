@@ -1084,6 +1084,23 @@ main()
 ```
 
 ใช้ `don.stringify(data)` แปลงกลับเป็น DON และ `don.fromJSON(text)` อ่าน JSON แบบเข้มงวด
+
+อ้างอิงค่าจาก root ได้ด้วย `@version` หรือ `@server.port` รองรับ forward references และคงชนิดข้อมูลเดิม
+
+```don
+version: 'v1.0.0'
+package: { name: 'my_app', entry: 'src/main.dev', modules: 'src' }
+dependencies: {
+  utils: {
+    git: 'https://github.com/example/utils.git'
+    rev: @version
+  }
+}
+```
+
+`'@version'` เป็นข้อความธรรมดา ส่วน `rev: version` ยังใช้ไม่ได้ ต้องมี `@`
+key ที่ไม่มีอยู่และ reference วนกันจะเกิด error เมื่อ serialize หรือแก้ dependencies จะเขียนค่าที่ resolve แล้ว
+field `version` ชั้นนอกเป็น metadata ของ package ยังไม่ได้ใช้แก้ semver dependencies
 ใช้ `std/fs` อ่านเขียนไฟล์ และ `d don check|fmt|to-json|from-json FILE` ตรวจหรือแปลงข้อมูล
 คำสั่ง format/convert ส่งออก stdout ไม่แก้ไฟล์ต้นฉบับ แต่ output ไม่เก็บ comments เดิม
 

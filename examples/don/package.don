@@ -1,4 +1,5 @@
 # Example project manifest. Run `d pkg install` in this directory.
+version: '0.1.0'
 package: {
   name: "don_demo"
   entry: "main.dev"

@@ -3,6 +3,7 @@
 DON is a data format for DevLang, with the `.don` extension. It stores JSON-compatible
 objects, arrays, strings, booleans, null and decimal numbers. It does not execute
 DevLang, expand environment variables, fetch imports or evaluate expressions.
+It supports explicit `@key` references to values in the same document.
 
 ```don
 # package.don
@@ -50,6 +51,28 @@ description with no escapes."""
 ```
 
 ## DevLang runtime API
+
+### References
+
+```don
+version: 'v1.0.0'
+package: { name: 'my_app', entry: 'src/main.dev', modules: 'src' }
+dependencies: {
+  utils: {
+    git: 'https://github.com/example/utils.git'
+    rev: @version
+  }
+}
+```
+
+`@version` references a root key. `@server.port` follows object fields from the
+root. Each path segment must be a bare identifier; quoted keys/array indices are
+not supported in reference paths. Forward references are supported. Values retain
+their types, including numbers, booleans, arrays and objects, and are copied into
+the result. `'@version'` remains a literal string; `rev: version` is invalid.
+Missing targets and direct/indirect cycles are errors. Reference expansion has
+an 8 MiB data budget and a 128-level traversal limit to reject expansion bombs.
+Serialization and `d pkg add/remove` write resolved values, not original references.
 
 ```dev-runtime
 use "std/don"
@@ -100,7 +123,8 @@ main()
 
 `d new my_app` creates `package.don`. The package manager reads the **existing
 DevLang manifest schema**, shown above: `package.name`, `package.entry`,
-`package.modules`, and `dependencies`. A dependency uses either `path`, or `git`
+`package.modules`, optional root `version` (string), and `dependencies`. Version
+is metadata; it does not enable semver solving. A dependency uses either `path`, or `git`
 with optional `rev`. Entry/modules paths must be relative without `..`; package
 names and dependency namespaces must be Dev identifiers.
 

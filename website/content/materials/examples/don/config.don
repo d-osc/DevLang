@@ -1,6 +1,7 @@
 # Dev Object Notation — no outer braces or commas needed
 name = 'DevLang demo'
 version: "1.0.0"
+release: @version
 server: {
   host: '127.0.0.1'
   port: 3_000
