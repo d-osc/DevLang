@@ -2,7 +2,7 @@
   "name": "devlang-language",
   "displayName": "DevLang",
   "description": "DevLang syntax, formatting, language server and native breakpoint support.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "publisher": "n-devs",
   "license": "MIT",
   "repository": {
@@ -72,7 +72,7 @@
         "devlang.executablePath": {
           "type": "string",
           "default": "d",
-          "scope": "machine",
+          "scope": "machine-overridable",
           "description": "Path to the latest d executable. Restart the extension host after changing it."
         }
       }
