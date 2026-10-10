@@ -3,6 +3,7 @@ mod debug;
 mod format;
 mod lsp;
 mod packages;
+mod unused;
 
 const HELP: &str = "Dev Lang
 

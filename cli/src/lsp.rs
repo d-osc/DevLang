@@ -82,7 +82,19 @@ fn word(text: &str, p: &Value) -> Option<String> {
 }
 fn diagnostics(uri: &str, doc: &Document) -> Value {
     let errors = match parsed(uri, doc) {
-        Ok(_) => vec![],
+        Ok(module) => {
+            let tokens = lex(&doc.text).unwrap_or_default();
+            crate::unused::variables(&module).into_iter().filter_map(|(name, span)| {
+                // Find the declaration's source token; skip compiler-generated for bindings.
+                let index = tokens.iter().position(|t| t.span.line == span.line && t.span.col == span.col)?;
+                let keyword = &tokens[index].kind;
+                let declaration = if matches!(keyword, Kind::Word(w) if w == "let" || w == "for") {
+                    tokens.get(index + 1)?
+                } else { return None; };
+                if !matches!(&declaration.kind, Kind::Word(w) if w == &name) { return None; }
+                Some(json!({"range":range(&doc.text,declaration.span.line,declaration.span.col,name.chars().count()),"severity":4,"tags":[1],"code":"unused-variable","source":"DevLang","message":format!("Variable '{name}' is declared but never read")}))
+            }).collect()
+        },
         Err(error) => {
             // Parse from the right-hand diagnostic suffix; paths may contain colons.
             let suffix = error
@@ -105,6 +117,20 @@ fn diagnostics(uri: &str, doc: &Document) -> Value {
         }
     };
     json!({"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":uri,"version":doc.version,"diagnostics":errors}})
+}
+
+#[cfg(test)]
+mod unused_tests {
+    use super::*;
+    #[test]
+    fn reports_exact_unused_name_range_and_tag() {
+        let doc = Document { text: "fn main() {\nlet unused = 1\nlet used = 2\nprint(used)\n}\nmain()\n".into(), version: 1 };
+        let result = diagnostics("file:///test.dev", &doc);
+        let items = result["params"]["diagnostics"].as_array().unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0]["tags"], json!([1]));
+        assert_eq!(items[0]["range"], json!({"start":{"line":1,"character":4},"end":{"line":1,"character":10}}));
+    }
 }
 fn send(out: &mut impl Write, message: &Value) -> Result<(), String> {
     let body = serde_json::to_vec(message).map_err(|e| e.to_string())?;

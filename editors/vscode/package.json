@@ -2,7 +2,7 @@
   "name": "devlang-language",
   "displayName": "DevLang",
   "description": "DevLang syntax, formatting, language server and native breakpoint support.",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "publisher": "n-devs",
   "license": "MIT",
   "repository": {
@@ -81,7 +81,8 @@
       "[devlang]": {
         "editor.defaultFormatter": "n-devs.devlang-language",
         "editor.insertSpaces": true,
-        "editor.tabSize": 4
+        "editor.tabSize": 4,
+        "editor.showUnused": true
       },
       "editor.tokenColorCustomizations": {
         "textMateRules": [

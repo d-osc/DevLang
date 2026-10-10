@@ -100,7 +100,7 @@ supports didOpen/didChange/didClose; stale versions are ignored.
 
 | Capability | Current boundary |
 | --- | --- |
-| Diagnostics | First lexer/parser error in the open document; cleared after fixes/close |
+| Diagnostics | First lexer/parser error, or hints for unread `let` variables; cleared after fixes/close |
 | Completion | Keywords, types and current-document top-level functions/types |
 | Hover | Current-document top-level function signatures and types |
 | Go to Definition | Current-document top-level declarations |

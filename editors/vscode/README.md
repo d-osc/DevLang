@@ -18,7 +18,13 @@ The language also supplies a default .dev icon; other icon themes may override i
 DevLang syntax colors apply only to DevLang token scopes, keeping your existing
 VS Code theme. Keywords are lavender, strings green, numbers peach,
 functions gold and types mint. Override these using editor.tokenColorCustomizations.
-Diagnostics currently cover lexer/parser errors only. Symbols, hover and
+Diagnostics cover lexer/parser errors and unread `let` variables. Unused
+declarations appear faded when editor.showUnused is enabled (the DevLang default).
+This needs the latest `d lsp`; rebuilding/updating the extension alone does not
+update the CLI. Names beginning with `_` suppress unused hints. Analysis respects
+blocks, parameters, closure captures and match bindings; it does not analyze
+control-flow liveness or report unused parameters.
+Symbols, hover and
 definition cover top-level functions and types in the current open document;
 there is no workspace type checker, cross-file navigation or rename yet.
 Formatting preserves tokens/newlines and uses four spaces; it does not reflow
