@@ -1,5 +1,8 @@
 # Dev source runtime
 
+`std/dns` and `std/cli` provide OS host resolution and schema-based argument
+parsing. See [API contracts](../docs/system-libs.md).
+
 `regex`, `encoding`, `crypto`, `compression`, `archive`, `uuid` add text matching,
 byte conversion, hashing/AEAD, codecs, ZIP/TAR and random UUIDs. See
 [data library contracts](../docs/data-libs.md).

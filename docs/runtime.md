@@ -1,5 +1,8 @@
 # Interpreter API
 
+`std/dns` provides OS host resolution; `std/cli` parses schema-defined program
+arguments. See [DNS and CLI contracts](system-libs.md).
+
 Data libraries `std/regex`, `std/encoding`, `std/crypto`, `std/compression`,
 `std/archive`, `std/uuid` are also available. See [API contracts](data-libs.md).
 

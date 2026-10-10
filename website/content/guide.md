@@ -1214,3 +1214,51 @@ Compression และ Archive จำกัดข้อมูล 8 MiB; Archive �
 UUID สร้างได้เฉพาะ v4; ยังไม่มี v7 และโมดูลชุดนี้ยังไม่รองรับ native build
 
 ลอง `d examples/data-libs/main.dev` และอ่าน [API พร้อมข้อจำกัด](../../docs/data-libs.md)
+
+# [system-libs] DNS และ CLI options
+
+`std/dns` หา IP ผ่าน resolver ของระบบ และ `std/cli` อ่าน options ของโปรแกรมด้วย schema
+ทั้งสองโมดูลใช้ source runtime และมี signatures ให้ Language Server ตรวจชนิดข้อมูล
+
+```dev-runtime
+use "std/dns"
+use "std/cli"
+
+fn main() {
+    let definitions = Vec<cli.Option>()
+    definitions.push(cli.Option("verbose", "v", false))
+    definitions.push(cli.Option("port", "p", true))
+    let arguments = Vec<str>()
+    arguments.push("-vp3000")
+    arguments.push("serve")
+    arguments.push("--")
+    arguments.push("--literal")
+    let parsed = cli.parse(arguments, definitions)
+    print(parsed.flags.contains("verbose"))
+    print(parsed.values.get("port"))
+    print(parsed.positionals[0])
+    print(parsed.positionals[1])
+    let address = dns.lookupOne("127.0.0.1", 4)
+    print(address.address)
+    print(address.family)
+    print(dns.lookup("::1", 6)[0])
+    print(dns.isIP("not an IP"))
+}
+main()
+```
+
+ใช้ `dns.lookup("localhost", 0)` เพื่ออ่าน IP ทั้งหมด หรือ `lookupOne(host, 4)` เพื่อหา IPv4 แรก
+family 0 เลือกได้ทั้งสองแบบ, 4 คือ IPv4 และ 6 คือ IPv6; `isIP` คืน 0/4/6 โดยไม่ติดต่อเครือข่าย
+DNS เป็น blocking OS lookup รวม hosts file ยังไม่มี MX/TXT/PTR, custom server หรือ timeout ของตัวเอง
+
+`cli.Option("port", "p", true)` กำหนด option ที่รับค่า; false คือ flag
+รองรับ `--port 3000`, `--port=3000`, `-p3000`, `-p=3000` และ grouped flags เช่น `-vp3000`
+อ่านผลจาก `parsed.values`, `parsed.flags` และ `parsed.positionals`; ใช้ Map `.contains()` ก่อน `.get()`
+Unknown/duplicate options และค่าที่ขาดจะเกิด error; flag ไม่เติมค่า false เมื่อไม่ได้ส่ง
+Value option กิน token ถัดไปตามข้อความเดิม แม้ขึ้นต้นด้วย `-` ส่วน `--` จบการอ่าน options
+
+ในโปรแกรมจริงใช้ `cli.parse(cli.args(), definitions)` และส่ง arguments ด้วย `d main.dev -- -vp3000 serve`
+`cli.args()` ไม่มี executable/source path; help/version และการแปลงค่าเลขต้องกำหนดเอง
+ชุดนี้ยังไม่รองรับ native build; CLI จำกัด 128 definitions, 4096 arguments และข้อความ 8 MiB
+
+ลอง `d examples/system-libs/main.dev` และอ่าน [API กับตัวอย่าง CLI](../../docs/system-libs.md)

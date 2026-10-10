@@ -33,6 +33,7 @@ include!("core.rs");
 include!("network.rs");
 include!("basics.rs");
 include!("data_libs.rs");
+include!("system_libs.rs");
 
 impl Value {
     pub(crate) fn ty(&self) -> Type {
@@ -2032,6 +2033,7 @@ impl Engine {
     }
     fn builtin(&mut self, module: &str, name: &str, args: Vec<Value>) -> Result<Value, String> {
         if [
+            "std/dns", "std/cli",
             "std/regex", "std/encoding", "std/crypto", "std/compression", "std/archive", "std/uuid",
             "std/math", "std/random", "std/strings", "std/datetime", "std/test", "std/log",
             "std/net",

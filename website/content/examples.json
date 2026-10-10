@@ -666,5 +666,17 @@
     "commands": [
       "d examples/data-libs/main.dev"
     ]
+  },
+  {
+    "id": "system-libs",
+    "title": "DNS และ CLI options",
+    "category": "I/O",
+    "path": "examples/system-libs/main.dev",
+    "description": "หา IP และอ่าน arguments ด้วย schema, short flags และ --",
+    "doc": "system-libs",
+    "mode": "runtime",
+    "commands": [
+      "d examples/system-libs/main.dev"
+    ]
   }
 ]

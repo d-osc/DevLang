@@ -1,4 +1,6 @@
 pub const BUILTINS: &[&str] = &[
+    "std/dns",
+    "std/cli",
     "std/io",
     "std/strings",
     "std/time",

@@ -94,6 +94,8 @@ impl Engine {
             .collect::<Result<Vec<_>, _>>()?;
         let ret = function.ret.clone();
         match module {
+            "std/dns" => self.dns_call(name, args, ret),
+            "std/cli" => self.cli_call(name, args, ret),
             "std/regex" => self.regex_call(name, args, ret),
             "std/encoding" => self.encoding_call(name, args),
             "std/crypto" => self.crypto_call(name, args),

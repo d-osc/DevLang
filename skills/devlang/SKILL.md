@@ -9,6 +9,13 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
 
 ## Choose context and mode
 
+- For DNS or command-line options, read `docs/system-libs.md`. `dns.lookup`
+  uses a blocking OS resolver with family 0/4/6; it has no custom DNS records,
+  timeout or reverse lookup. `cli.args()` excludes the executable/source path;
+  forward arguments through `d FILE -- ...`. `cli.parse` uses explicit Option
+  definitions and returns values/flags maps plus positionals. Use Map.contains
+  before get for absent options; a value consumes the next token verbatim.
+
 - For Node-style net/path/os/stream/url/module/process/events/buffer/dgram,
   read `docs/node-core.md`. Use the updated source runtime with `std/NAME`
   imports, not native builds or Node require. Close handles in their owning

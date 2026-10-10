@@ -1,0 +1,24 @@
+use "std/dns"
+use "std/cli"
+
+fn main() {
+    let definitions = Vec<cli.Option>()
+    definitions.push(cli.Option("verbose", "v", false))
+    definitions.push(cli.Option("port", "p", true))
+    let arguments = Vec<str>()
+    arguments.push("-vp3000")
+    arguments.push("serve")
+    arguments.push("--")
+    arguments.push("--literal")
+    let parsed = cli.parse(arguments, definitions)
+    print(parsed.flags.contains("verbose"))
+    print(parsed.values.get("port"))
+    print(parsed.positionals[0])
+    print(parsed.positionals[1])
+    let address = dns.lookupOne("127.0.0.1", 4)
+    print(address.address)
+    print(address.family)
+    print(dns.lookup("::1", 6)[0])
+    print(dns.isIP("not an IP"))
+}
+main()

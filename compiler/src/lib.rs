@@ -39,6 +39,7 @@ mod tests {
             "net", "path", "os", "stream", "url", "module", "process", "events", "buffer", "dgram",
             "math", "random", "datetime", "test", "log", "strings",
             "regex", "encoding", "crypto", "compression", "archive", "uuid",
+            "dns", "cli",
         ] {
             let source = format!("use \"std/{module}\"\nfn main() {{}}\nmain()");
             assert!(
@@ -47,6 +48,8 @@ mod tests {
                 errors(&source)
             );
         }
+        let source = "use \"std/dns\"\nuse \"std/cli\"\nfn main() {\nlet options=Vec<cli.Option>()\noptions.push(cli.Option(\"port\",\"p\",true))\nlet parsed=cli.parse(cli.args(),options)\nif parsed.values.contains(\"port\") { print(parsed.values.get(\"port\")) }\nlet ip=dns.lookupOne(\"localhost\",4)\nlet family i64=ip.family\nprint(family)\n}\nmain()";
+        assert!(errors(source).is_empty(), "{:?}", errors(source));
         for source in [
             "use \"std/path\"\npath.join(42, \"x\")",
             "use \"std/net\"\nnet.connect(80, 42, 1000)",
@@ -64,6 +67,9 @@ mod tests {
             "use \"std/compression\"\ncompression.gzip(\"bytes\", 6)",
             "use \"std/archive\"\narchive.writeZIP(Vec<i64>())",
             "use \"std/uuid\"\nuuid.parse(42)",
+            "use \"std/dns\"\ndns.lookup(42, 4)",
+            "use \"std/dns\"\ndns.lookup(\"localhost\", \"IPv4\")",
+            "use \"std/cli\"\ncli.parse(Vec<str>(), Vec<i64>())",
         ] {
             assert!(!errors(source).is_empty(), "accepted: {source}");
         }
