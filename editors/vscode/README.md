@@ -18,7 +18,18 @@ The language also supplies a default .dev icon; other icon themes may override i
 DevLang syntax colors apply only to DevLang token scopes, keeping your existing
 VS Code theme. Keywords are lavender, strings green, numbers peach,
 functions gold and types mint. Override these using editor.tokenColorCustomizations.
-Diagnostics cover lexer/parser errors and unread `let` variables. Unused
+Diagnostics cover lexer/parser errors, compiler frontend semantic checks and
+unread `let` variables. Type mismatches, unknown names, duplicate declarations,
+invalid arguments/returns/conditions, invalid operations, unsafe usage and
+out-of-range typed literals are checked against the same rules as native builds.
+Checks use unsaved editor text, including open imported files, without compiling
+or running code. Editing an imported file also refreshes dependent open files.
+Independent statement errors are collected (up to 100); parser and declaration/
+generic resolution failures currently stop their phase at the first error.
+Runtime-only JSON files are excluded from native semantic checks; parser checks
+and unused-variable hints remain available. This is not a full TypeScript-style
+incremental type checker or runtime memory-safety proof.
+Unused
 declarations appear faded when editor.showUnused is enabled (the DevLang default).
 This needs the latest `d lsp`; rebuilding/updating the extension alone does not
 update the CLI. Names beginning with `_` suppress unused hints. Analysis respects
@@ -26,7 +37,7 @@ blocks, parameters, closure captures and match bindings; it does not analyze
 control-flow liveness or report unused parameters.
 Symbols, hover and
 definition cover top-level functions and types in the current open document;
-there is no workspace type checker, cross-file navigation or rename yet.
+there is no persistent workspace index, cross-file navigation or rename yet.
 Formatting preserves tokens/newlines and uses four spaces; it does not reflow
 expressions or convert a one-line body into multiple lines.
 

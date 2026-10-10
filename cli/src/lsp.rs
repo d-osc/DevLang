@@ -80,11 +80,15 @@ fn word(text: &str, p: &Value) -> Option<String> {
         }
     })
 }
+#[cfg(test)]
 fn diagnostics(uri: &str, doc: &Document) -> Value {
+    diagnostics_with_documents(uri, doc, &HashMap::new())
+}
+fn diagnostics_with_documents(uri: &str, doc: &Document, documents: &HashMap<String, Document>) -> Value {
     let errors = match parsed(uri, doc) {
         Ok(module) => {
             let tokens = lex(&doc.text).unwrap_or_default();
-            crate::unused::variables(&module).into_iter().filter_map(|(name, span)| {
+            let mut errors: Vec<Value> = crate::unused::variables(&module).into_iter().filter_map(|(name, span)| {
                 // Find the declaration's source token; skip compiler-generated for bindings.
                 let index = tokens.iter().position(|t| t.span.line == span.line && t.span.col == span.col)?;
                 let keyword = &tokens[index].kind;
@@ -93,7 +97,9 @@ fn diagnostics(uri: &str, doc: &Document) -> Value {
                 } else { return None; };
                 if !matches!(&declaration.kind, Kind::Word(w) if w == &name) { return None; }
                 Some(json!({"range":range(&doc.text,declaration.span.line,declaration.span.col,name.chars().count()),"severity":4,"tags":[1],"code":"unused-variable","source":"DevLang","message":format!("Variable '{name}' is declared but never read")}))
-            }).collect()
+            }).collect();
+            errors.extend(semantic_diagnostics(uri, doc, &module, documents));
+            errors
         },
         Err(error) => {
             // Parse from the right-hand diagnostic suffix; paths may contain colons.
@@ -119,6 +125,66 @@ fn diagnostics(uri: &str, doc: &Document) -> Value {
     json!({"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":uri,"version":doc.version,"diagnostics":errors}})
 }
 
+fn semantic_diagnostics(uri: &str, doc: &Document, module: &Module, documents: &HashMap<String, Document>) -> Vec<Value> {
+    // JSON is currently runtime-only: the native frontend cannot resolve it.
+    // Do not mislabel valid runtime code as a native compiler error.
+    if module.imports.iter().any(|i| i.path == "std/json") { return vec![]; }
+    let entry = path(uri);
+    let entry = entry.canonicalize().unwrap_or(entry);
+    let mut sources: HashMap<PathBuf, String> = documents.iter().map(|(uri, document)| {
+        let file = path(uri);
+        (file.canonicalize().unwrap_or(file), document.text.clone())
+    }).collect();
+    sources.insert(entry.clone(), doc.text.clone());
+    let mut directories = HashMap::new();
+    if let Some(root) = crate::packages::root(entry.parent().unwrap_or(&entry)) {
+        match crate::packages::mappings(&root) {
+            Ok(mappings) => directories.extend(mappings),
+            Err(error) => return vec![json!({"range":range(&doc.text,1,1,1),"severity":1,"source":"DevLang project","message":error})],
+        }
+    }
+    if let Some(root) = entry.ancestors().find(|p| p.join("stdlib").is_dir()) {
+        directories.insert("std".into(), root.join("stdlib"));
+    }
+    let tokens = lex(&doc.text).unwrap_or_default();
+    dev_lang::check_sources(&entry, &directories, &sources).into_iter()
+    .filter(|error| !error.contains("cannot import 'std/json'") && !error.contains("JSON object literals currently require the source runtime"))
+    .map(|error| {
+        // Preserve contextual import messages and put their marker at the root import.
+        let mut pieces = error.splitn(2, ": ");
+        let location = pieces.next().unwrap_or("");
+        let message = pieces.next().unwrap_or(&error);
+        let coordinates = location.rsplit_once(':').and_then(|(prefix, col)| {
+            let (file, line) = prefix.rsplit_once(':')?;
+            Some((PathBuf::from(file), line.parse::<usize>().ok()?, col.parse::<usize>().ok()?))
+        });
+        let (line, col, message) = match coordinates {
+            Some((file, line, col)) if file == entry => (line, col, message.to_owned()),
+            Some((file, _, _)) => {
+                let import = module.imports.iter().find(|i| {
+                    dev_syntax::modules::resolve(&entry, &i.path, &directories).ok()
+                        .and_then(|p| p.canonicalize().ok()).is_some_and(|p| p == file)
+                });
+                let span = import.map(|i| i.span).unwrap_or_default();
+                (span.line.max(1), span.col.max(1), error.clone())
+            }
+            None => (1, 1, error.clone()),
+        };
+        let width = tokens.iter().find(|t| t.span.line == line && t.span.col == col).map(|t| match &t.kind {
+            Kind::Word(w) | Kind::Symbol(w) => w.chars().count().max(1),
+            _ => 1,
+        }).unwrap_or(1);
+        json!({"range":range(&doc.text,line,col,width),"severity":1,"source":"DevLang checker","code":"semantic-error","message":message})
+    }).collect()
+}
+
+fn publish_documents(out: &mut impl Write, documents: &HashMap<String, Document>) -> Result<(), String> {
+    let mut uris = documents.keys().collect::<Vec<_>>();
+    uris.sort();
+    for uri in uris { send(out, &diagnostics_with_documents(uri, &documents[uri], documents))?; }
+    Ok(())
+}
+
 #[cfg(test)]
 mod unused_tests {
     use super::*;
@@ -130,6 +196,20 @@ mod unused_tests {
         assert_eq!(items.len(), 1);
         assert_eq!(items[0]["tags"], json!([1]));
         assert_eq!(items[0]["range"], json!({"start":{"line":1,"character":4},"end":{"line":1,"character":10}}));
+    }
+    #[test]
+    fn semantic_errors_are_marked_and_clear_after_fix() {
+        let doc = Document {text: "fn main() {\nlet age i64 = \"wrong\"\nprint(age)\n}\nmain()".into(), version: 1};
+        let result = diagnostics("file:///test.dev", &doc);
+        let items = result["params"]["diagnostics"].as_array().unwrap();
+        assert!(items.iter().any(|d| d["code"] == "semantic-error" && d["severity"] == 1 && d["range"]["start"]["line"] == 1));
+        let fixed = Document {text: doc.text.replace("\"wrong\"", "18"), version: 2};
+        assert_eq!(diagnostics("file:///test.dev", &fixed)["params"]["diagnostics"], json!([]));
+    }
+    #[test]
+    fn valid_runtime_json_is_not_flagged_as_native_error() {
+        let doc = Document {text: "let user = { name: \"Dev\", age: 18 }\nprint(user.name)".into(), version: 1};
+        assert_eq!(diagnostics("file:///test.dev", &doc)["params"]["diagnostics"], json!([]));
     }
 }
 fn send(out: &mut impl Write, message: &Value) -> Result<(), String> {
@@ -230,7 +310,7 @@ pub fn command(args: &[String]) -> Result<i32, String> {
                             version,
                         },
                     );
-                    send(&mut out, &diagnostics(uri, &docs[uri]))?;
+                    publish_documents(&mut out, &docs)?;
                 }
             }
             "textDocument/didChange" => {
@@ -248,10 +328,11 @@ pub fn command(args: &[String]) -> Result<i32, String> {
                                 doc.text = change["text"].as_str().unwrap().into();
                             }
                             doc.version = version;
-                            send(&mut out, &diagnostics(uri, doc))?;
+                            // Publish below after releasing the mutable document borrow.
                         }
                     }
                 }
+                publish_documents(&mut out, &docs)?;
             }
             "textDocument/didClose" => {
                 docs.remove(uri);
@@ -259,6 +340,7 @@ pub fn command(args: &[String]) -> Result<i32, String> {
                     &mut out,
                     &json!({"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":uri,"diagnostics":[]}}),
                 )?;
+                publish_documents(&mut out, &docs)?;
             }
             "initialized"
             | "$/cancelRequest"

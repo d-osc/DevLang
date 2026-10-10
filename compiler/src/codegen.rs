@@ -62,6 +62,23 @@ fn prototype(program: &Program, id: usize, function: &Function) -> String {
     )
 }
 pub fn generate(program: &Program, hosted: bool) -> Result<Vec<Generated>, String> {
+    generate_inner(program, hosted, None)
+}
+pub fn diagnostics(program: &Program) -> Vec<String> {
+    let mut errors = Vec::new();
+    if let Err(error) = generate_inner(program, true, Some(&mut errors)) {
+        errors.push(error);
+    }
+    errors.sort();
+    errors.dedup();
+    errors.truncate(100);
+    errors
+}
+fn generate_inner(
+    program: &Program,
+    hosted: bool,
+    mut diagnostics: Option<&mut Vec<String>>,
+) -> Result<Vec<Generated>, String> {
     fn definitions(
         t: &Type,
         seen: &mut std::collections::HashSet<String>,
@@ -273,6 +290,7 @@ pub fn generate(program: &Program, hosted: bool) -> Result<Vec<Generated>, Strin
             context_callback_types: HashMap::new(),
             writing: false,
             hosted,
+            diagnostics: diagnostics.as_deref_mut(),
         };
         let mut functions = String::new();
         for f in &module.functions {
@@ -296,11 +314,16 @@ pub fn generate(program: &Program, hosted: bool) -> Result<Vec<Generated>, Strin
             let text = format!("{parameter_retains}{text}");
             let is_entry = f.main_default && f.ret == Type::i32();
             if f.ret != Type::Void && !is_entry && !returns(body) {
-                return Err(error(
+                let message = error(
                     &module.path,
                     f.span,
                     "function must return a value on every path",
-                ));
+                );
+                if let Some(errors) = &mut emitter.diagnostics {
+                    errors.push(message);
+                } else {
+                    return Err(message);
+                }
             }
             functions.push_str(&format!(
                 "#line {} {}\n{} {{\n{}",
@@ -410,6 +433,7 @@ pub(crate) struct Emitter<'a> {
     pub(crate) context_callback_types: HashMap<String, Type>,
     pub(crate) writing: bool,
     pub(crate) hosted: bool,
+    diagnostics: Option<&'a mut Vec<String>>,
 }
 impl Emitter<'_> {
     pub(crate) fn location(&self, span: Span) -> String {
@@ -577,7 +601,54 @@ impl Emitter<'_> {
         }
         let mut text = String::new();
         for s in body {
-            text.push_str(&self.statement(s)?);
+            if self.diagnostics.is_none() {
+                text.push_str(&self.statement(s)?);
+                continue;
+            }
+            // Editor checks recover after a failed statement. Roll back scope/control
+            // state so one malformed statement cannot corrupt later diagnostics.
+            let scopes = self.scopes.clone();
+            let prelude = self.prelude.clone();
+            let temporaries = self.temporaries.clone();
+            let loop_scopes = self.loop_scopes.clone();
+            let loop_temporaries = self.loop_temporaries.clone();
+            let loop_depth = self.loop_depth;
+            let unsafe_depth = self.unsafe_depth;
+            let ret = self.ret.clone();
+            match self.statement(s) {
+                Ok(code) => text.push_str(&code),
+                Err(error) => {
+                    let errors = self.diagnostics.as_mut().unwrap();
+                    if errors.len() < 100 {
+                        errors.push(error);
+                    }
+                    self.scopes = scopes;
+                    self.prelude = prelude;
+                    self.temporaries = temporaries;
+                    self.loop_scopes = loop_scopes;
+                    self.loop_temporaries = loop_temporaries;
+                    self.loop_depth = loop_depth;
+                    self.unsafe_depth = unsafe_depth;
+                    self.ret = ret;
+                    self.writing = false;
+                    // Retain an explicit annotation to avoid unknown-name cascades.
+                    if let Stmt::Let {
+                        name, ty: Some(ty), ..
+                    } = s
+                    {
+                        if valid_type(ty, false).is_ok() {
+                            self.scopes
+                                .last_mut()
+                                .unwrap()
+                                .entry(name.clone())
+                                .or_insert(Variable {
+                                    name: "dev_invalid".into(),
+                                    ty: ty.clone(),
+                                });
+                        }
+                    }
+                }
+            }
         }
         text.push_str(&self.scope_cleanup(self.scopes.len() - 1, false));
         if scoped {

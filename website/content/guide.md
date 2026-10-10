@@ -955,7 +955,7 @@ d fmt --stdout src/main.dev
 
 ## Language server และ VS Code
 
-`d lsp --stdio` มี parser diagnostics, keyword/type completion และชื่อ function/type ในไฟล์ปัจจุบัน, hover signatures, Go to Definition, Outline และ Format Document ใช้ full document sync และ UTF-16 positions ตาม LSP ยังไม่มี workspace type checker, cross-file navigation, local variable definitions หรือ rename
+`d lsp --stdio` ตรวจ syntax และ semantic ตามกฎ compiler เช่น ชนิดตัวแปร อาร์กิวเมนต์ return เงื่อนไข ชื่อที่ไม่มี และการประกาศซ้ำ ตรวจข้อความที่ยังไม่บันทึกและไฟล์ import ที่เปิดอยู่ พร้อมอัปเดตไฟล์ที่เกี่ยวข้อง มี unused-variable hints, keyword/type completion และชื่อ function/type ในไฟล์ปัจจุบัน, hover signatures, Go to Definition, Outline และ Format Document ใช้ full document sync และ UTF-16 positions ตาม LSP เก็บข้อผิดพลาด statement ได้หลายข้อ (สูงสุด 100) แต่ parser/การ resolve declaration และ generics ยังหยุดที่ข้อแรก ไฟล์ runtime JSON ยังตรวจเฉพาะ parser/unused ยังไม่มี persistent workspace index, cross-file navigation, local variable definitions หรือ rename
 
 ติดตั้ง [DevLang จาก VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=n-devs.devlang-language) หรือใช้ `code --install-extension n-devs.devlang-language` ตั้งค่า `devlang.executablePath` ให้ชี้ไป `d` ใหม่ เปิด trusted project และ `.dev` Extension source อยู่ใน `editors/vscode` ถ้าจะสร้าง VSIX เอง ใช้ Node.js 22 ขึ้นไป รัน `npm ci`, `npm run check`, `npm run package` ในโฟลเดอร์นั้น แล้วใช้ **Extensions: Install from VSIX**
 

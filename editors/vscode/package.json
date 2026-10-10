@@ -2,7 +2,7 @@
   "name": "devlang-language",
   "displayName": "DevLang",
   "description": "DevLang syntax, formatting, language server and native breakpoint support.",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "publisher": "n-devs",
   "license": "MIT",
   "repository": {

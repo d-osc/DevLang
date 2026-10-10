@@ -50,6 +50,7 @@ dependencies = [
 name = "dev-cli"
 version = "0.1.0"
 dependencies = [
+ "dev-lang",
  "dev-syntax",
  "dunce",
  "pathdiff",

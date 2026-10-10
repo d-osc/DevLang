@@ -100,17 +100,26 @@ supports didOpen/didChange/didClose; stale versions are ignored.
 
 | Capability | Current boundary |
 | --- | --- |
-| Diagnostics | First lexer/parser error, or hints for unread `let` variables; cleared after fixes/close |
+| Diagnostics | Lexer/parser errors, compiler frontend type/name/argument/return checks and unread-variable hints; cleared after fixes/close |
 | Completion | Keywords, types and current-document top-level functions/types |
 | Hover | Current-document top-level function signatures and types |
 | Go to Definition | Current-document top-level declarations |
 | Outline | Top-level functions/structs/enums |
 | Format Document | Same formatter as `d fmt`, fixed four-space indentation |
 
-This is an initial syntax language server. It does not yet perform workspace type
-checking, cross-file navigation, local-variable definition lookup, rename,
-signature help or semantic tokens. It does not execute edited code or invoke
-a C compiler for diagnostics. Unknown requests return protocol errors.
+The language server uses the compiler frontend to check unsaved editor text and
+its imported modules. It checks mismatched variable/argument/return types, unknown
+names, duplicate declarations, conditions, operators, typed-literal ranges and
+unsafe operations. Changing or closing an imported document refreshes other open
+documents using the latest editor text or the file on disk. Diagnostics never
+execute code, invoke a C compiler, or write edited source to disk.
+
+Independent statement errors are collected, capped at 100. Parser errors and
+declaration/generic resolution errors still stop their phase at the first error.
+Runtime-only JSON files retain parser/unused checks but skip native semantic
+checks. This does not yet provide a persistent incremental workspace index,
+cross-file navigation, local-variable definition lookup, rename, signature help
+or semantic tokens. Unknown requests return protocol errors.
 
 The extension is published as [`n-devs.devlang-language`](https://marketplace.visualstudio.com/items?itemName=n-devs.devlang-language).
 Install it from the Marketplace or with `code --install-extension n-devs.devlang-language`.

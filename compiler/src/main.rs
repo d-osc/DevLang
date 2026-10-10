@@ -1,13 +1,8 @@
-mod callbacks;
-mod collections;
-mod tasks;
 #[cfg(test)]
 use dev_syntax::lexer;
-use dev_syntax::{ast, parser};
 mod build;
-mod codegen;
 mod native;
-mod program;
+use dev_lang::{codegen, program};
 #[cfg(test)]
 mod tests;
 

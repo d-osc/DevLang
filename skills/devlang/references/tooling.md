@@ -25,9 +25,13 @@ nothing and returns 1 if needed, `--stdout` takes exactly one file. The formatte
 uses four spaces/LF and preserves tokens, comments and existing line breaks.
 It validates all input before writes, and does not expand one-line bodies.
 
-`d lsp --stdio` exposes full sync, parser diagnostics, keywords/current-file
+`d lsp --stdio` exposes full sync, parser/compiler-frontend diagnostics,
+unused-variable hints, keywords/current-file
 top-level completion, signatures/hover, local top-level definitions, outline and
-formatting. No workspace type checking/cross-file navigation/local variables/
+formatting. Semantic checks include unsaved imported files; independent statement
+errors are collected up to 100. Parser/declaration/generic-resolution failures
+stop their phase at the first error; runtime-only JSON skips native semantics.
+No persistent workspace index/cross-file navigation/local variable definitions/
 rename yet. Never claim runtime validation from editor diagnostics. VS Code
 source extension: editors/vscode; build npm ci/package, configure
 devlang.executablePath to d and install the VSIX in a trusted workspace.

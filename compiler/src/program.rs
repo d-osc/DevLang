@@ -33,12 +33,19 @@ impl Program {
         entry: &Path,
         module_dirs: &HashMap<String, PathBuf>,
     ) -> Result<Self, String> {
+        Self::load_with_sources(entry, module_dirs, &HashMap::new())
+    }
+    pub fn load_with_sources(
+        entry: &Path,
+        module_dirs: &HashMap<String, PathBuf>,
+        sources: &HashMap<PathBuf, String>,
+    ) -> Result<Self, String> {
         let mut program = Self {
             modules: Vec::new(),
             aliases: Vec::new(),
             signatures: HashMap::new(),
         };
-        program.load_module(entry, &mut HashMap::new(), module_dirs)?;
+        program.load_module(entry, &mut HashMap::new(), module_dirs, sources)?;
         dev_syntax::expand::modules(&mut program.modules, &program.aliases)?;
         for module in &program.modules {
             for ty in &module.concrete_types {
@@ -141,20 +148,36 @@ impl Program {
         path: &Path,
         seen: &mut HashMap<PathBuf, usize>,
         module_dirs: &HashMap<String, PathBuf>,
+        sources: &HashMap<PathBuf, String>,
     ) -> Result<usize, String> {
-        let path = std::fs::canonicalize(path).map_err(|e| format!("{}: {e}", path.display()))?;
+        let path = std::fs::canonicalize(path)
+            .or_else(|e| {
+                if sources.contains_key(path) {
+                    Ok(path.to_owned())
+                } else {
+                    Err(e)
+                }
+            })
+            .map_err(|e| format!("{}: {e}", path.display()))?;
         if let Some(id) = seen.get(&path) {
             return Ok(*id);
         }
         if seen.len() >= 512 {
             return Err("a program can have at most 512 modules in v0.1".into());
         }
-        let metadata = std::fs::metadata(&path).map_err(|e| e.to_string())?;
-        if metadata.len() > 8 * 1024 * 1024 {
+        let source = match sources.get(&path) {
+            Some(source) => source.clone(),
+            None => {
+                let metadata = std::fs::metadata(&path).map_err(|e| e.to_string())?;
+                if metadata.len() > 8 * 1024 * 1024 {
+                    return Err(format!("{}: source exceeds 8 MiB", path.display()));
+                }
+                std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?
+            }
+        };
+        if source.len() > 8 * 1024 * 1024 {
             return Err(format!("{}: source exceeds 8 MiB", path.display()));
         }
-        let source =
-            std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
         let module = parser::parse(path.clone(), &source)?;
         let id = self.modules.len();
         seen.insert(path.clone(), id);
@@ -167,13 +190,15 @@ impl Program {
             }
             let target = dev_syntax::modules::resolve(&path, &import.path, module_dirs)
                 .map_err(|e| error(&path, import.span, e))?;
-            let target_id = self.load_module(&target, seen, module_dirs).map_err(|e| {
-                error(
-                    &path,
-                    import.span,
-                    format!("cannot import '{}': {e}", import.path),
-                )
-            })?;
+            let target_id = self
+                .load_module(&target, seen, module_dirs, sources)
+                .map_err(|e| {
+                    error(
+                        &path,
+                        import.span,
+                        format!("cannot import '{}': {e}", import.path),
+                    )
+                })?;
             self.aliases[id].insert(import.alias, target_id);
         }
         Ok(id)
