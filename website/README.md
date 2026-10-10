@@ -25,7 +25,7 @@ Standalone Site clones use the tracked snapshots in `content/materials` and `con
 
 ## Example catalog
 
-`content/examples.json` defines 53 focused and integrated examples, their topic,
+`content/examples.json` defines 54 focused and integrated examples, their topic,
 mode, commands, prerequisites, input and related documentation page. It covers
 conditions/logical aliases, operators, types/casts, loops, functions/recursion,
 modules, structs/methods, enums/matching, Ref/recursive layouts, Vec/Map/Slice,

@@ -6,7 +6,7 @@ use std::{
     process::Command,
 };
 
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
 pub struct Dependency {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -15,7 +15,15 @@ pub struct Dependency {
     pub git: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rev: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub workspace: bool,
 }
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+include!("workspace.rs");
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Package {
@@ -35,7 +43,8 @@ mod manifest_tests {
     #[test]
     fn don_version_and_dependency_reference() {
         let text = "version:'v1.0.0'\npackage:{name:'app'}\ndependencies:{utils:{git:'https://github.com/example/utils.git'\nrev:@version}}";
-        let manifest: Manifest = serde_json::from_value(dev_syntax::don::parse(text).unwrap()).unwrap();
+        let manifest: Manifest =
+            serde_json::from_value(dev_syntax::don::parse(text).unwrap()).unwrap();
         assert_eq!(manifest.version.as_deref(), Some("v1.0.0"));
         assert_eq!(manifest.dependencies["utils"].rev, manifest.version);
         assert_eq!(manifest.package.entry, "src/main.dev");
@@ -54,6 +63,13 @@ pub struct Manifest {
     pub package: Package,
     #[serde(default)]
     pub dependencies: BTreeMap<String, Dependency>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workspace: Option<Workspace>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Workspace {
+    pub members: Vec<String>,
 }
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -69,6 +85,10 @@ struct Locked {
     commit: Option<String>,
     sha256: String,
     modules: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    resolved_version: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    additional_sources: Vec<Dependency>,
 }
 fn locked_root(project: &Path, name: &str, item: &Locked) -> Result<PathBuf, String> {
     if !identifier(name) {
@@ -172,7 +192,18 @@ fn git(dir: Option<&Path>, args: &[&str]) -> Result<String, String> {
     Ok(String::from_utf8_lossy(&output.stdout).trim().into())
 }
 fn tree_hash(root: &Path) -> Result<String, String> {
-    fn files(root: &Path, at: &Path, result: &mut Vec<PathBuf>) -> Result<(), String> {
+    tree_hash_mode(root, false)
+}
+fn tree_matches(root: &Path, expected: &str) -> Result<bool, String> {
+    Ok(tree_hash(root)? == expected || tree_hash_mode(root, true)? == expected)
+}
+fn tree_hash_mode(root: &Path, include_lock: bool) -> Result<String, String> {
+    fn files(
+        root: &Path,
+        at: &Path,
+        result: &mut Vec<PathBuf>,
+        include_lock: bool,
+    ) -> Result<(), String> {
         for item in std::fs::read_dir(at).map_err(|e| e.to_string())? {
             let item = item.map_err(|e| e.to_string())?;
             let ty = item.file_type().map_err(|e| e.to_string())?;
@@ -184,16 +215,18 @@ fn tree_hash(root: &Path) -> Result<String, String> {
                 if ![".git", ".dev", "target", "dist", "out", "node_modules"]
                     .contains(&item.file_name().to_string_lossy().as_ref())
                 {
-                    files(root, &path, result)?;
+                    files(root, &path, result, include_lock)?;
                 }
-            } else if ty.is_file() {
+            } else if ty.is_file()
+                && (include_lock || path.file_name().is_none_or(|name| name != "dev.lock"))
+            {
                 result.push(path.strip_prefix(root).unwrap().to_owned());
             }
         }
         Ok(())
     }
     let mut paths = Vec::new();
-    files(root, root, &mut paths)?;
+    files(root, root, &mut paths, include_lock)?;
     paths.sort();
     let mut hash = Sha256::new();
     for path in paths {
@@ -213,116 +246,164 @@ fn resolve(
     dep: &Dependency,
     previous: Option<&Locked>,
     refresh: bool,
+    locked: bool,
 ) -> Result<Locked, String> {
     if !identifier(name) {
         return Err(format!("invalid dependency namespace {name}"));
     }
-    let (path, commit) = match (&dep.path, &dep.git) {
-        (Some(p), None) if dep.rev.is_none() => (
-            parent.join(p).canonicalize().map_err(|e| e.to_string())?,
-            None,
-        ),
-        (None, Some(remote)) => {
-            if !(remote.starts_with("https://") || remote.starts_with("file://")) {
-                return Err("Git sources require https:// or file:// URLs".into());
-            }
-            if remote.contains('@') && remote.starts_with("https://") {
-                return Err("Git URL must not contain embedded credentials".into());
-            }
-            if !refresh {
-                if let Some(old) = previous.filter(|p| p.source == *dep) {
-                    let cached = locked_root(project, name, old)?;
-                    if cached.is_dir() {
-                        if tree_hash(&cached)? != old.sha256
-                            || Some(git(Some(&cached), &["rev-parse", "HEAD"])?).as_ref()
-                                != old.commit.as_ref()
-                        {
-                            return Err("cached dependency changed; remove its checkout before reinstalling".into());
+    validate_dependency(dep)?;
+    let req = requirement(dep)?;
+    let mut selected_version = None;
+    let (path, commit) = if dep.workspace {
+        (workspace_dependency(parent, name)?, None)
+    } else {
+        match (&dep.path, &dep.git) {
+            (Some(p), None) if dep.rev.is_none() => (
+                parent.join(p).canonicalize().map_err(|e| e.to_string())?,
+                None,
+            ),
+            (None, Some(remote)) => {
+                if !(remote.starts_with("https://") || remote.starts_with("file://")) {
+                    return Err("Git sources require https:// or file:// URLs".into());
+                }
+                if remote.contains('@') && remote.starts_with("https://") {
+                    return Err("Git URL must not contain embedded credentials".into());
+                }
+                if !refresh {
+                    if let Some(old) = previous.filter(|p| p.source == *dep) {
+                        let cached = locked_root(project, name, old)?;
+                        if cached.is_dir() {
+                            if !tree_matches(&cached, &old.sha256)?
+                                || Some(git(Some(&cached), &["rev-parse", "HEAD"])?).as_ref()
+                                    != old.commit.as_ref()
+                            {
+                                return Err("cached dependency changed; remove its checkout before reinstalling".into());
+                            }
+                            let mut item = old.clone();
+                            item.additional_sources.clear();
+                            if let Some(req) = &req {
+                                let version =
+                                    package_version(&manifest(&cached)?, req)?.to_string();
+                                if old.resolved_version.as_deref() != Some(&version) {
+                                    return Err("locked package version changed".into());
+                                }
+                            }
+                            if !locked {
+                                item.sha256 = tree_hash(&cached)?;
+                            }
+                            return Ok(item);
                         }
-                        return Ok(old.clone());
                     }
                 }
-            }
-            let revision = (if !refresh {
-                previous
-                    .filter(|p| p.source == *dep)
-                    .and_then(|p| p.commit.as_deref())
-            } else {
-                None
-            })
-            .unwrap_or(dep.rev.as_deref().unwrap_or("HEAD"));
-            if revision.starts_with('-') || revision.contains(['\n', '\r']) {
-                return Err("invalid Git revision".into());
-            }
-            let cache = project.join(".dev/packages");
-            std::fs::create_dir_all(&cache).map_err(|e| e.to_string())?;
-            let temp = cache.join(format!("{name}-fetch-{}", std::process::id()));
-            if temp.exists() {
-                return Err(format!(
-                    "stale fetch directory {}; remove it before retrying",
-                    temp.display()
-                ));
-            }
-            git(
-                None,
-                &[
-                    "-c",
-                    "core.autocrlf=false",
-                    "clone",
-                    "--no-checkout",
-                    "--",
-                    remote,
-                    temp.to_str().ok_or("non-UTF8 cache path")?,
-                ],
-            )?;
-            let commit = git(
-                Some(&temp),
-                &["rev-parse", "--verify", &format!("{revision}^{{commit}}")],
-            )?;
-            git(
-                Some(&temp),
-                &[
-                    "-c",
-                    "core.autocrlf=false",
-                    "-c",
-                    "core.hooksPath=",
-                    "checkout",
-                    "--detach",
-                    &commit,
-                ],
-            )?;
-            let destination = cache.join(format!("{name}-{commit}"));
-            if destination.exists() {
-                // Keep the existing checkout; verify its content against this fresh copy.
-                if tree_hash(&temp)? != tree_hash(&destination)? {
-                    return Err(
-                        "cached dependency changed; remove its checkout before reinstalling".into(),
-                    );
+                let pinned = if !refresh {
+                    previous
+                        .filter(|p| p.source == *dep)
+                        .and_then(|p| p.commit.as_deref())
+                } else {
+                    None
+                };
+                let revision = pinned.unwrap_or(dep.rev.as_deref().unwrap_or("HEAD"));
+                if revision.starts_with('-') || revision.contains(['\n', '\r']) {
+                    return Err("invalid Git revision".into());
                 }
-                // No recursive deletion: retain the fetch checkout for recovery.
-                std::fs::rename(
-                    &temp,
-                    cache.join(format!(
-                        "{name}-verified-{}",
-                        std::time::SystemTime::now()
-                            .duration_since(std::time::UNIX_EPOCH)
-                            .unwrap()
-                            .as_nanos()
-                    )),
+                let cache = project.join(".dev/packages");
+                std::fs::create_dir_all(&cache).map_err(|e| e.to_string())?;
+                let temp = cache.join(format!(
+                    "{name}-fetch-{}-{}",
+                    std::process::id(),
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map_err(|e| e.to_string())?
+                        .as_nanos()
+                ));
+                if temp.exists() {
+                    return Err(format!(
+                        "stale fetch directory {}; remove it before retrying",
+                        temp.display()
+                    ));
+                }
+                git(
+                    None,
+                    &[
+                        "-c",
+                        "core.autocrlf=false",
+                        "clone",
+                        "--no-checkout",
+                        "--",
+                        remote,
+                        temp.to_str().ok_or("non-UTF8 cache path")?,
+                    ],
+                )?;
+                let chosen;
+                let revision = if pinned.is_none() && req.is_some() {
+                    let (tag, version) = semver_tag(&temp, req.as_ref().unwrap())?;
+                    chosen = tag;
+                    selected_version = Some(version);
+                    chosen.as_str()
+                } else {
+                    revision
+                };
+                let commit = git(
+                    Some(&temp),
+                    &["rev-parse", "--verify", &format!("{revision}^{{commit}}")],
+                )?;
+                git(
+                    Some(&temp),
+                    &[
+                        "-c",
+                        "core.autocrlf=false",
+                        "-c",
+                        "core.hooksPath=",
+                        "checkout",
+                        "--detach",
+                        &commit,
+                    ],
+                )?;
+                let destination = cache.join(format!("{name}-{commit}"));
+                if destination.exists() {
+                    // Keep the existing checkout; verify its content against this fresh copy.
+                    if tree_hash(&temp)? != tree_hash(&destination)? {
+                        return Err(
+                            "cached dependency changed; remove its checkout before reinstalling"
+                                .into(),
+                        );
+                    }
+                    // No recursive deletion: retain the fetch checkout for recovery.
+                    std::fs::rename(
+                        &temp,
+                        cache.join(format!(
+                            "{name}-verified-{}",
+                            std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .unwrap()
+                                .as_nanos()
+                        )),
+                    )
+                    .map_err(|e| e.to_string())?;
+                } else {
+                    std::fs::rename(temp, &destination).map_err(|e| e.to_string())?;
+                }
+                (
+                    destination.canonicalize().map_err(|e| e.to_string())?,
+                    Some(commit),
                 )
-                .map_err(|e| e.to_string())?;
-            } else {
-                std::fs::rename(temp, &destination).map_err(|e| e.to_string())?;
             }
-            (
-                destination.canonicalize().map_err(|e| e.to_string())?,
-                Some(commit),
-            )
+            _ => return Err("dependency needs exactly one of path or git; rev is Git-only".into()),
         }
-        _ => return Err("dependency needs exactly one of path or git; rev is Git-only".into()),
     };
     let path = dunce::simplified(&path).to_owned();
     let m = manifest(&path)?;
+    let resolved_version = req
+        .as_ref()
+        .map(|req| package_version(&m, req))
+        .transpose()?;
+    if selected_version
+        .as_ref()
+        .zip(resolved_version.as_ref())
+        .is_some_and(|(tag, actual)| tag != actual)
+    {
+        return Err("Git tag version differs from package manifest version".into());
+    }
     let modules = m.package.modules;
     if !path.join(&modules).is_dir() {
         return Err("dependency module directory does not exist".into());
@@ -338,12 +419,26 @@ fn resolve(
             .to_string_lossy()
             .replace('\\', "/")
     };
+    let sha256 = if locked {
+        if let Some(old) = previous.filter(|old| old.source == *dep) {
+            if !tree_matches(&path, &old.sha256)? {
+                return Err(format!("dependency {name} content changed from dev.lock"));
+            }
+            old.sha256.clone()
+        } else {
+            tree_hash(&path)?
+        }
+    } else {
+        tree_hash(&path)?
+    };
     Ok(Locked {
         source: dep.clone(),
         root: stored,
         commit,
-        sha256: tree_hash(&path)?,
+        sha256,
         modules,
+        resolved_version: resolved_version.map(|v| v.to_string()),
+        additional_sources: Vec::new(),
     })
 }
 
@@ -363,9 +458,15 @@ pub fn install(project: &Path, locked: bool, refresh: bool) -> Result<(), String
     let mut pending = vec![(project.to_owned(), manifest(project)?.dependencies)];
     while let Some((parent, dependencies)) = pending.pop() {
         for (name, dep) in dependencies {
-            if let Some(old) = result.packages.get(&name) {
+            if let Some(old) = result.packages.get_mut(&name) {
                 if old.source != dep {
-                    return Err(format!("conflicting dependency namespace {name}"));
+                    if !compatible_source(&old.source, &dep, old.resolved_version.as_deref())? {
+                        return Err(format!("conflicting dependency namespace {name}"));
+                    }
+                    if !old.additional_sources.contains(&dep) {
+                        old.additional_sources.push(dep.clone());
+                        old.additional_sources.sort();
+                    }
                 }
                 if let Some(p) = &dep.path {
                     if parent.join(p).canonicalize().map_err(|e| e.to_string())?
@@ -376,6 +477,13 @@ pub fn install(project: &Path, locked: bool, refresh: bool) -> Result<(), String
                     {
                         return Err(format!("conflicting local dependency {name}"));
                     }
+                }
+                if dep.workspace
+                    && workspace_dependency(&parent, &name)?
+                        != dunce::canonicalize(project.join(&old.root))
+                            .map_err(|e| e.to_string())?
+                {
+                    return Err(format!("conflicting workspace dependency {name}"));
                 }
                 continue;
             }
@@ -389,8 +497,15 @@ pub fn install(project: &Path, locked: bool, refresh: bool) -> Result<(), String
                 &dep,
                 previous.packages.get(&name),
                 refresh,
+                locked,
             )?;
-            if locked && previous.packages.get(&name) != Some(&resolved) {
+            if locked
+                && previous.packages.get(&name).map(|p| {
+                    let mut p = p.clone();
+                    p.additional_sources.clear();
+                    p
+                }) != Some(resolved.clone())
+            {
                 return Err(format!("dependency {name} content changed from dev.lock"));
             }
             let dep_root = project.join(&resolved.root);
@@ -425,15 +540,20 @@ pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
     let mut pending = vec![(project.to_owned(), m.dependencies)];
     let mut visited = BTreeSet::new();
     let mut dirs = Vec::new();
+    let mut declarations = BTreeMap::<String, BTreeSet<Dependency>>::new();
     while let Some((parent, dependencies)) = pending.pop() {
         for (name, dep) in dependencies {
             let item = lock
                 .packages
                 .get(&name)
                 .ok_or_else(|| format!("dependency {name} missing from lock; run d pkg install"))?;
-            if item.source != dep {
+            if item.source != dep && !item.additional_sources.contains(&dep) {
                 return Err(format!("dependency {name} changed; run d pkg install"));
             }
+            declarations
+                .entry(name.clone())
+                .or_default()
+                .insert(dep.clone());
             let at = locked_root(project, &name, item)?
                 .canonicalize()
                 .map_err(|e| format!("{e}; run d pkg install"))?;
@@ -442,10 +562,28 @@ pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
                     return Err(format!("local dependency {name} changed"));
                 }
             }
+            validate_dependency(&dep)?;
+            if dep.workspace
+                && workspace_dependency(&parent, &name)?
+                    != dunce::canonicalize(&at).map_err(|e| e.to_string())?
+            {
+                return Err(format!("workspace dependency {name} changed"));
+            }
+            if let Some(req) = requirement(&dep)? {
+                let version = semver::Version::parse(
+                    item.resolved_version
+                        .as_deref()
+                        .ok_or("missing locked package version")?,
+                )
+                .map_err(|e| e.to_string())?;
+                if !req.matches(&version) {
+                    return Err(format!("locked version {version} does not satisfy {req}"));
+                }
+            }
             if !visited.insert(name.clone()) {
                 continue;
             }
-            if tree_hash(&at)? != item.sha256 {
+            if !tree_matches(&at, &item.sha256)? {
                 return Err(format!("dependency {name} content changed; run d pkg install to update local dependencies"));
             }
             if let Some(commit) = &item.commit {
@@ -454,6 +592,12 @@ pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
                 }
             }
             let child = manifest(&at)?;
+            if let Some(req) = requirement(&dep)? {
+                let version = package_version(&child, &req)?.to_string();
+                if item.resolved_version.as_deref() != Some(&version) {
+                    return Err("locked package version changed".into());
+                }
+            }
             if child.package.modules != item.modules {
                 return Err("locked module directory changed".into());
             }
@@ -463,6 +607,16 @@ pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
     }
     if visited.len() != lock.packages.len() {
         return Err("dev.lock contains stale dependencies; run d pkg install".into());
+    }
+    for (name, item) in &lock.packages {
+        let expected: BTreeSet<_> = std::iter::once(item.source.clone())
+            .chain(item.additional_sources.iter().cloned())
+            .collect();
+        if declarations.get(name) != Some(&expected) {
+            return Err(
+                "dev.lock contains stale dependency requirements; run d pkg install".into(),
+            );
+        }
     }
     dirs.sort();
     Ok(dirs)
@@ -489,6 +643,7 @@ pub fn new(path: &Path) -> Result<i32, String> {
                 modules: modules(),
             },
             dependencies: BTreeMap::new(),
+            workspace: None,
         },
     )?;
     std::fs::write(
@@ -509,26 +664,45 @@ pub fn command(args: &[String]) -> Result<i32, String> {
     let project = root(&std::env::current_dir().map_err(|e| e.to_string())?)
         .ok_or("no package.don or dev.toml; use d new NAME")?;
     match args.first().map(String::as_str) {
-        Some("install") | Some("update") if args.len() <= 2 && args.get(1).is_none_or(|a| a == "--locked") && !(args[0]=="update" && args.len()==2) => {
-            install(&project, args.get(1).is_some(), args[0] == "update")?;
+        Some("install") | Some("update") => {
+            let mut locked=false; let mut all=false;
+            for option in &args[1..] {
+                match option.as_str() {
+                    "--locked" if !locked && args[0] == "install" => locked=true,
+                    "--workspace" if !all => all=true,
+                    _ => return Err("pkg install [--locked] [--workspace]; pkg update [--workspace]".into()),
+                }
+            }
+            if all {
+                let root=workspace_root(&project)?.ok_or("--workspace needs workspace.members")?;
+                let members=workspace_members(&root)?;
+                install(&root,locked,args[0]=="update")?;
+                for (name,at) in members { println!("package {name}"); install(&at,locked,args[0]=="update")?; }
+            } else { install(&project, locked, args[0] == "update")?; }
+        }
+        Some("workspace") if args.len()==1 => {
+            let root=workspace_root(&project)?.ok_or("no workspace.members")?;
+            for (name,at) in workspace_members(&root)? { println!("{name} {}",at.display()); }
         }
         Some("add") => {
             let name = args.get(1).ok_or("pkg add NAME --path DIR | --git URL [--rev REF]")?;
             if !identifier(name) { return Err("invalid dependency name".into()); }
-            let mut dep = Dependency { path: None, git: None, rev: None };
+            let mut dep = Dependency { path: None, git: None, rev: None, version: None, workspace: false };
             let mut at = 2;
+            let mut seen=BTreeSet::new();
             while at < args.len() {
+                if !seen.insert(args[at].clone()) { return Err("duplicate dependency option".into()); }
+                if args[at] == "--workspace" { dep.workspace=true; at+=1; continue; }
                 let value = args.get(at + 1).ok_or("dependency option needs value")?.clone();
-                match args[at].as_str() { "--path" => { let absolute = dunce::canonicalize(&value).map_err(|e| e.to_string())?; dep.path = Some(pathdiff::diff_paths(&absolute,&project).unwrap_or(absolute).to_string_lossy().replace('\\', "/")); }, "--git" => dep.git = Some(value), "--rev" => dep.rev = Some(value), _ => return Err("unknown dependency option".into()) }
+                match args[at].as_str() { "--path" => { let absolute = dunce::canonicalize(&value).map_err(|e| e.to_string())?; dep.path = Some(pathdiff::diff_paths(&absolute,&project).unwrap_or(absolute).to_string_lossy().replace('\\', "/")); }, "--git" => dep.git = Some(value), "--rev" => dep.rev = Some(value), "--version" => dep.version=Some(value), _ => return Err("unknown dependency option".into()) }
                 at += 2;
             }
-            if dep.path.is_some() == dep.git.is_some() || (dep.path.is_some() && dep.rev.is_some()) { return Err("use exactly one --path or --git; --rev is Git-only".into()); }
-            let mut m = manifest(&project)?; m.dependencies.insert(name.clone(), dep); write(&manifest_path(&project), &m)?;
-            install(&project, false, false)?;
+            validate_dependency(&dep)?;
+            let mut m = manifest(&project)?; m.dependencies.insert(name.clone(), dep); change_manifest(&project,&m)?;
         }
-        Some("remove") if args.len() == 2 => { let mut m = manifest(&project)?; m.dependencies.remove(&args[1]).ok_or("dependency does not exist")?; write(&manifest_path(&project), &m)?; install(&project, false, false)?; }
+        Some("remove") if args.len() == 2 => { let mut m = manifest(&project)?; m.dependencies.remove(&args[1]).ok_or("dependency does not exist")?; change_manifest(&project,&m)?; }
         Some("list") if args.len() == 1 => { for (name, dir) in mappings(&project)? { println!("{name} {}", dir.display()); } }
-        _ => return Err("pkg add NAME --path DIR | --git URL [--rev REF]; pkg install [--locked]; pkg update; pkg remove NAME; pkg list".into()),
+        _ => return Err("pkg add NAME --path DIR | --git URL | --workspace [--rev REF | --version REQUIREMENT]; pkg install [--locked] [--workspace]; pkg update [--workspace]; pkg workspace; pkg remove NAME; pkg list".into()),
     }
     Ok(0)
 }

@@ -87,7 +87,12 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
   DON `@version` / `@server.port` references are root-relative, support forward
   declarations and preserve value types; missing targets/cycles fail. Quoted
   references stay strings. Serialization writes resolved copies. Optional root
-  manifest `version` is metadata, not a semver solver.
+  manifest `version` is checked when a dependency has a SemVer `version` requirement.
+  Use `workspace: { members: [...] }`, dependencies `{ workspace: true, version: "^1" }`,
+  `d pkg install --workspace` and `d run --package NAME` for monorepos. Git dependencies
+  with `version` select matching SemVer tags; `rev` and `version` cannot combine.
+  Install retains pinned commits; update selects tags again. The namespace is flat,
+  with no backtracking or public registry. Read `docs/packages.md` for details.
 
 - Declare typed parameters as `fn add(a i64, b i64) i64`. Return type follows the parameter list; colons and arrows are optional. Statements end at newline or optional semicolon.
 - Explicitly invoke `main()` after its declaration. Declarations never auto-run. Use file-level `return main()` only when the result should become exit status. Imported files contain declarations only.

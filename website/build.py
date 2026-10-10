@@ -17,12 +17,13 @@ sys.path.insert(0, str(HERE / '.build-deps'))
 from markdown_it import MarkdownIt
 
 GROUPS = {
-    'เริ่มต้น': ['intro', 'install', 'layout', 'cli', 'tooling'],
+    'เริ่มต้น': ['intro', 'install', 'layout', 'cli', 'tooling', 'packages'],
     'พื้นฐานภาษา': ['variables', 'types', 'operators', 'loops', 'functions', 'strings-arrays', 'modules'],
     'ข้อมูลและ abstraction': ['structs', 'enums-match', 'references', 'collections', 'generics', 'closures'],
     'ระบบและ interoperability': ['tasks', 'sync', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'fs-http', 'node-core', 'limitations', 'ai'],
 }
 REFERENCES = {
+    'packages-reference': ('Workspaces and dependency versions', 'docs/packages.md'),
     'sync-reference': ('Shared channels, mutexes and cancellation', 'docs/sync.md'),
     'control-libs-reference': ('Errors, timers and child processes', 'docs/control-libs.md'),
     'storage-libs-reference': ('SQLite, CSV, TOML and YAML', 'docs/storage-libs.md'),
@@ -144,7 +145,8 @@ def main():
             p for p in folder.rglob('*') if p.is_file() and p.suffix in ('.dev', '.c', '.h'))
         for root in item.get('package_roots', []):
             package.extend(sorted(p for p in (REPO / root).rglob('*') if p.is_file()
-                                  and p.suffix in ('.dev', '.c', '.h', '.py')))
+                                  and p.suffix in ('.dev', '.c', '.h', '.py', '.don', '.toml')))
+        package = sorted(set(package))
         source_hash = hashlib.sha256(file.read_text(encoding='utf-8').encode('utf-8')).hexdigest()
         package_hash = hashlib.sha256()
         for p in package:
@@ -164,6 +166,14 @@ def main():
                 subprocess.run([launcher, 'check', str(file), *check_args], cwd=REPO,
                                capture_output=True, check=True, timeout=30)
             with tempfile.TemporaryDirectory(prefix='devlang-example-') as work:
+                run_file = file
+                if item.get('project_root'):
+                    project = Path(work) / 'project'
+                    original = REPO / item['project_root']
+                    shutil.copytree(original, project, ignore=shutil.ignore_patterns('.dev', 'out', 'dev.lock'))
+                    subprocess.run([launcher, '-C', str(project), 'pkg', 'install', '--workspace'],
+                                   capture_output=True, check=True, timeout=30)
+                    run_file = project / file.relative_to(original)
                 if mode == 'native':
                     binary = str(Path(work) / 'example.exe')
                     subprocess.run([launcher, 'build', str(file), '--release', '-o', binary, *check_args],
@@ -171,7 +181,7 @@ def main():
                     result = subprocess.run([binary], cwd=work, capture_output=True, check=True, timeout=30)
                     output = result.stdout.decode('utf-8').replace('\r\n', '\n')
                 else:
-                    results = [subprocess.run([launcher, str(file), '--engine', engine, *item.get('runtime_args', [])],
+                    results = [subprocess.run([launcher, str(run_file), '--engine', engine, *item.get('runtime_args', [])],
                                               input=item.get('stdin', '').encode(), cwd=work,
                                               capture_output=True, check=True, timeout=30)
                                for engine in ('auto', 'ast')]
@@ -183,8 +193,8 @@ def main():
         validation = 'native frontend + compiled executable' if item.get('mode') == 'native' else (
             'runtime auto + AST' if item.get('mode') == 'runtime' else 'native frontend + runtime auto + AST')
         dependencies = [dict(path=p.relative_to(REPO).as_posix(), code=p.read_text(encoding='utf-8'))
-                        for p in package if p != file and p.suffix in ('.dev', '.c', '.h')
-                        and not item.get('package_roots')]
+                        for p in package if p != file and p.suffix in ('.dev', '.c', '.h', '.don', '.toml')
+                        and (not item.get('package_roots') or item.get('project_root'))]
         examples.append(dict(item, code=file.read_text(encoding='utf-8'), output=output,
                              validation=validation, files=dependencies, download='downloads/' + slug + '.zip'))
     if not args.skip_validation:
@@ -200,8 +210,8 @@ def main():
                 p for p in folder.rglob('*') if p.is_file() and p.suffix in ('.dev', '.c', '.h', '.md')]
             for root in example.get('package_roots', []):
                 files.extend(p for p in (REPO / root).rglob('*') if p.is_file()
-                             and p.suffix in ('.dev', '.c', '.h', '.py', '.md'))
-            for file in files:
+                             and p.suffix in ('.dev', '.c', '.h', '.py', '.md', '.don', '.toml'))
+            for file in sorted(set(files)):
                 archive.write(file, file.relative_to(REPO).as_posix())
     docs_dir = dist / 'markdown'
     docs_dir.mkdir(exist_ok=True)

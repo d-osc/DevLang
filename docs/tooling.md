@@ -51,7 +51,9 @@ d pkg remove math
 Dependencies need their own `package.don` or legacy `dev.toml`. Path and Git dependencies can have
 transitive dependencies. Names form one flat namespace; conflicting versions or
 local sources for the same name are rejected. `std` is reserved. There is no
-public registry, semver solver, workspace manifest or package publishing yet.
+public registry or package publishing yet. Workspace members and SemVer Git-tag
+requirements are supported; see [Workspaces and dependency versions](packages.md)
+for commands, lock behavior and the flat resolver limitations.
 Git URLs accept HTTPS and file URLs; Git must be installed for Git dependencies.
 Credential-bearing HTTPS URLs are rejected; use Git's existing credential setup.
 Git dependencies are checked out in `.dev/packages/NAME-COMMIT`, without running
@@ -59,7 +61,7 @@ package install/build scripts. Submodules and symlink packages are unsupported.
 
 Commit your manifest and `dev.lock`; ignore `.dev/` and `out/`. The versioned TOML
 lockfile records source declarations, pinned Git commits, module directories and
-SHA-256 hashes of package files (excluding .git/.dev/target/dist/out/node_modules).
+SHA-256 hashes of package files (excluding .git/.dev/target/dist/out/node_modules and dev.lock files).
 `pkg install` keeps existing matching Git commits pinned, resolves new sources,
 and accepts intentional local content changes. `pkg update` resolves requested
 Git refs again. `--locked` restores missing Git checkouts at the pinned commit

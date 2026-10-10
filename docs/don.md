@@ -124,8 +124,9 @@ main()
 `d new my_app` creates `package.don`. The package manager reads the **existing
 DevLang manifest schema**, shown above: `package.name`, `package.entry`,
 `package.modules`, optional root `version` (string), and `dependencies`. Version
-is metadata; it does not enable semver solving. A dependency uses either `path`, or `git`
-with optional `rev`. Entry/modules paths must be relative without `..`; package
+is metadata and is checked against dependency `version` requirements when supplied.
+A dependency uses `path`, `git` with optional `rev` or `version`, or `workspace: true`.
+See [workspaces and SemVer](packages.md) for the resolver contracts. Entry/modules paths must be relative without `..`; package
 names and dependency namespaces must be Dev identifiers.
 
 ```sh

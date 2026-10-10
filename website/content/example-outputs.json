@@ -263,5 +263,10 @@
     "source_sha256": "994cfbca4ffdb2f7b41609128588aaf57b688757d043a1867b067f8d1749a5a7",
     "validation_sha256": "eef4088f773ce6ce9ab745dc126935e55adb1827c7cf57cdc3d9ca4b9c9422c2",
     "output": "15\ntrue\n15\ntrue\n"
+  },
+  "workspace": {
+    "source_sha256": "7c57d7d4048ad1acf58524af90de7e75313219fbb0daa19b3ca0c0a4115c41f1",
+    "validation_sha256": "7b18ef06c782d07a505dcd859905c9233e0cc014907c3966d6222115632d336a",
+    "output": "42\n"
   }
 }

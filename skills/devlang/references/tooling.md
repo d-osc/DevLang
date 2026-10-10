@@ -3,21 +3,22 @@
 Use `cargo build --release` when tooling commands are missing; existing v0.4.0
 installers do not include them. d/devrun/devc stay together.
 
-`d new NAME` creates `dev.toml`, src/main.dev and .gitignore; destination must not
+`d new NAME` creates `package.don`, src/main.dev and .gitignore; destination must not
 exist and NAME is a Dev identifier. `d run/build/check` without a filename use
 `[package].entry` (default src/main.dev). `[package].modules` defaults to src.
 Import dependencies as `use "NAME/lib"`; aliases follow ordinary import rules.
-Dependencies require their own dev.toml and declaration-only imported .dev files.
+Dependencies require their own package.don or legacy dev.toml and declaration-only imported .dev files.
 
 `d pkg add NAME --path DIR` or `--git HTTPS_URL [--rev COMMIT_OR_TAG]` updates the
 manifest and installs. `install` keeps existing matching Git commits pinned;
-`update` resolves refs again. Commit dev.toml/dev.lock; ignore .dev/out. `install
+`update` resolves refs again. Commit package.don/dev.lock; ignore .dev/out. `install
 --locked` restores/verifies the pinned lock without rewriting it; missing HTTPS
 checkouts require network. Run/build never fetch. Cached Git content changes are
 errors; intentional local changes require install and a new lock. Local sources
 use relative paths where possible. A lock hashes source bytes, so CRLF changes
 matter. Dependencies are transitive with one flat namespace and conflict errors;
-no registry, semver resolution or publication exists. std is reserved. No hooks
+workspace members and SemVer Git-tag requirements are supported; no registry or
+publication exists. See `packages.md` alongside this reference for commands and limits. std is reserved. No hooks
 or package build scripts are intentionally run; symlinks/submodules unsupported.
 
 `d fmt [FILES/DIRS]` defaults to the project module directory; `--check` changes
@@ -45,3 +46,9 @@ have generated C names. This does not debug the source interpreter or JSON.
 DevLang extension for F5/.dev breakpoints. LLDB must have its runtime dependencies
 on PATH (some Windows builds require a matching Python DLL). Verify a real
 breakpoint with smoke_tooling.py --bin-dir target/release --lldb when available.
+
+Use root `workspace: { members: ["apps/app", "libs/math"] }`, per-member manifests,
+`{ workspace: true, version: "^1" }` dependencies, `d pkg install --workspace` and
+`d run --package app`. The selector changes working directory to the member.
+Path/Git dependencies also accept version; Git selects matching tags and validates
+manifest version. No version backtracking or multiple versions of one namespace.

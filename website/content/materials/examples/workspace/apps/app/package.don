@@ -1,0 +1,3 @@
+version: '0.1.0'
+package: { name: 'app' }
+dependencies: { math: { workspace: true, version: '^1.0' } }

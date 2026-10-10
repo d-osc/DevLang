@@ -16,7 +16,7 @@ const HELP: &str = "Dev Lang
   d check|--check FILE.dev [options]        Check a native program
   d emit|--emit FILE.dev [options]          Emit C source
   d new NAME                              Create a project with package.don
-  d pkg add|install|update|remove|list      Manage path/Git dependencies
+  d pkg add|install|update|remove|list|workspace  Manage path/Git/workspace dependencies
   d don check|fmt|to-json|from-json FILE   Validate or convert data (output to stdout)
   d fmt [--check|--stdout] [FILES/DIRS]     Format source (defaults to src/)
   d lsp [--stdio]                         Start the language server
@@ -28,6 +28,7 @@ Common options (before --):
   -h, --help       Show help, including after a command or filename
   -v, -V, --version  Show d version
   -C, --cwd DIR    Run from a working directory
+  --package NAME   Select a named workspace package (changes working directory)
   --timings        Print runtime or compiler timings to stderr
   --ffi-lib PATH   Load a native shared library in runtime mode (repeatable)
   --engine MODE    Runtime: auto (default) or ast
@@ -64,6 +65,7 @@ fn run() -> Result<i32, String> {
     let raw: Vec<OsString> = env::args_os().skip(1).collect();
     let mut args = Vec::new();
     let mut cwd = None;
+    let mut selected_package = None;
     let mut timings = false;
     let mut at = 0;
     while at < raw.len() {
@@ -75,6 +77,26 @@ fn run() -> Result<i32, String> {
             "--help" | "-h" => {
                 println!("{HELP}");
                 return Ok(0);
+            }
+            "--version"
+                if args.first().is_some_and(|a| a == "pkg")
+                    && args.get(1).is_some_and(|a| a == "add") =>
+            {
+                args.push(raw[at].clone());
+                at += 1;
+                args.push(raw.get(at).ok_or("--version needs a requirement")?.clone());
+            }
+            "--package" => {
+                if selected_package.is_some() {
+                    return Err("duplicate --package".into());
+                }
+                at += 1;
+                selected_package = Some(
+                    raw.get(at)
+                        .and_then(|s| s.to_str())
+                        .ok_or("--package needs a UTF-8 name")?
+                        .to_owned(),
+                );
             }
             "--version" | "-V" | "-v" => {
                 println!("d {}", env!("CARGO_PKG_VERSION"));
@@ -105,6 +127,11 @@ fn run() -> Result<i32, String> {
     if let Some(dir) = &cwd {
         env::set_current_dir(dir)
             .map_err(|e| format!("working directory {}: {e}", dir.display()))?;
+    }
+    if let Some(name) = selected_package {
+        let selected =
+            packages::select_project(&env::current_dir().map_err(|e| e.to_string())?, &name)?;
+        env::set_current_dir(selected).map_err(|e| e.to_string())?;
     }
     if matches!(selector, "new" | "pkg" | "fmt" | "lsp" | "debug" | "don") {
         let values = args

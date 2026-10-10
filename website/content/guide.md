@@ -792,7 +792,7 @@ Selectors อยู่ argument แรก Compiler options ใส่หลัง
 
 ## สิ่งที่ยังไม่มี
 
-Source ล่าสุดมี package manager แบบ path/Git, formatter, LSP เบื้องต้น และ native debugger integration แล้ว ดู [เครื่องมือพัฒนา](#/docs/tooling) ส่วน registry/semver solver, workspace type checking และ interpreter debugger ยังไม่มี เช่นเดียวกับ coroutine event loop, async I/O, channels/cancellation, trait objects, literal/struct/slice patterns, inclusive/custom-step ranges และ iterator for collections
+Source ล่าสุดมี package manager แบบ path/Git, formatter, LSP เบื้องต้น และ native debugger integration แล้ว ดู [เครื่องมือพัฒนา](#/docs/tooling) รองรับ workspace และ SemVer Git tags แล้ว ส่วน registry/global version solver, workspace type checking และ interpreter debugger ยังไม่มี เช่นเดียวกับ coroutine event loop, async I/O, trait objects, literal/struct/slice patterns, inclusive/custom-step ranges และ iterator for collections
 
 Native `str` เป็น borrowed storage และ arbitrary foreign pointers ไม่ได้รับ lifetime proof Shared collection mutation อาจ copy O(n) Capturing raw C callbacks มี slot/lifetime limits ให้เลือก managed userdata API เมื่อเหมาะสม
 
@@ -940,7 +940,7 @@ d pkg list
 d pkg remove math
 ```
 
-Commit manifest และ `dev.lock`; ignore `.dev/` และ `out/` Lockfile เก็บ commit ของ Git และ SHA-256 ของ package files `install` รักษา Git commit เดิมและบันทึก local edits ที่ตั้งใจ `update` resolve Git refs ใหม่ `--locked` ติดตั้ง checkout ที่ขาดด้วย commit เดิมและตรวจเนื้อหาโดยไม่แก้ lock การรัน/build ตรวจ lock แต่ไม่ดาวน์โหลดอัตโนมัติ Git ใช้ HTTPS/file URL และต้องมี Git ติดตั้ง รองรับ transitive dependencies แบบ namespace เดียว ถ้าชื่อชนกันคนละ source จะเป็น error ยังไม่มี registry, semver solver หรือ publish command
+Commit manifest และ `dev.lock`; ignore `.dev/` และ `out/` Lockfile เก็บ commit ของ Git และ SHA-256 ของ package files `install` รักษา Git commit เดิมและบันทึก local edits ที่ตั้งใจ `update` resolve Git refs ใหม่ `--locked` ติดตั้ง checkout ที่ขาดด้วย commit เดิมและตรวจเนื้อหาโดยไม่แก้ lock การรัน/build ตรวจ lock แต่ไม่ดาวน์โหลดอัตโนมัติ Git ใช้ HTTPS/file URL และต้องมี Git ติดตั้ง รองรับ transitive dependencies แบบ namespace เดียว ถ้าชื่อชนกันคนละ source จะเป็น error รองรับ workspace และเลือก Git tag ตาม SemVer แล้ว ดู [Workspace และ versions](#/docs/packages) ยังไม่มี registry หรือ publish command
 
 ## Formatter
 
@@ -1100,7 +1100,7 @@ dependencies: {
 
 `'@version'` เป็นข้อความธรรมดา ส่วน `rev: version` ยังใช้ไม่ได้ ต้องมี `@`
 key ที่ไม่มีอยู่และ reference วนกันจะเกิด error เมื่อ serialize หรือแก้ dependencies จะเขียนค่าที่ resolve แล้ว
-field `version` ชั้นนอกเป็น metadata ของ package ยังไม่ได้ใช้แก้ semver dependencies
+field `version` ชั้นนอกเป็น metadata ของ package และจะตรวจเมื่อ dependency ระบุ SemVer requirement ดู [Workspace และ versions](#/docs/packages)
 
 # [basic-libs] ไลบรารีพื้นฐาน: Math, Random, Strings, Datetime, Test และ Log
 
@@ -1408,3 +1408,55 @@ main()
 
 ชุดนี้ใช้ runtime เท่านั้นและยังไม่ใช่ coroutine async I/O
 อ่าน [API, timeout และข้อจำกัด](../../docs/sync.md)
+
+# [packages] Workspace และ dependency versions
+
+Source build ล่าสุดรองรับหลาย package ใน repository เดียว และ dependency version แบบ SemVer สำหรับ path, workspace และ Git tags ดูสัญญาการใช้งานทั้งหมดใน [Packages reference](#/docs/packages-reference)
+
+## Workspace
+
+สร้าง `package.don` ที่ root และ manifest ของแต่ละ member เช่นตัวอย่าง `examples/workspace`:
+
+```don
+version: '0.1.0'
+package: { name: 'monorepo' }
+workspace: { members: ['apps/app', 'libs/math'] }
+```
+
+ใน `apps/app/package.don` อ้างอิง library ด้วยชื่อ package:
+
+```don
+version: '0.1.0'
+package: { name: 'app', entry: 'src/main.dev', modules: 'src' }
+dependencies: {
+  math: { workspace: true, version: '^1.0' }
+}
+```
+
+Library `libs/math/package.don` ต้องมี `package.name: 'math'` และ `version` ที่ตรงเงื่อนไข จากนั้น import ด้วย `use "math/lib"` แต่ละ member มี `dev.lock` และ cache ของตัวเอง
+
+```sh
+d -C examples/workspace pkg workspace
+d -C examples/workspace pkg install --workspace
+d -C examples/workspace run --package app
+d -C examples/workspace build --package app --release -o out/app.exe
+d -C examples/workspace pkg install --workspace --locked
+```
+
+`--package NAME` เปลี่ยน directory ไปยัง member ก่อนทำคำสั่ง จึงคิด path ของไฟล์, output และ I/O แบบ relative จาก member นั้น ใช้ได้กับ run/build/check/fmt/pkg ต้องประกาศ member ด้วย path ที่แน่นอนภายใน root ไม่รองรับ glob, symlink หรือ nested workspace
+
+## เลือก version
+
+```sh
+d pkg add math --workspace --version '^1'
+d pkg add math --path ../math --version '~1.2'
+# เปลี่ยน URL ตัวอย่างเป็น repository ของคุณ:
+d pkg add math --git https://github.com/your-org/math.git --version '^1.2'
+d pkg update
+```
+
+`^1.2` รับ stable version ตั้งแต่ 1.2.0 และต่ำกว่า 2.0.0; `~1.2` จำกัดใน 1.2.x; `=1.2.3` เลือก version เดียว ใช้ comma เช่น `>=1.2, <2` ได้ แต่ยังไม่รองรับ npm `||` หรือ hyphen ranges Prerelease ต้องระบุเงื่อนไขที่อนุญาตไว้ชัดเจน
+
+Git จะเลือก tag สูงสุดที่ตรงเงื่อนไข เช่น `v1.2.3` และตรวจ version ใน manifest ด้วย `install` รักษา commit เดิม ส่วน `update` เลือก tag ใหม่ `--locked` ตรวจ source/requirements/content และกู้ checkout ที่ขาดโดยใช้ commit เดิม ระบุ `rev` พร้อม `version` ไม่ได้
+
+ยังเป็น namespace เดียว: constraints ที่ใช้ version ที่เลือกเดียวกันได้จะแชร์ package แต่ไม่มี backtracking หรือหลาย version ของชื่อเดียวกัน และยังไม่มี public registry/publish ถ้า add/remove ติดตั้งไม่สำเร็จจะคืน manifest เดิม การติดตั้ง `--workspace` ไม่เป็น transaction ทั้งกลุ่ม

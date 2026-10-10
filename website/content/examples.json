@@ -726,5 +726,23 @@
     "commands": [
       "d examples/sync/main.dev"
     ]
+  },
+  {
+    "id": "workspace",
+    "title": "Workspace และ version ของ dependencies",
+    "category": "Modules",
+    "path": "examples/workspace/apps/app/src/main.dev",
+    "description": "หลาย package ใน repository เดียว พร้อม workspace dependencies และ SemVer",
+    "doc": "packages",
+    "mode": "runtime",
+    "package_roots": [
+      "examples/workspace"
+    ],
+    "project_root": "examples/workspace",
+    "commands": [
+      "d -C examples/workspace pkg install --workspace",
+      "d -C examples/workspace run --package app",
+      "d -C examples/workspace build --package app --release -o out/app.exe"
+    ]
   }
 ]

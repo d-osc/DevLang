@@ -1,0 +1,4 @@
+use "math/lib"
+
+fn main() { print(lib.add(19, 23)) }
+main()

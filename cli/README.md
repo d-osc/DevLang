@@ -34,6 +34,7 @@ Basic options:
 | `-h`, `--help` | Show help, including `d build --help` or `d FILE.dev -h` |
 | `-v`, `-V`, `--version` | Show launcher version |
 | `-C DIR`, `--cwd DIR` | Execute relative to DIR; accepted before or after the command |
+| `--package NAME` | Select a package in the enclosing workspace; relative paths use its directory |
 | `-e CODE`, `--eval CODE` | Interpret inline statements |
 | `--engine auto\|ast` | Runtime engine: numeric plans with AST fallback (default), or reference AST execution |
 | `--timings` | Report load/execution timings for runtime, build timings for compiler, on stderr |
@@ -66,3 +67,6 @@ C backend required on the first run; later runs reuse `.dev-cache/native/`.
 Compilation only needs `d`
 and `devc` plus a C backend. The launcher has no compiler/runtime crate
 dependencies. To use the bare command, add the bundle directory to your PATH.
+
+Workspaces and Git-tag SemVer requirements are described in [Packages](../docs/packages.md).
+Use `d pkg workspace`, `d pkg install --workspace`, and `d run --package NAME`.
