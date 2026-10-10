@@ -41,4 +41,19 @@ with tempfile.TemporaryDirectory(prefix='dev-peers-') as temporary:
     manifest.pop('devDependencies')
     (app / 'package.don').write_text(json.dumps(manifest))
     command('pkg', 'install', error="requires peer 'math'")
+    # The root package can provide an importable host peer.
+    manifest['package']['name'] = 'math'
+    manifest['version'] = '1.2.0'
+    (app / 'src/lib.dev').write_text('fn add(a i64, b i64) i64 { return a + b }\n', encoding='utf-8')
+    (app / 'package.don').write_text(json.dumps(manifest), encoding='utf-8')
+    command('pkg', 'install')
+    assert command('run') == '42'
+    assert command('run', '--engine', 'ast') == '42'
+    # A peer-only manifest must not bypass verification when no lock exists.
+    (app / 'package-lock.don').unlink()
+    manifest['dependencies'] = {}
+    manifest['peerDependencies'] = {'absent': '^1'}
+    (app / 'package.don').write_text(json.dumps(manifest), encoding='utf-8')
+    command('run', error='run d pkg install')
+    command('pkg', 'install', error="requires peer 'absent'")
 print('PASS: peer provider resolution, versions, locked checks, development mode and CLI rollback')

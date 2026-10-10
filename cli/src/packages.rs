@@ -625,7 +625,7 @@ fn install_mode(project: &Path, locked: bool, refresh: bool, production: bool) -
 }
 pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
     let m = manifest(project)?;
-    if m.dependencies.is_empty() && m.dev_dependencies.is_empty() && !lock_path(project).exists() {
+    if m.dependencies.is_empty() && m.dev_dependencies.is_empty() && m.peer_dependencies.is_empty() && !lock_path(project).exists() {
         return Ok(Vec::new());
     }
     let lock: Lock =
@@ -713,6 +713,9 @@ pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
                 "package-lock.don contains stale dependency requirements; run d pkg install".into(),
             );
         }
+    }
+    if !lock.packages.contains_key(&m.package.name) {
+        dirs.push((m.package.name.clone(), project.join(relative(&m.package.modules)?)));
     }
     dirs.sort();
     verify_peers(project, &lock)?;
