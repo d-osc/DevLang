@@ -13,7 +13,14 @@ On Windows, Shift+Alt+F runs Format Document using DevLang by default.
 Formatting calls `d fmt --stdout` independently of the language server and
 includes unsaved edits. Configure `devlang.executablePath` to a current CLI
 with `fmt` support; the CLI is not bundled in this extension.
-For file icons, select **Preferences: File Icon Theme** → **DevLang File Icons**.
+When Material Icon Theme is active, DevLang automatically adds its .dev SVG icon
+through that theme's supported custom file association setting. Other icons and
+explicit custom .dev associations are preserved. The SVG is stored in a sibling
+devlang-file-icons directory under the installed extensions directory, so Material
+updates do not delete it. Disable `devlang.autoFileIcon` in User Settings to remove
+the automatic association. Integration activates in trusted local workspaces at
+startup and refreshes when the theme or installed extensions change.
+Other icon themes can select **Preferences: File Icon Theme** → **DevLang File Icons**.
 The language also supplies a default .dev icon; other icon themes may override it.
 DevLang syntax colors apply only to DevLang token scopes, keeping your existing
 VS Code theme. Keywords are lavender, strings green, numbers peach,

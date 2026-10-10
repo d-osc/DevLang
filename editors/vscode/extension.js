@@ -4,9 +4,12 @@ const { execFile } = require('node:child_process');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
+const { setupFileIcons } = require('./file-icons');
 let client;
+let starting;
 
 async function activate(context) {
+    setupFileIcons(vscode, context);
     context.subscriptions.push(vscode.languages.registerDocumentFormattingEditProvider('devlang', {
         async provideDocumentFormattingEdits(document, options, token) {
             const version = document.version;
@@ -32,6 +35,23 @@ async function activate(context) {
             }
         },
     }));
+    const ensureServer = () => {
+        if (!starting) starting = startServer();
+        return starting;
+    };
+    context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(document => {
+        if (document.languageId === 'devlang') void ensureServer();
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('devlang.restartServer', async () => {
+        if (client) await client.dispose();
+        client = undefined;
+        starting = undefined;
+        await ensureServer();
+    }));
+    if (vscode.workspace.textDocuments.some(document => document.languageId === 'devlang')) await ensureServer();
+}
+
+async function startServer() {
     const command = vscode.workspace.getConfiguration('devlang').get('executablePath', 'd');
     client = new LanguageClient('devlang', 'DevLang', {
         command,
@@ -40,11 +60,6 @@ async function activate(context) {
     }, {
         documentSelector: [{ scheme: 'file', language: 'devlang' }],
     });
-    context.subscriptions.push(vscode.commands.registerCommand('devlang.restartServer', async () => {
-        await client.stop();
-        await client.start();
-        client.getFeature('textDocument/formatting').clear();
-    }));
     try {
         await client.start();
         client.getFeature('textDocument/formatting').clear();

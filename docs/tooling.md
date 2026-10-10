@@ -130,6 +130,12 @@ Install via **Extensions: Install from VSIX**. Configure
 `devlang.executablePath` with the latest absolute `d` path, or put the directory
 containing all three binaries on PATH. Open a trusted project and a `.dev` file.
 The extension supplies syntax highlighting, LSP, formatting and .dev breakpoints.
+When Material Icon Theme is active in a trusted local workspace, the extension
+automatically associates its .dev SVG icon using Material's custom file settings.
+Other icons and existing custom .dev mappings are preserved. Disable
+`devlang.autoFileIcon` in User Settings to remove the generated association.
+Other themes can use the language's default icon when supported or explicitly
+select the separate DevLang File Icons theme.
 **DevLang: Restart Language Server** reconnects with the configured executable;
 reload the extension host after changing its executable path.
 

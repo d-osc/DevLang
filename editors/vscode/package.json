@@ -2,7 +2,7 @@
   "name": "devlang-language",
   "displayName": "DevLang",
   "description": "DevLang syntax, formatting, language server and native breakpoint support.",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "publisher": "n-devs",
   "license": "MIT",
   "repository": {
@@ -18,7 +18,8 @@
   ],
   "main": "./extension.js",
   "activationEvents": [
-    "onLanguage:devlang"
+    "onLanguage:devlang",
+    "onStartupFinished"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -27,7 +28,7 @@
     }
   },
   "scripts": {
-    "check": "node --check extension.js",
+    "check": "node --check extension.js && node --check file-icons.js",
     "package": "vsce package"
   },
   "dependencies": {
@@ -74,6 +75,12 @@
           "default": "d",
           "scope": "machine-overridable",
           "description": "Path to the latest d executable. Restart the extension host after changing it."
+        },
+        "devlang.autoFileIcon": {
+          "type": "boolean",
+          "default": true,
+          "scope": "application",
+          "description": "Automatically add the DevLang .dev file icon to the active Material Icon Theme. Keeps other icons and existing custom .dev associations. Disable to remove the automatic association."
         }
       }
     },
