@@ -1,0 +1,4 @@
+package: { name: 'math', entry: 'src/lib.dev' }
+bin: {
+    math-add: 'src/cli.dev'
+}

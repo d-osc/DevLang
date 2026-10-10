@@ -1,0 +1,10 @@
+package: { name: 'bin_app' }
+bin: {
+    hello: 'src/cli.dev'
+}
+dependencies: {
+    math: { path: '../math' }
+}
+devDependencies: {
+    testkit: { path: '../testkit' }
+}

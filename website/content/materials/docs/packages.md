@@ -92,6 +92,17 @@ Within one package graph, namespaces remain flat. Different version declarations
 
 `pkg add` / `pkg remove` restore the original manifest bytes if dependency installation fails. Completed cache fetches may remain; failed/verification fetch directories are retained for inspection. Successful mutation still rewrites DON formatting/comments as before.
 
+## Package commands (`bin`)
+
+```don
+package: { name: 'my_cli' }
+bin: { mycli: 'src/cli.dev' }
+```
+
+`pkg install` creates local launchers in `.dev/bin` (`NAME.cmd` on Windows; executable shell scripts on Unix). `d exec NAME [-- arguments]` runs a command from the current package or installed dependency with devrun and the consumer project's module mappings. `d pkg bin` lists commands. Program arguments are forwarded literally and child exit codes are preserved. Working directory is the consumer project root. No global PATH changes are made. Reinstall to regenerate launchers after moving the project or `d`.
+
+Command names support ASCII letters, digits, underscore and hyphen, beginning with a letter or underscore; reserved Windows device names are rejected. Entries are `.dev` files inside the package. Duplicate names (case-insensitive), missing files and escaping paths fail install. Production installation removes generated development-only launchers but preserves custom files and cached dependencies. Locked installs refresh launchers. See [the complete bin example](../examples/package-bin/README.md).
+
 ## Development dependencies
 
 `devDependencies` uses the same dependency source objects as `dependencies`:

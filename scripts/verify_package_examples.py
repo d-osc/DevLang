@@ -52,4 +52,6 @@ for name in ['github-tag', 'archive-url']:
     count += 1
 subprocess.run([sys.executable, str(repo / 'scripts/smoke_dev_dependencies.py'), '--d', str(d)], check=True, timeout=120)
 count += 1
+subprocess.run([sys.executable, str(repo / 'scripts/smoke_package_bins.py'), '--d', str(d)], check=True, timeout=120)
+count += 1
 print(f'PASS: {count} package example groups')

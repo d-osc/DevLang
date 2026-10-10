@@ -31,6 +31,7 @@ fn is_false(value: &bool) -> bool {
 }
 include!("workspace.rs");
 include!("package_archives.rs");
+include!("package_bins.rs");
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Package {
@@ -101,6 +102,8 @@ pub struct Manifest {
     pub dependencies: BTreeMap<String, Dependency>,
     #[serde(default, rename = "devDependencies", alias = "dev-dependencies", skip_serializing_if = "BTreeMap::is_empty")]
     pub dev_dependencies: BTreeMap<String, Dependency>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub bin: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub workspace: Option<Workspace>,
 }
@@ -216,6 +219,11 @@ pub fn manifest(root: &Path) -> Result<Manifest, String> {
     }
     relative(&m.package.entry)?;
     relative(&m.package.modules)?;
+    for (name, entry) in &m.bin {
+        if !bin_name(name) { return Err("invalid bin command name".into()); }
+        relative(entry)?;
+        if !entry.ends_with(".dev") { return Err("bin entry must be a .dev source file".into()); }
+    }
     Ok(m)
 }
 fn manifest_path(root: &Path) -> PathBuf {
@@ -592,12 +600,16 @@ fn install_mode(project: &Path, locked: bool, refresh: bool, production: bool) -
         if result != previous {
             return Err("dependencies differ from package-lock.don".into());
         }
+        let bins = package_bins(project, &result)?;
+        install_bins(project, &bins)?;
         if old_path.file_name().is_some_and(|n| n == "dev.lock") {
             write(&project.join("package-lock.don"), &previous)?;
         }
         println!("dependencies verified against package-lock.don");
         Ok(())
     } else {
+        let bins = package_bins(project, &result)?;
+        install_bins(project, &bins)?;
         write(&project.join("package-lock.don"), &result)
     }
 }
@@ -718,6 +730,7 @@ pub fn new(path: &Path) -> Result<i32, String> {
             },
             dependencies: BTreeMap::new(),
             dev_dependencies: BTreeMap::new(),
+            bin: BTreeMap::new(),
             workspace: None,
         },
     )?;
@@ -790,6 +803,11 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             change_manifest(&project,&m)?;
         }
         Some("list") if args.len() == 1 => { for (name, dir) in mappings(&project)? { println!("{name} {}", dir.display()); } }
+        Some("bin") if args.len() == 1 => {
+            mappings(&project)?;
+            let lock: Lock = if lock_path(&project).exists() { read(&lock_path(&project))? } else { Lock::default() };
+            for (name, entry) in package_bins(&project, &lock)? { println!("{name} {}", entry.display()); }
+        }
         _ => return Err("pkg add NAME --path DIR | --url URL --sha256 HEX | --git URL | --workspace [--tag TAG | --branch NAME | --version REQUIREMENT]; pkg install [--locked] [--workspace] [--production]; pkg update [--workspace] [--production]; pkg workspace; pkg remove NAME [--dev]; pkg list".into()),
     }
     Ok(0)

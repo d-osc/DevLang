@@ -1,0 +1,4 @@
+package: { name: 'testkit', entry: 'src/lib.dev' }
+bin: {
+    dev-check: 'src/cli.dev'
+}

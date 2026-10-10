@@ -1,0 +1,2 @@
+fn main() { print("Use d exec hello or d exec math-add"); return 0 }
+return main()

@@ -1,0 +1,9 @@
+use "std/args"
+fn main() {
+    print("Hello from package bin")
+    for index in 0..(args.len() as i64) {
+        print(args.get(index))
+    }
+    return 0
+}
+return main()

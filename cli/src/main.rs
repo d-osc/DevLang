@@ -16,6 +16,8 @@ const HELP: &str = "Dev Lang
   d check|--check FILE.dev [options]        Check a native program
   d emit|--emit FILE.dev [options]          Emit C source
   d new NAME                              Create a project with package.don
+  d exec NAME [-- arguments]              Run a local or installed package bin
+  d pkg bin                              List available bin commands
   d pkg add|install|update|remove|list|workspace  Manage path/Git/workspace dependencies
   d don check|fmt|fmt-source|to-json|from-json FILE   Validate or convert data (output to stdout)
   d fmt [--check|--stdout] [FILES/DIRS]     Format source (defaults to src/)
@@ -69,6 +71,10 @@ fn run() -> Result<i32, String> {
     let mut timings = false;
     let mut at = 0;
     while at < raw.len() {
+        if args.first().is_some_and(|a| a == "exec") && args.len() >= 2 {
+            args.extend_from_slice(&raw[at..]);
+            break;
+        }
         match raw[at].to_str().unwrap_or("") {
             "--" => {
                 args.extend_from_slice(&raw[at..]);
@@ -133,7 +139,7 @@ fn run() -> Result<i32, String> {
             packages::select_project(&env::current_dir().map_err(|e| e.to_string())?, &name)?;
         env::set_current_dir(selected).map_err(|e| e.to_string())?;
     }
-    if matches!(selector, "new" | "pkg" | "fmt" | "lsp" | "debug" | "don") {
+    if matches!(selector, "new" | "pkg" | "fmt" | "lsp" | "debug" | "don" | "exec") {
         let values = args
             .iter()
             .skip(1)
@@ -147,6 +153,7 @@ fn run() -> Result<i32, String> {
             "new" if values.len() == 1 => packages::new(std::path::Path::new(&values[0])),
             "new" => Err("usage: d new NAME".into()),
             "pkg" => packages::command(&values),
+            "exec" => packages::exec_bin(&values),
             "don" => don::command(&values),
             "fmt" => format::command(&values),
             "lsp" => lsp::command(&values),
