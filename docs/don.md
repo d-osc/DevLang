@@ -60,7 +60,7 @@ package: { name: 'my_app', entry: 'src/main.dev', modules: 'src' }
 dependencies: {
   utils: {
     git: 'https://github.com/example/utils.git'
-    rev: @version
+    tag: @version
   }
 }
 ```
@@ -69,7 +69,7 @@ dependencies: {
 root. Each path segment must be a bare identifier; quoted keys/array indices are
 not supported in reference paths. Forward references are supported. Values retain
 their types, including numbers, booleans, arrays and objects, and are copied into
-the result. `'@version'` remains a literal string; `rev: version` is invalid.
+the result. `'@version'` remains a literal string; `tag: version` is invalid.
 Missing targets and direct/indirect cycles are errors. Reference expansion has
 an 8 MiB data budget and a 128-level traversal limit to reject expansion bombs.
 Serialization and `d pkg add/remove` write resolved values, not original references.
@@ -125,7 +125,7 @@ main()
 DevLang manifest schema**, shown above: `package.name`, `package.entry`,
 `package.modules`, optional root `version` (string), and `dependencies`. Version
 is metadata and is checked against dependency `version` requirements when supplied.
-A dependency uses `path`, `git` with optional `rev` or `version`, or `workspace: true`.
+A dependency uses `path`, `git` with optional `tag` or `version`, or `workspace: true`.
 See [workspaces and SemVer](packages.md) for the resolver contracts. Entry/modules paths must be relative without `..`; package
 names and dependency namespaces must be Dev identifiers.
 

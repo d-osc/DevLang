@@ -13,7 +13,7 @@ pub struct Dependency {
     pub path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub git: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "tag", alias = "rev", skip_serializing_if = "Option::is_none")]
     pub rev: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
@@ -40,6 +40,17 @@ fn entry() -> String {
 #[cfg(test)]
 mod manifest_tests {
     use super::*;
+    #[test]
+    fn tag_is_canonical_and_rev_remains_a_legacy_alias() {
+        let current = serde_json::json!({"git":"https://github.com/example/math.git","tag":"v1.2.0"});
+        let legacy = serde_json::json!({"git":"https://github.com/example/math.git","rev":"v1.2.0"});
+        let dep: Dependency = serde_json::from_value(current.clone()).unwrap();
+        let old: Dependency = serde_json::from_value(legacy).unwrap();
+        assert!(dep == old);
+        assert_eq!(serde_json::to_value(&dep).unwrap(), current);
+        assert!(serde_json::from_value::<Dependency>(serde_json::json!({"git":"https://github.com/example/math.git","tag":"v1","rev":"v2"})).is_err());
+        assert!(validate_dependency(&Dependency { version: Some("^1".into()), ..dep }).is_err());
+    }
     #[test]
     fn don_version_and_dependency_reference() {
         let text = "version:'v1.0.0'\npackage:{name:'app'}\ndependencies:{utils:{git:'https://github.com/example/utils.git'\nrev:@version}}";
@@ -388,7 +399,7 @@ fn resolve(
                     Some(commit),
                 )
             }
-            _ => return Err("dependency needs exactly one of path or git; rev is Git-only".into()),
+            _ => return Err("dependency needs exactly one of path or git; tag is Git-only".into()),
         }
     };
     let path = dunce::simplified(&path).to_owned();
@@ -685,16 +696,17 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             for (name,at) in workspace_members(&root)? { println!("{name} {}",at.display()); }
         }
         Some("add") => {
-            let name = args.get(1).ok_or("pkg add NAME --path DIR | --git URL [--rev REF]")?;
+            let name = args.get(1).ok_or("pkg add NAME --path DIR | --git URL [--tag TAG]")?;
             if !identifier(name) { return Err("invalid dependency name".into()); }
             let mut dep = Dependency { path: None, git: None, rev: None, version: None, workspace: false };
             let mut at = 2;
             let mut seen=BTreeSet::new();
             while at < args.len() {
-                if !seen.insert(args[at].clone()) { return Err("duplicate dependency option".into()); }
+                let option = if args[at] == "--rev" { "--tag" } else { args[at].as_str() };
+                if !seen.insert(option.to_owned()) { return Err("duplicate dependency option".into()); }
                 if args[at] == "--workspace" { dep.workspace=true; at+=1; continue; }
                 let value = args.get(at + 1).ok_or("dependency option needs value")?.clone();
-                match args[at].as_str() { "--path" => { let absolute = dunce::canonicalize(&value).map_err(|e| e.to_string())?; dep.path = Some(pathdiff::diff_paths(&absolute,&project).unwrap_or(absolute).to_string_lossy().replace('\\', "/")); }, "--git" => dep.git = Some(value), "--rev" => dep.rev = Some(value), "--version" => dep.version=Some(value), _ => return Err("unknown dependency option".into()) }
+                match args[at].as_str() { "--path" => { let absolute = dunce::canonicalize(&value).map_err(|e| e.to_string())?; dep.path = Some(pathdiff::diff_paths(&absolute,&project).unwrap_or(absolute).to_string_lossy().replace('\\', "/")); }, "--git" => dep.git = Some(value), "--tag" | "--rev" => dep.rev = Some(value), "--version" => dep.version=Some(value), _ => return Err("unknown dependency option".into()) }
                 at += 2;
             }
             validate_dependency(&dep)?;
@@ -702,7 +714,7 @@ pub fn command(args: &[String]) -> Result<i32, String> {
         }
         Some("remove") if args.len() == 2 => { let mut m = manifest(&project)?; m.dependencies.remove(&args[1]).ok_or("dependency does not exist")?; change_manifest(&project,&m)?; }
         Some("list") if args.len() == 1 => { for (name, dir) in mappings(&project)? { println!("{name} {}", dir.display()); } }
-        _ => return Err("pkg add NAME --path DIR | --git URL | --workspace [--rev REF | --version REQUIREMENT]; pkg install [--locked] [--workspace]; pkg update [--workspace]; pkg workspace; pkg remove NAME; pkg list".into()),
+        _ => return Err("pkg add NAME --path DIR | --git URL | --workspace [--tag TAG | --version REQUIREMENT]; pkg install [--locked] [--workspace]; pkg update [--workspace]; pkg workspace; pkg remove NAME; pkg list".into()),
     }
     Ok(0)
 }

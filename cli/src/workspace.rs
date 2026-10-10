@@ -127,7 +127,7 @@ fn validate_dependency(dep: &Dependency) -> Result<(), String> {
         return Err("dependency needs exactly one of path, git or workspace".into());
     }
     if dep.rev.is_some() && (dep.git.is_none() || dep.version.is_some()) {
-        return Err("rev is Git-only and cannot be combined with version".into());
+        return Err("tag is Git-only and cannot be combined with version".into());
     }
     requirement(dep)?;
     Ok(())

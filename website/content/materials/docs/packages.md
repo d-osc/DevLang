@@ -1,5 +1,7 @@
 # Workspaces and version requirements
 
+For a complete runnable `package.don` example covering manifest fields, workspace and path dependencies, Git templates, DON references and lock commands, see [the full package example](../examples/package-don/README.md).
+
 Use the current source-built `d`, `devrun` and `devc`. These additions extend the existing path/Git package manager; there is no public package registry or publish command yet.
 
 ## Workspace layout
@@ -51,6 +53,8 @@ Group installation is not a transaction across all packages: an error in a later
 
 ## SemVer dependencies
 
+Use `tag: 'v1.2.0'` or `pkg add NAME --git URL --tag v1.2.0` to select a Git ref. `rev` and `--rev` remain legacy aliases for existing manifests and locks; newly written manifests and locks use `tag`. Do not specify both names or combine `tag` with a dependency `version`.
+
 The optional root manifest `version` supplies the package's version. A dependency may add `version` to path, Git or workspace sources:
 
 ```don
@@ -78,7 +82,7 @@ The URL above is a placeholder. Git version resolution enumerates repository tag
 
 Requirements follow [the semver crate syntax](https://docs.rs/semver/latest/semver/struct.VersionReq.html); they are not npm's full range syntax. `||`, space-separated comparator intersections and hyphen ranges are unsupported. Ordinary ranges/wildcards do not automatically opt into prereleases. Requirements are capped at 256 bytes.
 
-Local/workspace requirements validate the member's manifest version; they do not fetch another version. Git requirements select a tag during initial install or explicit `pkg update`. Regular install keeps a matching locked commit pinned. `--locked` restores the exact old commit and verifies its contents even if newer tags exist. `resolved_version` in dev.lock records the selected version. `rev` remains available for arbitrary Git refs but cannot be combined with a dependency version.
+Local/workspace requirements validate the member's manifest version; they do not fetch another version. Git requirements select a tag during initial install or explicit `pkg update`. Regular install keeps a matching locked commit pinned. `--locked` restores the exact old commit and verifies its contents even if newer tags exist. `resolved_version` in dev.lock records the selected version. `tag` remains available for arbitrary Git refs but cannot be combined with a dependency version.
 
 Within one package graph, namespaces remain flat. Different version declarations for the same source can share an already selected version when it satisfies both requirements; all declarations are recorded in the lock. Different sources, incompatible constraints or a later constraint that excludes the selected version are rejected. There is no backtracking to a lower tag, multi-version namespace support, or npm-style global solver yet. Dependencies with and without version requirements for the same namespace are not merged.
 

@@ -1,0 +1,7 @@
+use "math/lib" as math
+
+fn main() {
+    print(math.add(19, 23))
+    return 0
+}
+return main()

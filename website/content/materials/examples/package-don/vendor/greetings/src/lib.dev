@@ -1,0 +1,3 @@
+fn message() str {
+    return "Hello from package.don"
+}

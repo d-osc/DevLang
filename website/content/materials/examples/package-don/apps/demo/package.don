@@ -1,0 +1,17 @@
+# Application consuming a workspace library and a local path library.
+version: '1.0.0'
+package: {
+    name: 'demo_app'
+    entry: 'src/main.dev'
+    modules: 'src'
+}
+dependencies: {
+    math: {
+        workspace: true
+        version: '^1.2'
+    }
+    greetings: {
+        path: '../../vendor/greetings'
+        version: '=1.0.0'
+    }
+}

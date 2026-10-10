@@ -40,7 +40,7 @@ Local dependency paths may use `..` and are resolved relative to their manifest.
 ```sh
 d pkg add math --path ../math
 # Git URL below is a placeholder for your actual library repository:
-d pkg add math --git https://github.com/your-org/math.git --rev v1.0.0
+d pkg add math --git https://github.com/your-org/math.git --tag v1.0.0
 d pkg install
 d pkg install --locked
 d pkg update

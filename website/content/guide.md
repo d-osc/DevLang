@@ -932,7 +932,7 @@ Dependency ต้องมี `package.don` หรือ `dev.toml` ของต
 ```sh
 d pkg add math --path ../math
 # ตัวอย่าง URL ต้องเปลี่ยนเป็น repository library ของคุณ:
-d pkg add math --git https://github.com/your-org/math.git --rev v1.0.0
+d pkg add math --git https://github.com/your-org/math.git --tag v1.0.0
 d pkg install
 d pkg install --locked
 d pkg update
@@ -1093,12 +1093,12 @@ package: { name: 'my_app', entry: 'src/main.dev', modules: 'src' }
 dependencies: {
   utils: {
     git: 'https://github.com/example/utils.git'
-    rev: @version
+    tag: @version
   }
 }
 ```
 
-`'@version'` เป็นข้อความธรรมดา ส่วน `rev: version` ยังใช้ไม่ได้ ต้องมี `@`
+`'@version'` เป็นข้อความธรรมดา ส่วน `tag: version` ยังใช้ไม่ได้ ต้องมี `@`
 key ที่ไม่มีอยู่และ reference วนกันจะเกิด error เมื่อ serialize หรือแก้ dependencies จะเขียนค่าที่ resolve แล้ว
 field `version` ชั้นนอกเป็น metadata ของ package และจะตรวจเมื่อ dependency ระบุ SemVer requirement ดู [Workspace และ versions](#/docs/packages)
 
@@ -1457,7 +1457,7 @@ d pkg update
 
 `^1.2` รับ stable version ตั้งแต่ 1.2.0 และต่ำกว่า 2.0.0; `~1.2` จำกัดใน 1.2.x; `=1.2.3` เลือก version เดียว ใช้ comma เช่น `>=1.2, <2` ได้ แต่ยังไม่รองรับ npm `||` หรือ hyphen ranges Prerelease ต้องระบุเงื่อนไขที่อนุญาตไว้ชัดเจน
 
-Git จะเลือก tag สูงสุดที่ตรงเงื่อนไข เช่น `v1.2.3` และตรวจ version ใน manifest ด้วย `install` รักษา commit เดิม ส่วน `update` เลือก tag ใหม่ `--locked` ตรวจ source/requirements/content และกู้ checkout ที่ขาดโดยใช้ commit เดิม ระบุ `rev` พร้อม `version` ไม่ได้
+Git จะเลือก tag สูงสุดที่ตรงเงื่อนไข เช่น `v1.2.3` และตรวจ version ใน manifest ด้วย `install` รักษา commit เดิม ส่วน `update` เลือก tag ใหม่ `--locked` ตรวจ source/requirements/content และกู้ checkout ที่ขาดโดยใช้ commit เดิม ระบุ `tag` พร้อม `version` ไม่ได้
 
 ยังเป็น namespace เดียว: constraints ที่ใช้ version ที่เลือกเดียวกันได้จะแชร์ package แต่ไม่มี backtracking หรือหลาย version ของชื่อเดียวกัน และยังไม่มี public registry/publish ถ้า add/remove ติดตั้งไม่สำเร็จจะคืน manifest เดิม การติดตั้ง `--workspace` ไม่เป็น transaction ทั้งกลุ่ม
 
@@ -1481,7 +1481,7 @@ Extension `n-devs.devlang-language` รุ่น 0.2.0 รองรับไฟ�
 // เวอร์ชันเดียวกัน
 version: 'v1.0.0'
 dependencies: {
-    utils: { git: 'https://github.com/example/utils.git', rev: @version }
+    utils: { git: 'https://github.com/example/utils.git', tag: @version }
 }
 ```
 
