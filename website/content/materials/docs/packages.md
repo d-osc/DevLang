@@ -138,3 +138,20 @@ peerDependencies: { math: '^1.2' }
 The complete installed graph must provide `math` with a manifest `version` matching this semantic version requirement. The root package itself may also provide a peer by its package name and version. Missing peers, missing versions and incompatible versions fail installation and run/build checks. Peers are not downloaded automatically. A development dependency can provide a peer in development mode; production mode requires a production provider.
 
 Use `d pkg add math --peer --version '^1.2'` or `d pkg remove math --peer`. `--peer` cannot be combined with source options or `--dev`. See `examples/peer-dependencies` for an app, plugin and shared math library.
+
+## Static registries and publishing
+
+`d pkg publish --registry DIRECTORY` writes a local static `index.don` and immutable `.tar.gz` package versions. The output directory must be outside the source package. Publish requires a valid SemVer package version, portable production dependencies (HTTP(S) URL with checksum or Git tag over HTTPS), an existing module directory and valid bin entries. Development dependencies/workspace metadata are removed from the packed manifest. Sources are copied with the same exclusions and symlink rejection as global snapshots, then validated with the consumer's archive extractor. Re-publishing a version fails; increment version instead.
+
+Serve the directory with your HTTP server or HTTPS hosting provider, then use:
+
+```sh
+d pkg search --registry https://packages.example.org/index.don math
+d pkg add math --registry https://packages.example.org/index.don --version '^1.2'
+```
+
+`search` works outside a project. HTTP(S) and file URLs are supported. Selection chooses the highest matching SemVer; default `*` excludes prereleases. The resolved manifest stores the exact version, archive URL and SHA-256, so locked cached installs do not require the registry online. `--dev` works; other source options/`--peer` cannot be combined with `--registry`. The original registry/range are not stored: `pkg update` retains this archive, and repeating `pkg add --registry` re-resolves the index.
+
+This is a static registry protocol, not a hosted central service or remote upload API. Checksums authenticate bytes relative to the index; use a trusted HTTPS index for remote distribution. The index is limited to 1 MiB and package extraction uses existing archive limits. See `examples/registry/README.md` for the generated DON schema and a complete local HTTP example.
+
+When an archive cache remains after removing a dependency or changing install modes, a new installation without a matching lock verifies the downloaded archive checksum and compares extracted source contents against that cache. A changed cache is rejected, never silently overwritten. A matching lock continues to support offline cached installs.

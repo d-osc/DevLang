@@ -1,10 +1,12 @@
 fn archive_bytes(spec: &str) -> Result<Vec<u8>, String> {
+    download_bytes(spec, 64 * 1024 * 1024)
+}
+fn download_bytes(spec: &str, max: u64) -> Result<Vec<u8>, String> {
     use std::io::Read;
     let url = url::Url::parse(spec).map_err(|e| e.to_string())?;
     if !url.username().is_empty() || url.password().is_some() || url.fragment().is_some() {
         return Err("archive URL must not contain credentials or fragment".into());
     }
-    let max = 64 * 1024 * 1024;
     let mut bytes = Vec::new();
     match url.scheme() {
         "file" => {
@@ -18,7 +20,7 @@ fn archive_bytes(spec: &str) -> Result<Vec<u8>, String> {
         }
         _ => return Err("archive URL requires https://, http:// or file://".into()),
     }
-    if bytes.len() > max as usize { return Err("archive download exceeds 64 MiB".into()); }
+    if bytes.len() > max as usize { return Err(format!("download exceeds {max} bytes")); }
     Ok(bytes)
 }
 
@@ -75,9 +77,11 @@ fn unpack_package(bytes: Vec<u8>, spec: &str, target: &Path) -> Result<PathBuf, 
 
 fn fetch_archive(project: &Path, name: &str, dep: &Dependency, previous: Option<&Locked>) -> Result<PathBuf, String> {
     let digest = dep.sha256.as_deref().unwrap().to_lowercase();
+    global_cache_directory(project, &project.join(".dev/packages"))?;
     let destination = project.join(format!(".dev/packages/{name}-archive-{digest}"));
-    if destination.exists() {
-        let old = previous.filter(|p| p.source == *dep).ok_or("archive cache has no matching lock; remove it before reinstalling")?;
+    if std::fs::symlink_metadata(&destination).is_ok_and(|m| m.file_type().is_symlink() || !m.is_dir()) { return Err("archive cache must be a real directory".into()); }
+    if destination.exists() && !dunce::canonicalize(&destination).map_err(|e| e.to_string())?.starts_with(dunce::canonicalize(project).map_err(|e| e.to_string())?) { return Err("archive cache cannot escape project directory".into()); }
+    if let Some(old) = previous.filter(|p| p.source == *dep && destination.exists()) {
         if !tree_matches(&destination, &old.sha256)? { return Err("cached archive dependency changed".into()); }
         return dunce::canonicalize(destination).map_err(|e| e.to_string());
     }
@@ -87,6 +91,11 @@ fn fetch_archive(project: &Path, name: &str, dep: &Dependency, previous: Option<
     std::fs::create_dir_all(&temporary).map_err(|e| e.to_string())?;
     let root = unpack_package(bytes, dep.url.as_deref().unwrap(), &temporary)?;
     manifest(&root)?;
+    if destination.exists() {
+        if !tree_matches(&destination, &tree_hash(&root)?)? { return Err("cached archive dependency changed".into()); }
+        std::fs::remove_dir_all(&temporary).map_err(|e| e.to_string())?;
+        return dunce::canonicalize(destination).map_err(|e| e.to_string());
+    }
     std::fs::rename(root, &destination).map_err(|e| e.to_string())?;
     dunce::canonicalize(destination).map_err(|e| e.to_string())
 }

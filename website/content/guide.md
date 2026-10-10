@@ -1482,6 +1482,9 @@ CLI ใช้ `d pkg add math --url URL --sha256 HASH` ไฟล์ archive ต�
 
 ติดตั้งคำสั่งส่วนกลางด้วย `d pkg install -g` หรือ `--global` แล้วเรียก `mycli` ได้ตรง ๆ โฟลเดอร์คือ `~/.devlang/bin` (Windows: `%USERPROFILE%\.devlang\bin`) ระบบเพิ่ม user PATH บน Windows หรือ startup file ของ bash/zsh/profile บน Unix ต้องเปิดโปรแกรม terminal ใหม่หลังเพิ่ม PATH ครั้งแรก ระบบเก็บสำเนา source และ dependencies ใน `.devlang/packages` และ runtime ใน `.devlang/runtime` จึงยังเรียกคำสั่งได้หลังย้ายหรือลบต้นฉบับ คำสั่งทำงานจาก snapshot และต้อง install ใหม่เมื่อแก้ source ใช้ `pkg update --global` อัปเดต และ `pkg uninstall --global` ถอนคำสั่งของโปรเจกต์นี้ หรือ `pkg uninstall --global PACKAGE_NAME` จากที่ใดก็ได้ ใช้ `pkg list --global` ดูรายการ โดยไม่ลบ source/cache หรือคำสั่งของโปรเจกต์อื่น
 
+รองรับ static registry: `d pkg publish --registry DIRECTORY` สร้าง `index.don` และ archive ในโฟลเดอร์นอก source จากนั้นโฮสต์ด้วย HTTP/HTTPS หรือใช้ file URL ค้นหาด้วย `d pkg search --registry INDEX_URL [QUERY]` และติดตั้งด้วย `d pkg add math --registry INDEX_URL --version '^1.2'` ระบบเลือก SemVer ที่สูงสุดตามเงื่อนไขและบันทึก URL/checksum/version แบบ exact ใน manifest ใช้ add อีกครั้งเมื่อต้องการเลือก release ใหม่ เพราะ `pkg update` ยังคง archive ที่ pin ไว้ ไม่มีบริการ registry กลางหรืออัปโหลด remote อัตโนมัติ ตัวอย่างเต็มอยู่ใน `examples/registry`
+
+
 ยังเป็น namespace เดียว: constraints ที่ใช้ version ที่เลือกเดียวกันได้จะแชร์ package แต่ไม่มี backtracking หรือหลาย version ของชื่อเดียวกัน และยังไม่มี public registry/publish ถ้า add/remove ติดตั้งไม่สำเร็จจะคืน manifest เดิม การติดตั้ง `--workspace` ไม่เป็น transaction ทั้งกลุ่ม
 
 # [module-api-intro] คู่มือแต่ละ Module

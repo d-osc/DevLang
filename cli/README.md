@@ -2,7 +2,7 @@
 
 The latest source build also includes project dependencies, formatting, a stdio
 language server and native debugger integration. See [Developer tools](../docs/tooling.md)
-for `package.don`/`dev.lock`, `d new`, `d pkg`, `d fmt`, `d lsp` and `d debug`.
+for `package.don`/`package-lock.don`, `d new`, `d pkg`, `d fmt`, `d lsp` and `d debug`.
 These commands are not included in the existing v0.4.0 installers.
 
 `d` dispatches to the independent `devrun` runtime or `devc` compiler located
@@ -70,3 +70,10 @@ dependencies. To use the bare command, add the bundle directory to your PATH.
 
 Workspaces and Git-tag SemVer requirements are described in [Packages](../docs/packages.md).
 Use `d pkg workspace`, `d pkg install --workspace`, and `d run --package NAME`.
+
+Static registries use `index.don` plus checksum-verified archives. Create one with
+`d pkg publish --registry DIRECTORY` (local output), discover packages with
+`d pkg search --registry INDEX_URL [QUERY]`, and add a matching release with
+`d pkg add NAME --registry INDEX_URL --version REQUIREMENT [--dev]`. The manifest
+stores the selected exact version and archive checksum; repeat `pkg add` to select
+a newer registry release. See [the registry example](../examples/registry/README.md).

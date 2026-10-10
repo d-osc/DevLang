@@ -37,3 +37,5 @@ python scripts/build_module_docs.py --d target/release/d.exe
 ```
 
 `peer-dependencies/` demonstrates a plugin requiring the consumer’s shared `math` version, with verification of missing and incompatible peers.
+
+`registry/` demonstrates local publication, HTTP discovery and SemVer installation; publish/add the dependency before running its app.

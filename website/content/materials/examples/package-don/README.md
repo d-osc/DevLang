@@ -116,7 +116,7 @@ dependencies: {
 
 ## ข้อจำกัดปัจจุบัน
 
-ยังไม่มี public registry, publish, `scripts`, `description`, `license` หรือ custom metadata ใน manifest; field ที่ไม่รู้จักถูกปฏิเสธ การ install ทั้ง workspace ไม่เป็น transaction เดียว และยังไม่มี resolver ที่ backtrack หรือโหลดหลาย version ใน namespace เดียว
+รองรับ static registry และ local publish ตามตัวอย่าง `../registry`; ยังไม่มีบริการ registry กลาง, `scripts`, `description`, `license` หรือ custom metadata ใน manifest; field ที่ไม่รู้จักถูกปฏิเสธ การ install ทั้ง workspace ไม่เป็น transaction เดียว และยังไม่มี resolver ที่ backtrack หรือโหลดหลาย version ใน namespace เดียว
 
 ตัวอย่างนี้ใช้ runtime builtin `std/io`; native build ต้องใช้ native stdlib bindings/link settings ที่เหมาะสมกับ native API อย่านำ runtime API ไปสมมติว่าเป็น native API เดียวกัน
 

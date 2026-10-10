@@ -57,5 +57,6 @@ count += 1
 subprocess.run([sys.executable, str(repo / 'scripts/smoke_global_bins.py'), '--d', str(d)], check=True, timeout=120)
 
 subprocess.run([sys.executable, str(repo / 'scripts/smoke_peers.py'), '--d', str(d)], check=True, timeout=120)
-count += 2
+subprocess.run([sys.executable, str(repo / 'scripts/smoke_registry.py'), '--d', str(d)], check=True, timeout=120)
+count += 3
 print(f'PASS: {count} package example groups')
