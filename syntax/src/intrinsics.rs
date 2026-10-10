@@ -1,6 +1,12 @@
 //! Source-runtime signatures shared by runtime loading and editor checking.
 pub fn module(name: &str) -> Option<&'static str> {
     match name {
+        "std/regex" => Some(REGEX),
+        "std/encoding" => Some(ENCODING),
+        "std/crypto" => Some(CRYPTO),
+        "std/compression" => Some(COMPRESSION),
+        "std/archive" => Some(ARCHIVE),
+        "std/uuid" => Some(UUID),
         "std/math" => Some(MATH),
         "std/random" => Some(RANDOM),
         "std/strings" => Some(STRINGS),
@@ -26,6 +32,7 @@ pub fn module(name: &str) -> Option<&'static str> {
 }
 include!("core_intrinsics.rs");
 include!("basic_intrinsics.rs");
+include!("data_intrinsics.rs");
 pub const DON: &str = r#"
 struct Value {}
 fn parse(text str) Value { return Value() }

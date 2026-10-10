@@ -233,5 +233,10 @@
     "source_sha256": "922a21672ca092172c7bf690906acc21f01d83240f7df2c58e8cf7d5a067ddc0",
     "validation_sha256": "c4e46b59788a9ca9a53a8b786d90b1d3a66c77788b71d0a367311f7c80f8b406",
     "output": "3\nDEVLANG\ntrue\n2024-02-29T12:30:00.000Z\n2024-02-29 19:30:00 +07:00\nPASS math\nPASS unicode\ntrue\n"
+  },
+  "data-libs": {
+    "source_sha256": "e74d60c306e693b34a5f755dc0e8798465218173ddf23e50633f3fb3458b0d63",
+    "validation_sha256": "45d327bf29008cc03493c465b18ba8a0afd2a611339ee77296a6f46b7918cd73",
+    "output": "3000\na# b#\nDevLang 🚀\nba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\ntrue\nDevLang 🚀\nhello.txt\nDevLang 🚀\nhello.txt\ntrue\n"
   }
 }

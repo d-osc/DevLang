@@ -1,5 +1,9 @@
 # Dev source runtime
 
+`regex`, `encoding`, `crypto`, `compression`, `archive`, `uuid` add text matching,
+byte conversion, hashing/AEAD, codecs, ZIP/TAR and random UUIDs. See
+[data library contracts](../docs/data-libs.md).
+
 Foundational `math`, `random`, `datetime`, `test`, `log` and expanded `strings`
 are built-in source-runtime modules. See [API contracts](../docs/basic-libs.md).
 

@@ -19,5 +19,15 @@ url = "2"
 base64 = "0.23"
 chrono = { version = "0.4", default-features = false, features = ["std", "now"] }
 getrandom = "0.2"
+regex = "1"
+encoding_rs = "0.8"
+sha2 = "0.10"
+hmac = "0.12"
+subtle = "2"
+aes-gcm = "0.10"
+flate2 = "1"
+zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
+tar = "0.4"
+uuid = "1"
 pathdiff = "0.2"
 sysinfo = { version = "0.37", default-features = false, features = ["system"] }

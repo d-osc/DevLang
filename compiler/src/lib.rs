@@ -38,6 +38,7 @@ mod tests {
         for module in [
             "net", "path", "os", "stream", "url", "module", "process", "events", "buffer", "dgram",
             "math", "random", "datetime", "test", "log", "strings",
+            "regex", "encoding", "crypto", "compression", "archive", "uuid",
         ] {
             let source = format!("use \"std/{module}\"\nfn main() {{}}\nmain()");
             assert!(
@@ -57,6 +58,12 @@ mod tests {
             "use \"std/datetime\"\ndatetime.parts(0, \"UTC\")",
             "use \"std/test\"\ntest.case(\"wrong\", fn(n i64) {})",
             "use \"std/log\"\nlog.info(1)",
+            "use \"std/regex\"\nregex.compile(1, \"\")",
+            "use \"std/encoding\"\nencoding.decode(\"bytes\", \"utf8\")",
+            "use \"std/crypto\"\ncrypto.secureBytes(\"32\")",
+            "use \"std/compression\"\ncompression.gzip(\"bytes\", 6)",
+            "use \"std/archive\"\narchive.writeZIP(Vec<i64>())",
+            "use \"std/uuid\"\nuuid.parse(42)",
         ] {
             assert!(!errors(source).is_empty(), "accepted: {source}");
         }

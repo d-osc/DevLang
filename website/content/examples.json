@@ -654,5 +654,17 @@
     "commands": [
       "d examples/basic-libs/main.dev"
     ]
+  },
+  {
+    "id": "data-libs",
+    "title": "Regex, Encoding, Crypto, Compression, Archive และ UUID",
+    "category": "I/O",
+    "path": "examples/data-libs/main.dev",
+    "description": "จับข้อความ แปลง encoding เข้ารหัส บีบอัด ZIP/TAR และ UUID",
+    "doc": "data-libs",
+    "mode": "runtime",
+    "commands": [
+      "d examples/data-libs/main.dev"
+    ]
   }
 ]

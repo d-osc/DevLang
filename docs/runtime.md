@@ -1,5 +1,8 @@
 # Interpreter API
 
+Data libraries `std/regex`, `std/encoding`, `std/crypto`, `std/compression`,
+`std/archive`, `std/uuid` are also available. See [API contracts](data-libs.md).
+
 Foundational `std/math`, `std/random`, `std/datetime`, `std/test`, `std/log` and
 expanded `std/strings` are available in the current runtime. See
 [Foundational library APIs](basic-libs.md) for contracts and examples.

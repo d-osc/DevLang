@@ -1154,3 +1154,63 @@ Datetime เป็นเวลาปฏิทิน Unix milliseconds ต่า�
 `d new` สร้าง `package.don`; dependencies ยังใช้ path/Git และ lock เป็น `dev.lock` แบบ TOML เดิม
 โปรเจกต์ `dev.toml` เดิมยังใช้ได้ API `std/don` รองรับ runtime ยังไม่มี native build
 อ่าน [คู่มือ DON และ API](../../docs/don.md) และลอง `d examples/don/main.dev`
+
+# [data-libs] Regex, Encoding, Crypto, Compression, Archive และ UUID
+
+ใช้ผ่าน source runtime ด้วย `use "std/ชื่อโมดูล"` และมี signatures ให้ Language Server ตรวจชนิดข้อมูล
+
+| โมดูล | ใช้งาน |
+| --- | --- |
+| `std/regex` | ค้นหา จับกลุ่ม แยก และแทนที่ข้อความ |
+| `std/encoding` | แปลงข้อความและ bytes เช่น UTF-8, UTF-16, Shift JIS |
+| `std/crypto` | SHA-256/512, HMAC, OS random และ AES-256-GCM |
+| `std/compression` | gzip, zlib และ raw DEFLATE |
+| `std/archive` | สร้าง อ่าน และดูรายชื่อไฟล์ ZIP/TAR ในหน่วยความจำ |
+| `std/uuid` | สร้าง UUID v4 ตรวจ และแปลงรูปแบบ |
+
+```dev-runtime
+use "std/regex"
+use "std/encoding"
+use "std/crypto"
+use "std/compression"
+use "std/archive"
+use "std/uuid"
+
+fn main() {
+    let pattern = regex.compile("[0-9]+", "")
+    print(pattern.find("port=3000").text)
+    print(pattern.replaceAll("a1 b2", "#"))
+    pattern.close()
+    let text = "DevLang 🚀"
+    let utf16 = encoding.encode(text, "utf-16le")
+    print(encoding.decode(utf16, "utf-16le"))
+    print(crypto.hashText("sha256", "abc"))
+    let data = encoding.encode(text, "utf-8")
+    let key = crypto.secureBytes(32)
+    let aad = encoding.encode("example", "utf-8")
+    let packet = crypto.encrypt(key, data, aad)
+    print(encoding.decode(crypto.decrypt(key, packet, aad), "utf-8") == text)
+    let packed = compression.gzip(data, 6)
+    print(encoding.decode(compression.gunzip(packed), "utf-8"))
+    let entries = Vec<archive.Entry>()
+    entries.push(archive.Entry("hello.txt", data))
+    let zip = archive.writeZIP(entries)
+    print(archive.listZIP(zip)[0])
+    print(encoding.decode(archive.readZIP(zip, "hello.txt"), "utf-8"))
+    let tar = archive.writeTAR(entries)
+    print(archive.listTAR(tar)[0])
+    let id = uuid.v4()
+    print(uuid.isValid(id) && uuid.version(id) == 4)
+}
+main()
+```
+
+Regex รองรับ flags `i`, `m`, `s`, `U`; offsets เป็น UTF-8 bytes และไม่รองรับ look-around/backreferences
+Encoding ตรวจข้อมูลเสียและตัวอักษรที่ charset เก็บไม่ได้ โดย UTF-16 ไม่เติม BOM อัตโนมัติ
+AES-GCM ใช้ key 32 bytes และ nonce สุ่มใหม่ทุกครั้ง; ต้องเก็บ key แยกจากข้อมูล และใช้ AAD เดิมตอนถอดรหัส
+`random` ใช้จำลองข้อมูล ส่วน `crypto.secureBytes` ใช้ randomness จากระบบสำหรับงาน security
+Crypto ยังไม่มี password hashing, KDF หรือ signatures และ API นี้ไม่ใช่การรับรองความปลอดภัยของแอป
+Compression และ Archive จำกัดข้อมูล 8 MiB; Archive รับส่ง bytes และไม่แตกไฟล์ลงดิสก์อัตโนมัติ
+UUID สร้างได้เฉพาะ v4; ยังไม่มี v7 และโมดูลชุดนี้ยังไม่รองรับ native build
+
+ลอง `d examples/data-libs/main.dev` และอ่าน [API พร้อมข้อจำกัด](../../docs/data-libs.md)

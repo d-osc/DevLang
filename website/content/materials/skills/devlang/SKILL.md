@@ -34,6 +34,14 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
 
 ## Essential language rules
 
+- Runtime `std/regex`, `std/encoding`, `std/crypto`, `std/compression`, `std/archive`,
+  `std/uuid` are documented in `docs/data-libs.md`. Close compiled regex handles;
+  offsets use UTF-8 bytes, not character indices. Binary APIs use Vec<u8>. AES-GCM
+  requires a 32-byte key, returns nonce+ciphertext+tag, and requires identical AAD
+  for decryption. Use crypto.secureBytes, not random, for keys. Archive APIs handle
+  ZIP/TAR bytes and validate relative member names; they do not extract to disk.
+  These APIs are runtime-only and do not implement a full Node compatibility layer.
+
 - Source-runtime foundational APIs live in `std/math`, `std/random`, `std/strings`,
   `std/datetime`, `std/test`, `std/log`; consult `docs/basic-libs.md`. Math uses f64
   and radians. Random is seeded SplitMix64, not cryptographic. Datetime uses Unix

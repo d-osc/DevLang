@@ -1,5 +1,6 @@
 #[derive(Default)]
 struct CoreState {
+    regexes: HashMap<i64, regex::Regex>,
     random: Option<u64>,
     tests: Vec<(String, Value)>,
     testing: bool,
@@ -33,6 +34,7 @@ impl Engine {
             + c.tcp.len()
             + c.tcp_servers.len()
             + c.udp.len()
+            + c.regexes.len()
             >= 256
         {
             Err("at most 256 core resource handles per interpreter; close unused resources".into())
@@ -92,6 +94,12 @@ impl Engine {
             .collect::<Result<Vec<_>, _>>()?;
         let ret = function.ret.clone();
         match module {
+            "std/regex" => self.regex_call(name, args, ret),
+            "std/encoding" => self.encoding_call(name, args),
+            "std/crypto" => self.crypto_call(name, args),
+            "std/compression" => self.compression_call(name, args),
+            "std/archive" => self.archive_call(name, args),
+            "std/uuid" => self.uuid_call(name, args),
             "std/math" => self.math_call(name, args),
             "std/random" => self.random_call(name, args),
             "std/strings" => self.strings_call(name, args),
