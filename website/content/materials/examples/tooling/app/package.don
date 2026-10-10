@@ -1,0 +1,8 @@
+package: {
+    name: 'tooling_app'
+    entry: 'src/main.dev'
+    modules: 'src'
+}
+dependencies: {
+    math: { path: '../math' }
+}

@@ -1,4 +1,0 @@
-[package]
-name = "tooling_math"
-entry = "src/lib.dev"
-modules = "src"
