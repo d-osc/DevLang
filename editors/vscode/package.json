@@ -2,7 +2,7 @@
   "name": "devlang-language",
   "displayName": "DevLang",
   "description": "DevLang syntax, formatting, language server and native breakpoint support.",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publisher": "n-devs",
   "license": "MIT",
   "repository": {
@@ -95,6 +95,13 @@
         "id": "devlang-icons",
         "label": "DevLang File Icons",
         "path": "./devlang-icons.json"
+      }
+    ],
+    "themes": [
+      {
+        "label": "DevLang Forest",
+        "uiTheme": "vs-dark",
+        "path": "./themes/devlang-forest.json"
       }
     ]
   },
