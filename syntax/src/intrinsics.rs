@@ -1,4 +1,27 @@
 //! Source-runtime signatures shared by runtime loading and editor checking.
+/// Editor signatures for builtins dispatched directly by the runtime.
+/// These must not become executable stub modules in the source engine.
+pub fn editor_module(name: &str) -> Option<&'static str> {
+    match name {
+        "std/io" => Some(r#"
+fn write(text str) bool { return true }
+fn writeln(text str) bool { return true }
+fn read_line() str { return "" }
+fn read_file(path str) str { return "" }
+fn write_file(path str, text str) bool { return true }
+"#),
+        "std/time" => Some(r#"
+fn now_ns() u64 { return 0 as u64 }
+fn now_ms() u64 { return 0 as u64 }
+fn sleep_ms<T:Integer>(milliseconds T) bool { return true }
+"#),
+        "std/args" => Some(r#"
+fn len() usize { return 0 as usize }
+fn get<T:Integer>(index T) str { return "" }
+"#),
+        _ => module(name),
+    }
+}
 pub fn module(name: &str) -> Option<&'static str> {
     match name {
         "std/sync" => Some(SYNC),

@@ -199,6 +199,17 @@ fn publish_documents(out: &mut impl Write, documents: &HashMap<String, Document>
 mod unused_tests {
     use super::*;
     #[test]
+    fn core_runtime_modules_do_not_require_disk_files() {
+        let doc = Document { text: "use \"std/io\"\nuse \"std/time\"\nuse \"std/args\"\nfn main() {\nio.writeln(\"hello\")\nprint(time.now_ns())\ntime.sleep_ms(1)\nprint(args.len())\nprint(args.get(0))\n}\nmain()\n".into(), version: 1, language: "devlang".into() };
+        let uri = "file:///nonexistent/examples/stdlib/main.dev";
+        assert_eq!(diagnostics(uri, &doc)["params"]["diagnostics"], json!([]));
+        for (from, to) in [("io.writeln(\"hello\")", "io.writeln(42)"), ("time.sleep_ms(1)", "time.sleep_ms(\"bad\")"), ("args.get(0)", "args.get(true)")] {
+            let invalid = Document { text: doc.text.replace(from, to), version: 2, language: "devlang".into() };
+            let result = diagnostics(uri, &invalid);
+            assert!(result["params"]["diagnostics"].as_array().unwrap().iter().any(|d| d["code"] == "semantic-error"), "{result}");
+        }
+    }
+    #[test]
     fn reports_exact_unused_name_range_and_tag() {
         let doc = Document { text: "fn main() {\nlet unused = 1\nlet used = 2\nprint(used)\n}\nmain()\n".into(), version: 1, language: "devlang".into() };
         let result = diagnostics("file:///test.dev", &doc);

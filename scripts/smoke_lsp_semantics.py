@@ -54,6 +54,14 @@ def main():
         disk = 'print("disk source stays unchanged")\n'
         source.write_text(disk, encoding="utf-8")
         uri = source.as_uri()
+        # A nearby stdlib directory must not redirect runtime builtin imports
+        # to missing native files (the original examples/stdlib/io.dev error).
+        (root / "stdlib").mkdir()
+        builtin = 'use "std/io"\nuse "std/time"\nuse "std/args"\nfn main() {\nio.writeln("hello")\nprint(time.now_ms())\ntime.sleep_ms(1)\nprint(args.len())\nprint(args.get(0))\n}\nmain()\n'
+        updates = run(binary, [start, opened(uri, builtin),
+            changed(uri, builtin.replace('io.writeln("hello")', 'io.writeln(42)')), *end])
+        assert not updates[0]["diagnostics"], updates
+        assert semantic(updates[1]["diagnostics"]), updates
         bad = 'fn main() {\nlet age i64 = "wrong"\nprint(missing)\nif 42 { print(1) }\n}\nmain()\n'
         good = 'fn main() {\nlet age i64 = 18\nprint(age)\nif true { print(1) }\n}\nmain()\n'
         notifications = run(binary, [start, opened(uri, bad), changed(uri, good), *end])

@@ -191,7 +191,7 @@ impl Program {
             // Editor overlays may check runtime intrinsics using shared signatures.
             // Native builds have no overlays and still require real native modules.
             if !sources.is_empty() {
-                if let Some(source) = dev_syntax::intrinsics::module(&import.path) {
+                if let Some(source) = dev_syntax::intrinsics::editor_module(&import.path) {
                     let virtual_path = PathBuf::from("__devlang_intrinsics__").join(format!("{}.dev", import.path.replace('/', "_")));
                     let mut overlays = sources.clone();
                     overlays.insert(virtual_path.clone(), source.into());
