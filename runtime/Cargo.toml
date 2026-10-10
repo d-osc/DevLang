@@ -13,3 +13,4 @@ dev-syntax = { path = "../syntax" }
 libffi = "5"
 libloading = "0.8"
 serde_json = { version = "1", features = ["arbitrary_precision"] }
+ureq = { version = "3.4.2", default-features = false, features = ["rustls", "gzip"] }

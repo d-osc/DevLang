@@ -188,5 +188,15 @@
     "source_sha256": "88c12206ff07f927ffbf406292df7bc7b5281bc52e1454c0017d9c194cfe6634",
     "validation_sha256": "24d9249b31ad23b17abb4b765c6627aa3f10e48bb951880d592916ab0f65f9ce",
     "output": "Dev\n19\nChiang Mai\nDevLang user\n18\n{\"active\":true,\"address\":{\"city\":\"Chiang Mai\"},\"age\":19,\"display-name\":\"DevLang user\",\"name\":\"Dev\",\"tags\":[\"developer\",100,true,null]}\n"
+  },
+  "filesystem": {
+    "source_sha256": "bec2ef5134f806cda211e376d134aca1d0cd8564f265288d16439b631fd3fba7",
+    "validation_sha256": "c2f0474d8f6246f9f46767141c2c242e6d557ffacfdc4f5dc44267768ea11cbc",
+    "output": "Hello DevLang!\n\n15\n"
+  },
+  "http": {
+    "source_sha256": "36324bb4ae186e043f1c8bed00e125f40294a4af836d39bff591226be25724e3",
+    "validation_sha256": "4d367be12be7363e05f67536a13251c12dc6fdf08fc64077fb9964f431eb01e5",
+    "output": "Usage: d examples/http/main.dev -- https://example.com/\n"
   }
 }

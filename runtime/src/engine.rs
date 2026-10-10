@@ -109,7 +109,7 @@ impl Value {
             Err("condition must be bool".into())
         }
     }
-    fn string(&self) -> Result<&str, String> {
+    pub(crate) fn string(&self) -> Result<&str, String> {
         if let Self::Str(s) = self {
             Ok(s)
         } else {
@@ -234,6 +234,7 @@ pub struct Engine {
     depth: usize,
     native: Native,
     numeric: bool,
+    http: Option<ureq::Agent>,
 }
 impl Engine {
     pub fn load_with_modules(
@@ -254,6 +255,7 @@ impl Engine {
             depth: 0,
             native: Native::new(libraries)?,
             numeric,
+            http: None,
         };
         e.entry = e.load_module(path, source)?;
         let mut keys = e.modules.keys().cloned().collect::<Vec<_>>();
@@ -385,6 +387,8 @@ impl Engine {
         for import in imports {
             let target = if import.path == "std/json" {
                 self.load_module(Path::new("std/json"), Some(crate::json::MODULE))?
+            } else if let Some(source) = dev_syntax::intrinsics::module(&import.path) {
+                self.load_module(Path::new(&import.path), Some(source))?
             } else if ["std/io", "std/strings", "std/time", "std/args"]
                 .contains(&import.path.as_str())
             {
@@ -614,6 +618,7 @@ impl Engine {
                         }
                     }
                     let mut worker = Engine {
+                        http: None,
                         module_dirs: HashMap::new(),
                         libraries: libraries.clone(),
                         modules,
@@ -710,6 +715,7 @@ impl Engine {
                     }
                 }
                 let mut worker = Engine {
+                    http: None,
                     module_dirs: HashMap::new(),
                     libraries,
                     modules,
@@ -2001,6 +2007,11 @@ impl Engine {
         }
     }
     fn builtin(&mut self, module: &str, name: &str, args: Vec<Value>) -> Result<Value, String> {
+        if module == "std/fs" { return crate::filesystem::call(name, args); }
+        if module == "std/http" {
+            let ty = self.modules[module].functions["get"].ret.clone();
+            return crate::http::call(name, args, ty, &mut self.http);
+        }
         if module == "std/json" {
             let ty = self.modules[module]
                 .module

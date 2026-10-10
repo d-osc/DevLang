@@ -1,5 +1,7 @@
 mod engine;
 mod json;
+mod filesystem;
+mod http;
 mod memory;
 mod native;
 mod numeric;

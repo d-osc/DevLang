@@ -34,6 +34,18 @@ mod tests {
         )
     }
     #[test]
+    fn runtime_io_signatures_are_checked_without_execution() {
+        let valid = "use \"std/fs\"\nuse \"std/http\"\nfn main() {\nlet text str = fs.read_text(\"missing-file\")\nlet response = http.get(\"https://invalid.example\")\nlet status i64 = response.status\nlet ok bool = response.ok\nprint(text)\nprint(status)\nprint(ok)\n}\nmain()";
+        assert!(errors(valid).is_empty(), "{:?}", errors(valid));
+        for source in [
+            "use \"std/fs\"\nfs.read_text(12)",
+            "use \"std/http\"\nhttp.get(12)",
+            "use \"std/http\"\nlet r = http.get(\"https://invalid.example\")\nlet status str = r.status",
+        ] {
+            assert!(!errors(source).is_empty(), "accepted: {source}");
+        }
+    }
+    #[test]
     fn collects_independent_statement_errors() {
         let result = errors(
             "fn main() {\nlet age i64 = \"wrong\"\nprint(missing)\nif 42 { print(1) }\n}\nmain()",

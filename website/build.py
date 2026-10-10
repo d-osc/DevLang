@@ -20,9 +20,10 @@ GROUPS = {
     'เริ่มต้น': ['intro', 'install', 'layout', 'cli', 'tooling'],
     'พื้นฐานภาษา': ['variables', 'types', 'operators', 'loops', 'functions', 'strings-arrays', 'modules'],
     'ข้อมูลและ abstraction': ['structs', 'enums-match', 'references', 'collections', 'generics', 'closures'],
-    'ระบบและ interoperability': ['tasks', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'json', 'limitations', 'ai'],
+    'ระบบและ interoperability': ['tasks', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'json', 'fs-http', 'limitations', 'ai'],
 }
 REFERENCES = {
+    'fs-http-reference': ('Filesystem and HTTP API', 'docs/fs-http.md'),
     'tooling-reference': ('Developer tools', 'docs/tooling.md'),
     'json-reference': ('JSON API', 'docs/json.md'),
     'language-reference': ('Language specification', 'docs/language.md'),

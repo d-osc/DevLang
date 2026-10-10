@@ -1,0 +1,14 @@
+use "std/http"
+use "std/args"
+
+fn main() {
+    if args.len() == 0 as usize {
+        print("Usage: d examples/http/main.dev -- https://example.com/")
+        return 0 as i32
+    }
+    let response = http.get(args.get(0))
+    print(response.status)
+    print(response.ok)
+    print(response.body)
+}
+main()

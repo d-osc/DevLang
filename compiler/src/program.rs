@@ -188,6 +188,18 @@ impl Program {
             if self.aliases[id].contains_key(&import.alias) {
                 return Err(error(&path, import.span, "duplicate module alias"));
             }
+            // Editor overlays may check runtime intrinsics using shared signatures.
+            // Native builds have no overlays and still require real native modules.
+            if !sources.is_empty() {
+                if let Some(source) = dev_syntax::intrinsics::module(&import.path) {
+                    let virtual_path = PathBuf::from("__devlang_intrinsics__").join(format!("{}.dev", import.path.replace('/', "_")));
+                    let mut overlays = sources.clone();
+                    overlays.insert(virtual_path.clone(), source.into());
+                    let target_id = self.load_module(&virtual_path, seen, module_dirs, &overlays)?;
+                    self.aliases[id].insert(import.alias, target_id);
+                    continue;
+                }
+            }
             let target = dev_syntax::modules::resolve(&path, &import.path, module_dirs)
                 .map_err(|e| error(&path, import.span, e))?;
             let target_id = self

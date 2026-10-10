@@ -1,5 +1,8 @@
 # Standalone Dev native stdlib
 
+For source-runtime filesystem and HTTP clients, see [std/fs and std/http](../docs/fs-http.md).
+These new intrinsic modules are separate from the native library described here.
+
 The native stdlib is a separate C library (ABI v1), with optional Dev module bindings.
 It builds without Rust or the Dev compiler. The compiler builds and runs basic
 programs without this library. The source interpreter is in `runtime/` and uses

@@ -973,3 +973,24 @@ d debug --vscode
 ติดตั้ง CodeLLDB และ DevLang extension สำหรับ VS Code แล้ว `d debug --vscode` เพื่อสร้าง tasks/launch (ไม่เขียนทับไฟล์เดิม) เปิด entry `.dev` และกด F5 LLDB/GDB เป็น debugger ภายนอก ฟีเจอร์นี้รองรับ native เท่านั้น ยังไม่รองรับ interpreter/JSON runtime debugging
 
 ดู [reference เครื่องมือ](#/docs/tooling-reference) สำหรับข้อจำกัดและการทดสอบ และ [ตัวอย่าง project](https://github.com/d-osc/DevLang/tree/main/examples/tooling)
+
+# [fs-http] Filesystem และ HTTP
+
+Runtime ปัจจุบันอ่านเขียนไฟล์และเรียก HTTP/HTTPS ได้โดยไม่ต้องใช้ C compiler
+API ใหม่นี้ยังไม่รองรับ native build และ HTTP เป็น client แบบ blocking ยังไม่มี server
+
+```dev-runtime
+use "std/fs"
+fn main() {
+    fs.write_text("hello.txt", "Hello DevLang")
+    print(fs.read_text("hello.txt"))
+    fs.remove_file("hello.txt")
+}
+main()
+```
+
+ใช้ `http.get(url)` เพื่อรับ response แล้วอ่าน `status`, `ok`, `body`, `bytes` และ `headers`
+ใช้ `http.request(method, url, headers, body, timeout_ms)` สำหรับ headers และ timeout
+ตัวอย่างออนไลน์: `d examples/http/main.dev -- https://example.com/`
+
+ดู [คู่มือ API เต็ม](../../docs/fs-http.md) สำหรับทุกฟังก์ชัน ชนิดข้อมูล ข้อผิดพลาด และข้อจำกัด

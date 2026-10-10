@@ -1,5 +1,9 @@
 # Interpreter API
 
+Filesystem and HTTP/HTTPS clients are available through `std/fs` and `std/http`
+in the current source runtime. See [Filesystem and HTTP](fs-http.md) for APIs,
+examples, errors and limits. These modules currently support runtime execution only.
+
 JSON is available in the current source runtime through `use "std/json"`.
 See [JSON API and contracts](json.md) and `examples/json/main.dev` for parsing,
 serialization, typed access, objects/arrays and file I/O. Build the updated runtime

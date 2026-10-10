@@ -546,5 +546,29 @@
       "# Linux: ./target/release/d examples/json/literals.dev"
     ],
     "notes": "ใช้ source runtime ล่าสุดเท่านั้น ตัวติดตั้ง v0.4.0 เดิมยังไม่รองรับ; native compiler ยังไม่รองรับ JSON object literals"
+  },
+  {
+    "id": "filesystem",
+    "title": "อ่านเขียนไฟล์และ directory",
+    "category": "I/O",
+    "path": "examples/filesystem/main.dev",
+    "description": "API runtime ไม่ต้องใช้ C compiler",
+    "doc": "fs-http",
+    "mode": "runtime",
+    "commands": [
+      "d examples/filesystem/main.dev"
+    ]
+  },
+  {
+    "id": "http",
+    "title": "HTTP/HTTPS client",
+    "category": "I/O",
+    "path": "examples/http/main.dev",
+    "description": "API runtime ไม่ต้องใช้ C compiler",
+    "doc": "fs-http",
+    "mode": "runtime",
+    "commands": [
+      "d examples/http/main.dev -- https://example.com/"
+    ]
   }
 ]

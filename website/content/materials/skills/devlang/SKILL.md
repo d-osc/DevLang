@@ -9,6 +9,11 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
 
 ## Choose context and mode
 
+- For filesystem or HTTP clients, consult `docs/fs-http.md`: `std/fs` and `std/http`
+  currently require the updated source runtime, not native compilation. Requests
+  block; failures abort with located runtime errors. Use `Response.bytes` for binary
+  payloads and `Response.body` for text. Do not invent a server or catch API.
+
 - For syntax, core types, modules, collections and functions, read [references/core.md](references/core.md).
 - For recursive data, generic constraints, threads, callbacks or C ABI, read [references/advanced.md](references/advanced.md).
 - For project manifests/dependencies, formatting, language-server or native-debugger work, read [references/tooling.md](references/tooling.md). These tools require the latest source build.

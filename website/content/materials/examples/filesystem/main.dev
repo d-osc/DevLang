@@ -1,0 +1,11 @@
+use "std/fs"
+
+fn main() {
+    let path = "devlang-filesystem-example.txt"
+    fs.write_text(path, "Hello DevLang")
+    fs.append_text(path, "!\n")
+    print(fs.read_text(path))
+    print(fs.size(path))
+    fs.remove_file(path)
+}
+main()

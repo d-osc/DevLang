@@ -79,7 +79,7 @@ impl MapStorage {
         }
         Ok(())
     }
-    fn set(&mut self, key: Value, value: Value) -> Result<(), String> {
+    pub(crate) fn set(&mut self, key: Value, value: Value) -> Result<(), String> {
         if let Some(i) = self.find(&key) {
             self.entries[i].1 = value;
             return Ok(());
