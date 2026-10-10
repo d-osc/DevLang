@@ -1,6 +1,6 @@
 # DevLang for VS Code
 
-Source distribution, not a Marketplace release. Build the latest repository
+Extension ID: `n-devs.devlang-language`. Build the latest repository runtime
 with `cargo build --release`, then configure `devlang.executablePath` to the
 absolute `target/release/d[.exe]` path (or put its containing directory on PATH).
 All three executables, d/devrun/devc, should stay together.

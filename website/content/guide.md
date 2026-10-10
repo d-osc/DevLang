@@ -957,7 +957,7 @@ d fmt --stdout src/main.dev
 
 `d lsp --stdio` มี parser diagnostics, keyword/type completion และชื่อ function/type ในไฟล์ปัจจุบัน, hover signatures, Go to Definition, Outline และ Format Document ใช้ full document sync และ UTF-16 positions ตาม LSP ยังไม่มี workspace type checker, cross-file navigation, local variable definitions หรือ rename
 
-Extension source อยู่ใน `editors/vscode` ใช้ Node.js 22 ขึ้นไป รัน `npm ci`, `npm run check`, `npm run package` ในโฟลเดอร์นั้น แล้วใช้ **Extensions: Install from VSIX** ตั้งค่า `devlang.executablePath` ให้ชี้ไป `d` ใหม่ เปิด trusted project และ `.dev` ยังไม่ได้ publish Marketplace
+ติดตั้ง [DevLang จาก VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=n-devs.devlang-language) หรือใช้ `code --install-extension n-devs.devlang-language` ตั้งค่า `devlang.executablePath` ให้ชี้ไป `d` ใหม่ เปิด trusted project และ `.dev` Extension source อยู่ใน `editors/vscode` ถ้าจะสร้าง VSIX เอง ใช้ Node.js 22 ขึ้นไป รัน `npm ci`, `npm run check`, `npm run package` ในโฟลเดอร์นั้น แล้วใช้ **Extensions: Install from VSIX**
 
 ## Debugger integration
 

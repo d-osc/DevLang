@@ -3,7 +3,7 @@
   "displayName": "DevLang",
   "description": "DevLang syntax, formatting, language server and native breakpoint support.",
   "version": "0.1.0",
-  "publisher": "d-osc",
+  "publisher": "n-devs",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -75,7 +75,7 @@
     },
     "configurationDefaults": {
       "[devlang]": {
-        "editor.defaultFormatter": "d-osc.devlang-language",
+        "editor.defaultFormatter": "n-devs.devlang-language",
         "editor.insertSpaces": true,
         "editor.tabSize": 4
       }

@@ -112,7 +112,9 @@ checking, cross-file navigation, local-variable definition lookup, rename,
 signature help or semantic tokens. It does not execute edited code or invoke
 a C compiler for diagnostics. Unknown requests return protocol errors.
 
-The extension is in `editors/vscode`; it is not published to the Marketplace.
+The extension is published as [`n-devs.devlang-language`](https://marketplace.visualstudio.com/items?itemName=n-devs.devlang-language).
+Install it from the Marketplace or with `code --install-extension n-devs.devlang-language`.
+Its source is in `editors/vscode`.
 Build a VSIX from that directory with Node.js 22 or newer,
 `npm ci`, `npm run check`, `npm run package`.
 Install via **Extensions: Install from VSIX**. Configure
