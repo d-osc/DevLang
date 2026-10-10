@@ -34,6 +34,13 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
 
 ## Essential language rules
 
+- DON (`.don`) is the JSON-compatible data format: comments, bare keys, colon/equal,
+  newline separators, single/double/triple-quoted strings. Read `docs/don.md` in a
+  checkout. `std/don` parse/stringify/toJSON/fromJSON runs in the source runtime.
+  New projects use `package.don` with the existing nested package/dependencies
+  schema; legacy `dev.toml` and TOML `dev.lock` remain supported. This is not Node's
+  package.json schema. Reformatting or package mutation discards DON comments.
+
 - Declare typed parameters as `fn add(a i64, b i64) i64`. Return type follows the parameter list; colons and arrows are optional. Statements end at newline or optional semicolon.
 - Explicitly invoke `main()` after its declaration. Declarations never auto-run. Use file-level `return main()` only when the result should become exit status. Imported files contain declarations only.
 - `let` is mutable and needs an initializer. Default literals are i64/f64. Numeric types do not implicitly mix; use `as` and matching widths. Conditions require bool.

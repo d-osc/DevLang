@@ -2060,13 +2060,48 @@ impl Engine {
             let ty = self.modules[module].functions["get"].ret.clone();
             return crate::http::call(name, args, ty, &mut self.http);
         }
-        if module == "std/json" {
+        if module == "std/json" || module == "std/don" {
             let ty = self.modules[module]
                 .module
                 .concrete_types
                 .first()
                 .ok_or("JSON value type unavailable")?
                 .clone();
+            if module == "std/don" {
+                let name = if name.starts_with("g_stringify_") {
+                    "stringify"
+                } else if name.starts_with("g_toJSON_") {
+                    "toJSON"
+                } else {
+                    name
+                };
+                if matches!(name, "parse" | "valid" | "fromJSON") {
+                    let [Value::Str(text)] = args.as_slice() else {
+                        return Err("don function expects one string".into());
+                    };
+                    if name == "fromJSON" {
+                        if text.len() > 8 * 1024 * 1024 { return Err("DON input exceeds 8 MiB".into()); }
+                        return crate::json::call("parse", args, ty);
+                    }
+                    let value = dev_syntax::don::parse(text);
+                    if name == "valid" {
+                        return Ok(Value::Bool(value.is_ok()));
+                    }
+                    return Ok(Value::Json(Arc::new(value?), ty));
+                }
+                if matches!(name, "stringify" | "toJSON") {
+                    if args.len() != 1 {
+                        return Err("don stringify expects one value".into());
+                    }
+                    let value = crate::json::encode(&args[0], 0)?;
+                    return Ok(Value::Str(if name == "toJSON" {
+                        serde_json::to_string(&value).map_err(|e| e.to_string())?
+                    } else {
+                        dev_syntax::don::stringify(&value)?
+                    }));
+                }
+                return crate::json::call(name, args, ty);
+            }
             return crate::json::call(name, args, ty);
         }
         let a = |i: usize| args.get(i).ok_or_else(|| "missing argument".to_string());

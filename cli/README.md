@@ -2,7 +2,7 @@
 
 The latest source build also includes project dependencies, formatting, a stdio
 language server and native debugger integration. See [Developer tools](../docs/tooling.md)
-for `dev.toml`/`dev.lock`, `d new`, `d pkg`, `d fmt`, `d lsp` and `d debug`.
+for `package.don`/`dev.lock`, `d new`, `d pkg`, `d fmt`, `d lsp` and `d debug`.
 These commands are not included in the existing v0.4.0 installers.
 
 `d` dispatches to the independent `devrun` runtime or `devc` compiler located

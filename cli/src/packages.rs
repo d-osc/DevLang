@@ -72,6 +72,13 @@ fn locked_root(project: &Path, name: &str, item: &Locked) -> Result<PathBuf, Str
     Ok(project.join(&item.root))
 }
 fn read<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, String> {
+    if path.extension().is_some_and(|ext| ext == "don") {
+        let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+        return serde_json::from_value(
+            dev_syntax::don::parse(&text).map_err(|e| format!("{}: {e}", path.display()))?,
+        )
+        .map_err(|e| format!("{}: {e}", path.display()));
+    }
     toml::from_str(&std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?)
         .map_err(|e| format!("{}: {e}", path.display()))
 }
@@ -79,7 +86,11 @@ fn write<T: Serialize>(path: &Path, value: &T) -> Result<(), String> {
     let temporary = path.with_extension("toml.tmp");
     std::fs::write(
         &temporary,
-        toml::to_string_pretty(value).map_err(|e| e.to_string())?,
+        if path.extension().is_some_and(|ext| ext == "don") {
+            dev_syntax::don::stringify(&serde_json::to_value(value).map_err(|e| e.to_string())?)?
+        } else {
+            toml::to_string_pretty(value).map_err(|e| e.to_string())?
+        },
     )
     .map_err(|e| e.to_string())?;
     // rename replaces an ordinary file on supported hosts.
@@ -95,7 +106,7 @@ pub fn identifier(name: &str) -> bool {
 }
 pub fn root(from: &Path) -> Option<PathBuf> {
     from.ancestors()
-        .find(|p| p.join("dev.toml").is_file())
+        .find(|p| p.join("package.don").is_file() || p.join("dev.toml").is_file())
         .and_then(|p| dunce::canonicalize(p).ok())
 }
 fn relative(path: &str) -> Result<&Path, String> {
@@ -110,13 +121,20 @@ fn relative(path: &str) -> Result<&Path, String> {
     Ok(p)
 }
 pub fn manifest(root: &Path) -> Result<Manifest, String> {
-    let m: Manifest = read(&root.join("dev.toml"))?;
+    let m: Manifest = read(&manifest_path(root))?;
     if !identifier(&m.package.name) {
         return Err("invalid package name".into());
     }
     relative(&m.package.entry)?;
     relative(&m.package.modules)?;
     Ok(m)
+}
+fn manifest_path(root: &Path) -> PathBuf {
+    root.join(if root.join("package.don").is_file() {
+        "package.don"
+    } else {
+        "dev.toml"
+    })
 }
 fn git(dir: Option<&Path>, args: &[&str]) -> Result<String, String> {
     let mut command = Command::new("git");
@@ -445,7 +463,7 @@ pub fn new(path: &Path) -> Result<i32, String> {
     }
     std::fs::create_dir_all(path.join("src")).map_err(|e| e.to_string())?;
     write(
-        &path.join("dev.toml"),
+        &path.join("package.don"),
         &Manifest {
             package: Package {
                 name: name.into(),
@@ -463,7 +481,7 @@ pub fn new(path: &Path) -> Result<i32, String> {
     std::fs::write(path.join(".gitignore"), ".dev/\nout/\n").map_err(|e| e.to_string())?;
     std::fs::write(
         path.join(".gitattributes"),
-        "*.dev text eol=lf\n*.toml text eol=lf\ndev.lock text eol=lf\n",
+        "*.dev text eol=lf\n*.don text eol=lf\n*.toml text eol=lf\ndev.lock text eol=lf\n",
     )
     .map_err(|e| e.to_string())?;
     println!("created {}", path.display());
@@ -471,7 +489,7 @@ pub fn new(path: &Path) -> Result<i32, String> {
 }
 pub fn command(args: &[String]) -> Result<i32, String> {
     let project = root(&std::env::current_dir().map_err(|e| e.to_string())?)
-        .ok_or("no dev.toml; use d new NAME")?;
+        .ok_or("no package.don or dev.toml; use d new NAME")?;
     match args.first().map(String::as_str) {
         Some("install") | Some("update") if args.len() <= 2 && args.get(1).is_none_or(|a| a == "--locked") && !(args[0]=="update" && args.len()==2) => {
             install(&project, args.get(1).is_some(), args[0] == "update")?;
@@ -487,10 +505,10 @@ pub fn command(args: &[String]) -> Result<i32, String> {
                 at += 2;
             }
             if dep.path.is_some() == dep.git.is_some() || (dep.path.is_some() && dep.rev.is_some()) { return Err("use exactly one --path or --git; --rev is Git-only".into()); }
-            let mut m = manifest(&project)?; m.dependencies.insert(name.clone(), dep); write(&project.join("dev.toml"), &m)?;
+            let mut m = manifest(&project)?; m.dependencies.insert(name.clone(), dep); write(&manifest_path(&project), &m)?;
             install(&project, false, false)?;
         }
-        Some("remove") if args.len() == 2 => { let mut m = manifest(&project)?; m.dependencies.remove(&args[1]).ok_or("dependency does not exist")?; write(&project.join("dev.toml"), &m)?; install(&project, false, false)?; }
+        Some("remove") if args.len() == 2 => { let mut m = manifest(&project)?; m.dependencies.remove(&args[1]).ok_or("dependency does not exist")?; write(&manifest_path(&project), &m)?; install(&project, false, false)?; }
         Some("list") if args.len() == 1 => { for (name, dir) in mappings(&project)? { println!("{name} {}", dir.display()); } }
         _ => return Err("pkg add NAME --path DIR | --git URL [--rev REF]; pkg install [--locked]; pkg update; pkg remove NAME; pkg list".into()),
     }

@@ -14,7 +14,7 @@ d build --release -o out/hello
 d fmt --check
 ```
 
-`dev.toml` is the project manifest. Commands without a filename use its entry.
+`d new` creates `package.don` using [Dev Object Notation](don.md). Legacy `dev.toml` manifests remain supported; DON takes precedence if both exist. The TOML example below is the legacy equivalent. Commands without a filename use its entry.
 An explicit file still works. The CLI searches ancestor directories of the
 entry file for a manifest; it never downloads dependencies while running/building.
 Use `d -C PROJECT ...` to select a working directory.
@@ -48,7 +48,7 @@ d pkg list
 d pkg remove math
 ```
 
-Dependencies need their own `dev.toml`. Path and Git dependencies can have
+Dependencies need their own `package.don` or legacy `dev.toml`. Path and Git dependencies can have
 transitive dependencies. Names form one flat namespace; conflicting versions or
 local sources for the same name are rejected. `std` is reserved. There is no
 public registry, semver solver, workspace manifest or package publishing yet.
@@ -57,7 +57,7 @@ Credential-bearing HTTPS URLs are rejected; use Git's existing credential setup.
 Git dependencies are checked out in `.dev/packages/NAME-COMMIT`, without running
 package install/build scripts. Submodules and symlink packages are unsupported.
 
-Commit `dev.toml` and `dev.lock`; ignore `.dev/` and `out/`. The versioned TOML
+Commit your manifest and `dev.lock`; ignore `.dev/` and `out/`. The versioned TOML
 lockfile records source declarations, pinned Git commits, module directories and
 SHA-256 hashes of package files (excluding .git/.dev/target/dist/out/node_modules).
 `pkg install` keeps existing matching Git commits pinned, resolves new sources,

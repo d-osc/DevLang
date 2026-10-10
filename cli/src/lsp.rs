@@ -128,7 +128,7 @@ fn diagnostics_with_documents(uri: &str, doc: &Document, documents: &HashMap<Str
 fn semantic_diagnostics(uri: &str, doc: &Document, module: &Module, documents: &HashMap<String, Document>) -> Vec<Value> {
     // JSON is currently runtime-only: the native frontend cannot resolve it.
     // Do not mislabel valid runtime code as a native compiler error.
-    if module.imports.iter().any(|i| i.path == "std/json") { return vec![]; }
+    if module.imports.iter().any(|i| matches!(i.path.as_str(), "std/json" | "std/don")) { return vec![]; }
     let entry = path(uri);
     let entry = entry.canonicalize().unwrap_or(entry);
     let mut sources: HashMap<PathBuf, String> = documents.iter().map(|(uri, document)| {

@@ -1,0 +1,7 @@
+# Example project manifest. Run `d pkg install` in this directory.
+package: {
+  name: "don_demo"
+  entry: "main.dev"
+  modules: "src"
+}
+dependencies: {}

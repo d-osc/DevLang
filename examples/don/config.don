@@ -1,0 +1,11 @@
+# Dev Object Notation — no outer braces or commas needed
+name = 'DevLang demo'
+version: "1.0.0"
+server: {
+  host: '127.0.0.1'
+  port: 3_000
+  enabled: true
+}
+tags: ["dev", 'don',]
+message: """Hello,
+Dev Object Notation!"""

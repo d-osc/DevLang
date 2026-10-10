@@ -1,5 +1,8 @@
 # Interpreter API
 
+`std/don` reads and writes Dev Object Notation (`.don`), a JSON-compatible format
+with comments, bare keys and newline separators. See [DON](don.md).
+
 Node-style core modules are also available under `std/`: `net`, `path`, `os`,
 `stream`, `url`, `module`, `process`, `events`, `buffer`, `dgram`.
 See [Core runtime APIs and contracts](node-core.md).

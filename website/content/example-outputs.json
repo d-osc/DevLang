@@ -223,5 +223,10 @@
     "source_sha256": "f26c13784099df62189a617c14fd7f686251ffa38d16bf6d39bc06cdd02c0db0",
     "validation_sha256": "bde2f9555a8d62aefb4fc35e5701f01c30480e496236bc9c02d0251d624a6485",
     "output": "UDP hello\n"
+  },
+  "don": {
+    "source_sha256": "9962c2cbf984f0fbef480aa1ef0e7d74e050e3f5b0a13e30e08a5ae7f75b0e2d",
+    "validation_sha256": "823dafcd4923845172271e0133d723c0e855fcd846ec804248f5739674a1bfd8",
+    "output": "DevLang demo\n3000\n8080\nfalse\n{\"name\":\"Dev\"}\n"
   }
 }

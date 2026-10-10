@@ -1,5 +1,6 @@
 use std::{env, ffi::OsString, process::Command};
 mod debug;
+mod don;
 mod format;
 mod lsp;
 mod packages;
@@ -14,13 +15,14 @@ const HELP: &str = "Dev Lang
   d -e|--eval 'print(40 + 2)'               Run inline source
   d check|--check FILE.dev [options]        Check a native program
   d emit|--emit FILE.dev [options]          Emit C source
-  d new NAME                              Create a project with dev.toml
+  d new NAME                              Create a project with package.don
   d pkg add|install|update|remove|list      Manage path/Git dependencies
+  d don check|fmt|to-json|from-json FILE   Validate or convert data (output to stdout)
   d fmt [--check|--stdout] [FILES/DIRS]     Format source (defaults to src/)
   d lsp [--stdio]                         Start the language server
   d debug FILE.dev [--no-launch]           Build with symbols and launch LLDB
   d debug --vscode                        Generate VS Code debug configuration
-  d run|build|check                       Use dev.toml entry when FILE is omitted
+  d run|build|check                       Use package.don/dev.toml entry when FILE is omitted
 
 Common options (before --):
   -h, --help       Show help, including after a command or filename
@@ -104,7 +106,7 @@ fn run() -> Result<i32, String> {
         env::set_current_dir(dir)
             .map_err(|e| format!("working directory {}: {e}", dir.display()))?;
     }
-    if matches!(selector, "new" | "pkg" | "fmt" | "lsp" | "debug") {
+    if matches!(selector, "new" | "pkg" | "fmt" | "lsp" | "debug" | "don") {
         let values = args
             .iter()
             .skip(1)
@@ -118,6 +120,7 @@ fn run() -> Result<i32, String> {
             "new" if values.len() == 1 => packages::new(std::path::Path::new(&values[0])),
             "new" => Err("usage: d new NAME".into()),
             "pkg" => packages::command(&values),
+            "don" => don::command(&values),
             "fmt" => format::command(&values),
             "lsp" => lsp::command(&values),
             "debug" => debug::command(&values),
@@ -149,8 +152,8 @@ fn run() -> Result<i32, String> {
             .is_none_or(|a| a.to_string_lossy().starts_with('-') && a != "--eval" && a != "-e")
         {
             let here = env::current_dir().map_err(|e| e.to_string())?;
-            let project =
-                packages::root(&here).ok_or("expected a .dev entry file or dev.toml project")?;
+            let project = packages::root(&here)
+                .ok_or("expected a .dev entry file or package.don/dev.toml project")?;
             args.insert(
                 0,
                 project

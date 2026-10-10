@@ -1,0 +1,18 @@
+use "std/don"
+use "std/fs"
+use "std/path"
+use "std/module"
+
+fn main() {
+    let config = don.parse(fs.read_text(path.join(path.dirname(module.entry()), "config.don")))
+    print(config.name)
+    print(config.server.port)
+    config.server.port = 8080
+    let text = don.stringify(config)
+    let restored = don.parse(text)
+    print(restored.server.port)
+    print(don.valid("invalid: bare-string"))
+    let original = don.fromJSON("{\"name\":\"Dev\"}")
+    print(don.toJSON(original))
+}
+main()

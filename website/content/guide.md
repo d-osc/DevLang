@@ -915,7 +915,7 @@ d fmt --check
 d build --release -o out/hello
 ```
 
-`dev.toml` กำหนด package name, entry (ปกติ `src/main.dev`) และ modules directory (ปกติ `src`) เมื่อไม่ระบุไฟล์ `d run/build/check` จะใช้ entry นี้
+`package.don` (หรือ `dev.toml` เดิม) กำหนด package name, entry (ปกติ `src/main.dev`) และ modules directory (ปกติ `src`) เมื่อไม่ระบุไฟล์ `d run/build/check` จะใช้ entry นี้
 
 ```toml
 [package]
@@ -927,7 +927,7 @@ modules = "src"
 path = "../math"
 ```
 
-Dependency ต้องมี `dev.toml` ของตัวเอง และไฟล์ที่ import มีเฉพาะ declarations ใช้ `use "math/lib"` แล้วเรียก `lib.answer()` ได้ทั้ง runtime/native ไม่ต้อง copy library เข้า source
+Dependency ต้องมี `package.don` หรือ `dev.toml` ของตัวเอง และไฟล์ที่ import มีเฉพาะ declarations ใช้ `use "math/lib"` แล้วเรียก `lib.answer()` ได้ทั้ง runtime/native ไม่ต้อง copy library เข้า source
 
 ```sh
 d pkg add math --path ../math
@@ -940,7 +940,7 @@ d pkg list
 d pkg remove math
 ```
 
-Commit `dev.toml` และ `dev.lock`; ignore `.dev/` และ `out/` Lockfile เก็บ commit ของ Git และ SHA-256 ของ package files `install` รักษา Git commit เดิมและบันทึก local edits ที่ตั้งใจ `update` resolve Git refs ใหม่ `--locked` ติดตั้ง checkout ที่ขาดด้วย commit เดิมและตรวจเนื้อหาโดยไม่แก้ lock การรัน/build ตรวจ lock แต่ไม่ดาวน์โหลดอัตโนมัติ Git ใช้ HTTPS/file URL และต้องมี Git ติดตั้ง รองรับ transitive dependencies แบบ namespace เดียว ถ้าชื่อชนกันคนละ source จะเป็น error ยังไม่มี registry, semver solver หรือ publish command
+Commit manifest และ `dev.lock`; ignore `.dev/` และ `out/` Lockfile เก็บ commit ของ Git และ SHA-256 ของ package files `install` รักษา Git commit เดิมและบันทึก local edits ที่ตั้งใจ `update` resolve Git refs ใหม่ `--locked` ติดตั้ง checkout ที่ขาดด้วย commit เดิมและตรวจเนื้อหาโดยไม่แก้ lock การรัน/build ตรวจ lock แต่ไม่ดาวน์โหลดอัตโนมัติ Git ใช้ HTTPS/file URL และต้องมี Git ติดตั้ง รองรับ transitive dependencies แบบ namespace เดียว ถ้าชื่อชนกันคนละ source จะเป็น error ยังไม่มี registry, semver solver หรือ publish command
 
 ## Formatter
 
@@ -1050,3 +1050,43 @@ TCP เป็น byte stream ต้องจัดการหลาย chunk �
 callback รับข้อมูลของ TCP/UDP ทำงานหลังโค้ดหลักจบ ส่วน `read`/`recv` และ file streams เป็น blocking
 handle ต้องใช้และปิดใน thread ที่สร้างมัน และ API ไม่มี optional arguments, Promise หรือ timer แบบ JavaScript
 อ่าน [signatures และข้อจำกัดครบทุกตัว](../../docs/node-core.md) ก่อนใช้ API ที่ชื่อคล้าย Node
+
+# [don] Dev Object Notation (DON)
+
+DON เป็นรูปแบบข้อมูลคู่กับ DevLang ใช้นามสกุล `.don` และใช้ `package.don` เป็น manifest ของโปรเจกต์ใหม่
+รองรับข้อมูลแบบ JSON พร้อม comments, key ไม่ต้องใส่ quotes, `:` หรือ `=`, newline แทน comma และ multiline strings
+
+```don
+# package.don
+package: {
+  name: 'my_app'
+  entry: 'src/main.dev'
+  modules: 'src'
+}
+dependencies: {
+  math: { path: '../math' }
+}
+```
+
+ข้อความต้องใส่ single/double quotes, ตัวเลขใช้ `_` คั่นหลักได้ เช่น `1_000`
+ชั้นนอกละ `{}` ได้ แต่ nested object ต้องมี braces ไม่รองรับ key ซ้ำหรือการรัน expression
+
+```dev-runtime
+use "std/don"
+fn main() {
+    let data = don.parse("name: 'Dev'\nport = 3_000")
+    print(data.name)
+    data.port = 8080
+    print(data.port)
+    print(don.toJSON(data))
+}
+main()
+```
+
+ใช้ `don.stringify(data)` แปลงกลับเป็น DON และ `don.fromJSON(text)` อ่าน JSON แบบเข้มงวด
+ใช้ `std/fs` อ่านเขียนไฟล์ และ `d don check|fmt|to-json|from-json FILE` ตรวจหรือแปลงข้อมูล
+คำสั่ง format/convert ส่งออก stdout ไม่แก้ไฟล์ต้นฉบับ แต่ output ไม่เก็บ comments เดิม
+
+`d new` สร้าง `package.don`; dependencies ยังใช้ path/Git และ lock เป็น `dev.lock` แบบ TOML เดิม
+โปรเจกต์ `dev.toml` เดิมยังใช้ได้ API `std/don` รองรับ runtime ยังไม่มี native build
+อ่าน [คู่มือ DON และ API](../../docs/don.md) และลอง `d examples/don/main.dev`

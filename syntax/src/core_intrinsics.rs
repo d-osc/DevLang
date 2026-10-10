@@ -4,6 +4,7 @@ pub const BUILTINS: &[&str] = &[
     "std/time",
     "std/args",
     "std/json",
+    "std/don",
     "std/fs",
     "std/http",
     "std/fs/promises",

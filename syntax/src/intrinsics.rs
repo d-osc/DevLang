@@ -1,6 +1,7 @@
 //! Source-runtime signatures shared by runtime loading and editor checking.
 pub fn module(name: &str) -> Option<&'static str> {
     match name {
+        "std/don" => Some(DON),
         "std/fs" => Some(FS),
         "std/http" => Some(HTTP),
         "std/fs/promises" => Some(FS_PROMISES),
@@ -18,6 +19,20 @@ pub fn module(name: &str) -> Option<&'static str> {
     }
 }
 include!("core_intrinsics.rs");
+pub const DON: &str = r#"
+struct Value {}
+fn parse(text str) Value { return Value() }
+fn valid(text str) bool { return false }
+fn stringify<T>(value T) str { return "" }
+fn toJSON<T>(value T) str { return "" }
+fn fromJSON(text str) Value { return Value() }
+fn get(value Value, key str) Value { return Value() }
+fn at(value Value, index i64) Value { return Value() }
+fn has(value Value, key str) bool { return false }
+fn string(value Value) str { return "" }
+fn int(value Value) i64 { return 0 }
+fn bool(value Value) bool { return false }
+"#;
 pub const FS: &str = r#"
 fn readFileSync(path str, encoding str) str { return "" }
 fn writeFileSync(path str, data str) bool { return true }

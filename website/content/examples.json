@@ -630,5 +630,17 @@
     "commands": [
       "d examples/udp/main.dev"
     ]
+  },
+  {
+    "id": "don",
+    "title": "Dev Object Notation",
+    "category": "I/O",
+    "path": "examples/don/main.dev",
+    "description": "อ่าน DON, nested objects, แก้ค่า และแปลง JSON",
+    "doc": "don",
+    "mode": "runtime",
+    "commands": [
+      "d examples/don/main.dev"
+    ]
   }
 ]

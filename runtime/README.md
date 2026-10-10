@@ -1,5 +1,8 @@
 # Dev source runtime
 
+`std/don` supports [Dev Object Notation](../docs/don.md): flexible data/config
+syntax, managed objects and JSON conversion, without a C compiler.
+
 Additional `std/net`, `std/path`, `std/os`, `std/stream`, `std/url`, `std/module`,
 `std/process`, `std/events`, `std/buffer`, `std/dgram` provide TCP/UDP, file
 streams, events, byte buffers and system utilities. See
