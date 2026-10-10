@@ -225,6 +225,7 @@ impl TaskState {
     }
 }
 pub struct Engine {
+    module_dirs: HashMap<String, PathBuf>,
     libraries: Vec<PathBuf>,
     modules: HashMap<String, Loaded>,
     entry: String,
@@ -235,14 +236,16 @@ pub struct Engine {
     numeric: bool,
 }
 impl Engine {
-    pub fn load(
+    pub fn load_with_modules(
         path: &Path,
         source: Option<&str>,
         args: Vec<String>,
         libraries: &[PathBuf],
         numeric: bool,
+        module_dirs: HashMap<String, PathBuf>,
     ) -> Result<Self, String> {
         let mut e = Self {
+            module_dirs,
             libraries: libraries.to_vec(),
             modules: HashMap::new(),
             entry: String::new(),
@@ -387,10 +390,8 @@ impl Engine {
             {
                 import.path.clone()
             } else {
-                let mut p = path.parent().unwrap_or(Path::new(".")).join(&import.path);
-                if p.extension().is_none() {
-                    p.set_extension("dev");
-                }
+                let p = dev_syntax::modules::resolve(&path, &import.path, &self.module_dirs)
+                    .map_err(|e| error(&path, import.span, e))?;
                 self.load_module(&p, None)?
             };
             if self
@@ -613,6 +614,7 @@ impl Engine {
                         }
                     }
                     let mut worker = Engine {
+                        module_dirs: HashMap::new(),
                         libraries: libraries.clone(),
                         modules,
                         entry: module.clone(),
@@ -708,6 +710,7 @@ impl Engine {
                     }
                 }
                 let mut worker = Engine {
+                    module_dirs: HashMap::new(),
                     libraries,
                     modules,
                     entry: module.clone(),

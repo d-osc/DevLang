@@ -11,6 +11,7 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
 
 - For syntax, core types, modules, collections and functions, read [references/core.md](references/core.md).
 - For recursive data, generic constraints, threads, callbacks or C ABI, read [references/advanced.md](references/advanced.md).
+- For project manifests/dependencies, formatting, language-server or native-debugger work, read [references/tooling.md](references/tooling.md). These tools require the latest source build.
 - In a DevLang checkout, consult `docs/language.md`, `docs/advanced.md`, `docs/runtime.md` and the relevant `.dev` examples rather than inventing APIs. The repository is https://github.com/d-osc/DevLang.
 - Use `d FILE.dev` or `d run FILE.dev` for source execution. Use `d build FILE.dev --release` for native compilation. `d run` is different from `devc run`, which compiles then executes.
 - Keep compiler, source interpreter and native stdlib separate when changing the implementation. Pure Dev runtime execution never needs a C compiler; first-use C source FFI preparation does.

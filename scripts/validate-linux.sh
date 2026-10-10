@@ -18,6 +18,7 @@ python3 scripts/smoke_features.py --bin-dir target/release
 python3 scripts/smoke_safety.py --bin-dir target/release
 python3 scripts/smoke_reference_native.py --compiler target/release/devc --sanitize
 python3 scripts/smoke_cli.py --bin-dir target/release
+python3 scripts/smoke_tooling.py --bin-dir target/release
 python3 scripts/smoke_entry.py --runtime target/release/devrun --compiler target/release/devc
 python3 scripts/smoke_ffi.py --bin-dir target/release
 python3 scripts/smoke_native_auto.py --bin-dir target/release

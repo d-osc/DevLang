@@ -1,0 +1,11 @@
+{
+  "scopeName": "source.devlang",
+  "patterns": [
+    { "name": "comment.line.devlang", "match": "(#|//).*$" },
+    { "name": "string.quoted.double.devlang", "begin": "\"", "end": "\"", "patterns": [{ "name": "constant.character.escape.devlang", "match": "\\\\." }] },
+    { "name": "keyword.control.devlang", "match": "\\b(fn|async|let|if|else|while|for|in|return|break|continue|struct|enum|match|unsafe|use|export|as|trait)\\b" },
+    { "name": "constant.language.devlang", "match": "\\b(true|false|null)\\b" },
+    { "name": "storage.type.devlang", "match": "\\b(i8|i16|i32|i64|u8|u16|u32|u64|isize|usize|f32|f64|bool|str|void|Ref|Vec|Map|Slice|Task)\\b" },
+    { "name": "constant.numeric.devlang", "match": "\\b(0[xX][0-9a-fA-F_]+|[0-9][0-9_]*(\\.[0-9_]+)?([eE][+-]?[0-9_]+)?)\\b" }
+  ]
+}

@@ -1,0 +1,3 @@
+*.dev text eol=lf
+*.toml text eol=lf
+dev.lock text eol=lf

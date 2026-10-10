@@ -69,6 +69,10 @@ pub fn build(options: &Options, modules: &[Generated]) -> Result<BuildResult, St
     };
     if !options.fast {
         flags.push(if options.release { "-O3" } else { "-O0" }.into());
+        if !options.release {
+            flags.push("-gdwarf-4".into());
+            flags.push("-fno-omit-frame-pointer".into());
+        }
     }
     if options.native {
         flags.push("-march=native".into());
@@ -96,6 +100,11 @@ pub fn build(options: &Options, modules: &[Generated]) -> Result<BuildResult, St
         None
     };
     let (cc, version) = compiler(fast_cc.as_deref().or(options.cc.as_deref()), &cache, &work)?;
+    if cfg!(windows) && !options.fast && !options.release && version.contains("windows-msvc") {
+        // link.exe truncates DWARF section names in PE images. LLD preserves them.
+        flags.push("-fuse-ld=lld".into());
+        flags.push("-Wl,/debug:dwarf".into());
+    }
     if options.fast {
         if !version.contains("tcc version") {
             return Err("--fast requires a TinyCC backend; use --cc /path/to/tcc".into());

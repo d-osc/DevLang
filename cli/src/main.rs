@@ -1,4 +1,8 @@
 use std::{env, ffi::OsString, process::Command};
+mod debug;
+mod format;
+mod lsp;
+mod packages;
 
 const HELP: &str = "Dev Lang
 
@@ -9,6 +13,13 @@ const HELP: &str = "Dev Lang
   d -e|--eval 'print(40 + 2)'               Run inline source
   d check|--check FILE.dev [options]        Check a native program
   d emit|--emit FILE.dev [options]          Emit C source
+  d new NAME                              Create a project with dev.toml
+  d pkg add|install|update|remove|list      Manage path/Git dependencies
+  d fmt [--check|--stdout] [FILES/DIRS]     Format source (defaults to src/)
+  d lsp [--stdio]                         Start the language server
+  d debug FILE.dev [--no-launch]           Build with symbols and launch LLDB
+  d debug --vscode                        Generate VS Code debug configuration
+  d run|build|check                       Use dev.toml entry when FILE is omitted
 
 Common options (before --):
   -h, --help       Show help, including after a command or filename
@@ -21,7 +32,7 @@ Common options (before --):
 
 Compiler options (after FILE.dev):
   -o, --output PATH  Set executable/archive/generated-source output
-  --debug          Use -O0 (default; last debug/release option wins)
+  --debug          Use -O0 with DWARF symbols (Windows MSVC Clang needs LLD)
   --release        Use -O3
   --native         Tune for this CPU
   --fast           Use TinyCC for fast builds
@@ -88,6 +99,30 @@ fn run() -> Result<i32, String> {
         return Ok(0);
     };
     let selector = first.to_str().unwrap_or("");
+    if let Some(dir) = &cwd {
+        env::set_current_dir(dir)
+            .map_err(|e| format!("working directory {}: {e}", dir.display()))?;
+    }
+    if matches!(selector, "new" | "pkg" | "fmt" | "lsp" | "debug") {
+        let values = args
+            .iter()
+            .skip(1)
+            .map(|a| {
+                a.to_str()
+                    .map(str::to_owned)
+                    .ok_or("tooling arguments must be UTF-8")
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        return match selector {
+            "new" if values.len() == 1 => packages::new(std::path::Path::new(&values[0])),
+            "new" => Err("usage: d new NAME".into()),
+            "pkg" => packages::command(&values),
+            "fmt" => format::command(&values),
+            "lsp" => lsp::command(&values),
+            "debug" => debug::command(&values),
+            _ => unreachable!(),
+        };
+    }
     if matches!(selector, "--help" | "-h" | "help") {
         println!("{HELP}");
         return Ok(0);
@@ -96,6 +131,7 @@ fn run() -> Result<i32, String> {
         println!("d {}", env!("CARGO_PKG_VERSION"));
         return Ok(0);
     }
+    let inline_mode = matches!(selector, "-e" | "--eval");
     let (tool, command) = match selector {
         "run" | "--run" | "-r" => ("devrun", Some("run")),
         "build" | "--build" | "-b" | "compiler" | "--compiler" | "-c" => ("devc", Some("build")),
@@ -107,8 +143,19 @@ fn run() -> Result<i32, String> {
     };
     if let Some(command) = command {
         args.remove(0);
-        if args.is_empty() {
-            return Err("expected a .dev entry file".into());
+        if args
+            .first()
+            .is_none_or(|a| a.to_string_lossy().starts_with('-') && a != "--eval" && a != "-e")
+        {
+            let here = env::current_dir().map_err(|e| e.to_string())?;
+            let project =
+                packages::root(&here).ok_or("expected a .dev entry file or dev.toml project")?;
+            args.insert(
+                0,
+                project
+                    .join(packages::manifest(&project)?.package.entry)
+                    .into_os_string(),
+            );
         }
         args.insert(0, command.into());
     }
@@ -126,16 +173,24 @@ fn run() -> Result<i32, String> {
         tool.into()
     });
     let mut child = Command::new(&binary);
-    child.args(args);
-    if let Some(cwd) = cwd {
-        if !cwd.is_dir() {
-            return Err(format!(
-                "working directory does not exist: {}",
-                cwd.display()
-            ));
+    if !inline_mode {
+        let entry_index = usize::from(command.is_some());
+        if let Some(entry) = args.get(entry_index) {
+            let entry = std::path::PathBuf::from(entry);
+            if let Ok(entry) = entry.canonicalize() {
+                if let Some(project) = packages::root(entry.parent().unwrap()) {
+                    let boundary = args.iter().position(|a| a == "--").unwrap_or(args.len());
+                    let mut maps = Vec::<OsString>::new();
+                    for (name, path) in packages::mappings(&project)? {
+                        maps.push("--module-dir".into());
+                        maps.push(format!("{name}={}", path.display()).into());
+                    }
+                    args.splice(boundary..boundary, maps);
+                }
+            }
         }
-        child.current_dir(cwd);
     }
+    child.args(args);
     let status = child.status().map_err(|e| {
         format!(
             "cannot start {}: {e}; place {tool} next to d",

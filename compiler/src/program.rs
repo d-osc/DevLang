@@ -165,31 +165,8 @@ impl Program {
             if self.aliases[id].contains_key(&import.alias) {
                 return Err(error(&path, import.span, "duplicate module alias"));
             }
-            let mapped = import
-                .path
-                .split_once('/')
-                .and_then(|(name, suffix)| module_dirs.get(name).map(|root| (root, suffix)));
-            let target = if let Some((root, suffix)) = mapped {
-                if suffix.is_empty()
-                    || Path::new(suffix)
-                        .components()
-                        .any(|part| !matches!(part, std::path::Component::Normal(_)))
-                {
-                    return Err(error(
-                        &path,
-                        import.span,
-                        "module path cannot escape its namespace directory",
-                    ));
-                }
-                let target = root.join(suffix);
-                if target.extension().is_some() {
-                    target
-                } else {
-                    target.with_extension("dev")
-                }
-            } else {
-                path.parent().unwrap().join(&import.path)
-            };
+            let target = dev_syntax::modules::resolve(&path, &import.path, module_dirs)
+                .map_err(|e| error(&path, import.span, e))?;
             let target_id = self.load_module(&target, seen, module_dirs).map_err(|e| {
                 error(
                     &path,

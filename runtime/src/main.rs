@@ -13,6 +13,7 @@ devrun -e|--eval 'print(40 + 2)' [--timings] [-- arguments]
   --timings        Print source-load and execution timings to stderr
   --ffi-lib PATH   Load a native shared library (.dll/.so), repeatable
   --engine MODE    auto (default numeric plans) or ast (reference interpreter)
+  --module-dir NAME=DIR  Map an imported namespace (repeatable)
 Interprets Dev directly; source-only C dependencies are prepared automatically.";
 
 fn main() {
@@ -29,6 +30,7 @@ fn run() -> Result<i32, String> {
     let mut timings = false;
     let mut libraries = Vec::new();
     let mut numeric = true;
+    let mut module_dirs = std::collections::HashMap::new();
     let mut raw = std::env::args().skip(1);
     while let Some(arg) = raw.next() {
         match arg.as_str() {
@@ -38,6 +40,14 @@ fn run() -> Result<i32, String> {
                 break;
             }
             "--timings" => timings = true,
+            "--module-dir" => {
+                let (name, path) = dev_syntax::modules::mapping(
+                    &raw.next().ok_or("--module-dir needs NAME=DIR")?,
+                )?;
+                if module_dirs.insert(name, path).is_some() {
+                    return Err("duplicate module namespace".into());
+                }
+            }
             "--engine" => {
                 numeric = match raw.next().as_deref() {
                     Some("auto") => true,
@@ -90,8 +100,14 @@ fn run() -> Result<i32, String> {
         program_args.remove(0);
     }
     let start = Instant::now();
-    let mut engine =
-        engine::Engine::load(&path, source.as_deref(), program_args, &libraries, numeric)?;
+    let mut engine = engine::Engine::load_with_modules(
+        &path,
+        source.as_deref(),
+        program_args,
+        &libraries,
+        numeric,
+        module_dirs,
+    )?;
     let loaded = start.elapsed();
     let executed = Instant::now();
     let result = engine.run();

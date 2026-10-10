@@ -51,10 +51,12 @@ def main():
     if (compiler / "backend").is_dir():
         shutil.copytree(compiler / "backend", bundle / "backend", dirs_exist_ok=True)
     shutil.copy2(repo / "cli/README.md", bundle / "README.md")
+    shutil.copytree(repo / "editors/vscode", bundle / "editors/vscode", dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns("node_modules", "*.vsix"))
     shutil.copy2(repo / "LICENSE", bundle / "LICENSE")
     shutil.copy2(repo / "runtime/THIRD_PARTY_NOTICES.md", bundle / "THIRD_PARTY_NOTICES.md")
     for directory in (compiler, runtime, interpreter, bundle):
-        for document in ("advanced.md","language.md","runtime.md","map-performance.md","map-benchmark-windows.json","map-benchmark-linux.json"):
+        for document in ("advanced.md","language.md","runtime.md","json.md","tooling.md","map-performance.md","map-benchmark-windows.json","map-benchmark-linux.json"):
             shutil.copy2(repo / "docs" / document,directory / document)
         lines = [hashlib.sha256(p.read_bytes()).hexdigest() + "  " + p.relative_to(directory).as_posix()
                  for p in sorted(directory.rglob("*")) if p.is_file() and p.name != "SHA256SUMS"]

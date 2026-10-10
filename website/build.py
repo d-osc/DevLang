@@ -17,12 +17,13 @@ sys.path.insert(0, str(HERE / '.build-deps'))
 from markdown_it import MarkdownIt
 
 GROUPS = {
-    'เริ่มต้น': ['intro', 'install', 'layout', 'cli'],
+    'เริ่มต้น': ['intro', 'install', 'layout', 'cli', 'tooling'],
     'พื้นฐานภาษา': ['variables', 'types', 'operators', 'loops', 'functions', 'strings-arrays', 'modules'],
     'ข้อมูลและ abstraction': ['structs', 'enums-match', 'references', 'collections', 'generics', 'closures'],
     'ระบบและ interoperability': ['tasks', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'json', 'limitations', 'ai'],
 }
 REFERENCES = {
+    'tooling-reference': ('Developer tools', 'docs/tooling.md'),
     'json-reference': ('JSON API', 'docs/json.md'),
     'language-reference': ('Language specification', 'docs/language.md'),
     'advanced-reference': ('Advanced contracts', 'docs/advanced.md'),

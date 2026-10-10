@@ -23,7 +23,7 @@ const HELP: &str = "Dev Lang 0.4.0 — small syntax, native code, C interoperabi
 
 Options:
   -o, --output PATH  Executable, archive (--lib), or generated directory (emit)
-  --debug          Use -O0 (default; last debug/release option wins)
+  --debug          Use -O0 with DWARF symbols (default; Windows MSVC Clang needs LLD)
   --release        Optimize native code with -O3 (default: fast -O0 build)
   --native         Tune for this CPU (-march=native; binary may not run elsewhere)
   --module-dir NAME=DIR  Map a module namespace to a directory (repeatable)

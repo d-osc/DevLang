@@ -1,5 +1,10 @@
 # Dev Lang
 
+Source ล่าสุดมี `d new`, package manager แบบ path/Git (`d pkg`), formatter
+(`d fmt`), language server (`d lsp`) และ native debugger (`d debug`) แล้ว
+ดู [เครื่องมือพัฒนา](docs/tooling.md) และ [VS Code extension](editors/vscode/README.md)
+ต้อง build จาก source; ตัวติดตั้ง v0.4.0 เดิมยังไม่มีเครื่องมือเหล่านี้
+
 ตัวติดตั้ง offline สำหรับ Windows/Linux และวิธีถอนการติดตั้ง: [คู่มือติดตั้ง](docs/install.md)
 
 เว็บไซต์คู่มือภาษาไทยและ reference: [เปิดเว็บไซต์ DevLang](https://d-osc.github.io/DevLang/) ([Sites mirror](https://devlang-docs.pineapplestudio7.chatgpt.site), [source](website/README.md)) · Skill สำหรับ AI coding agents: [devlang](skills/devlang/SKILL.md)
@@ -259,7 +264,7 @@ python3 scripts/benchmark_compare.py --compiler dist/compiler/linux-x86_64/devc 
 
 ## ขอบเขต v0.4
 
-นี่คือ compiler รุ่นเริ่มต้นที่รัน native program ได้จริง รองรับฟังก์ชัน, scalar types, array หนึ่งมิติ, raw pointer, module และ C ABI แบบ scalar/pointer รองรับ `for` แบบ range, value struct, enum ที่มี payload และ `match` และ explicit generics ของ function/struct/enum แล้ว รองรับ variadic FFI, scalar callbacks, C struct ABI, collections, closures, traits, const generics และ thread-backed async แล้ว ยังไม่มี inline assembly, package manager, debugger integration หรือ language server
+นี่คือ compiler รุ่นเริ่มต้นที่รัน native program ได้จริง รองรับฟังก์ชัน, scalar types, array หนึ่งมิติ, raw pointer, module และ C ABI แบบ scalar/pointer รองรับ `for` แบบ range, value struct, enum ที่มี payload และ `match` และ explicit generics ของ function/struct/enum แล้ว รองรับ variadic FFI, scalar callbacks, C struct ABI, collections, closures, traits, const generics และ thread-backed async แล้ว Source ล่าสุดมี path/Git package manager, formatter, LSP เบื้องต้น และ native debugger integration; ยังไม่มี inline assembly, package registry และ interpreter debugger
 
 มี `unsafe` ที่บังคับใช้ และตรวจ bounds, integer division และ shift ขณะรัน; raw pointer ที่หมดอายุและ bounds ของ allocation ภายนอกยังเป็นสัญญาที่ผู้เขียนต้องรักษา การจัดการหน่วยความจำและลำดับ side effect ใน expression ใช้แนวทาง C แยกการเรียกฟังก์ชันที่แก้ state เป็นคนละ statement เมื่อจำเป็น อ่านรายละเอียดใน [docs/language.md](docs/language.md)
 

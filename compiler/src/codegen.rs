@@ -592,7 +592,28 @@ impl Emitter<'_> {
         let prelude = std::mem::replace(&mut self.prelude, previous);
         let cleanup = self.temporary_cleanup(start);
         self.temporaries.truncate(start);
-        Ok(format!("{prelude}{result}{cleanup}"))
+        let span = match stmt {
+            Stmt::Let { span, .. }
+            | Stmt::Return(_, span)
+            | Stmt::Break(span)
+            | Stmt::Continue(span) => Some(*span),
+            Stmt::Expr(e)
+            | Stmt::Assign { target: e, .. }
+            | Stmt::Match { value: e, .. }
+            | Stmt::If { cond: e, .. }
+            | Stmt::While { cond: e, .. } => Some(e.span),
+            _ => None,
+        };
+        let line = span
+            .map(|s| {
+                format!(
+                    "#line {} {}\n",
+                    s.line,
+                    c_string(&self.program.modules[self.module].path.to_string_lossy())
+                )
+            })
+            .unwrap_or_default();
+        Ok(format!("{line}{prelude}{result}{cleanup}"))
     }
     fn statement_inner(&mut self, stmt: &Stmt) -> Result<String, String> {
         match stmt {

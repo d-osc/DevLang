@@ -792,7 +792,7 @@ Selectors อยู่ argument แรก Compiler options ใส่หลัง
 
 ## สิ่งที่ยังไม่มี
 
-ยังไม่มี package manager, debugger/LSP integration, coroutine event loop, async I/O, channels/cancellation, trait objects, literal/struct/slice patterns, inclusive/custom-step ranges หรือ iterator for collections
+Source ล่าสุดมี package manager แบบ path/Git, formatter, LSP เบื้องต้น และ native debugger integration แล้ว ดู [เครื่องมือพัฒนา](#/docs/tooling) ส่วน registry/semver solver, workspace type checking และ interpreter debugger ยังไม่มี เช่นเดียวกับ coroutine event loop, async I/O, channels/cancellation, trait objects, literal/struct/slice patterns, inclusive/custom-step ranges และ iterator for collections
 
 Native `str` เป็น borrowed storage และ arbitrary foreign pointers ไม่ได้รับ lifetime proof Shared collection mutation อาจ copy O(n) Capturing raw C callbacks มี slot/lifetime limits ให้เลือก managed userdata API เมื่อเหมาะสม
 
@@ -900,3 +900,76 @@ Unicode/escapes รองรับ UTF-8 และ surrogate pairs ตัวเ�
 
 - [JSON แบบครบชุด](#/examples/json) — nested data, struct, null, keys, immutable update และ file round-trip
 - [JSON API reference](#/docs/json-reference) — signatures, conversion rules, ownership และข้อจำกัด
+
+# [tooling] เครื่องมือพัฒนา: packages, formatter, LSP และ debugger
+
+เครื่องมือเหล่านี้อยู่ใน source ล่าสุด ต้อง `cargo build --release` และใช้ `d`, `devrun`, `devc` ที่ build ชุดเดียวกัน ตัวติดตั้ง v0.4.0 เดิมยังไม่มี
+
+## สร้าง project และจัดการ dependencies
+
+```sh
+d new hello
+cd hello
+d run
+d fmt --check
+d build --release -o out/hello
+```
+
+`dev.toml` กำหนด package name, entry (ปกติ `src/main.dev`) และ modules directory (ปกติ `src`) เมื่อไม่ระบุไฟล์ `d run/build/check` จะใช้ entry นี้
+
+```toml
+[package]
+name = "hello"
+entry = "src/main.dev"
+modules = "src"
+
+[dependencies.math]
+path = "../math"
+```
+
+Dependency ต้องมี `dev.toml` ของตัวเอง และไฟล์ที่ import มีเฉพาะ declarations ใช้ `use "math/lib"` แล้วเรียก `lib.answer()` ได้ทั้ง runtime/native ไม่ต้อง copy library เข้า source
+
+```sh
+d pkg add math --path ../math
+# ตัวอย่าง URL ต้องเปลี่ยนเป็น repository library ของคุณ:
+d pkg add math --git https://github.com/your-org/math.git --rev v1.0.0
+d pkg install
+d pkg install --locked
+d pkg update
+d pkg list
+d pkg remove math
+```
+
+Commit `dev.toml` และ `dev.lock`; ignore `.dev/` และ `out/` Lockfile เก็บ commit ของ Git และ SHA-256 ของ package files `install` รักษา Git commit เดิมและบันทึก local edits ที่ตั้งใจ `update` resolve Git refs ใหม่ `--locked` ติดตั้ง checkout ที่ขาดด้วย commit เดิมและตรวจเนื้อหาโดยไม่แก้ lock การรัน/build ตรวจ lock แต่ไม่ดาวน์โหลดอัตโนมัติ Git ใช้ HTTPS/file URL และต้องมี Git ติดตั้ง รองรับ transitive dependencies แบบ namespace เดียว ถ้าชื่อชนกันคนละ source จะเป็น error ยังไม่มี registry, semver solver หรือ publish command
+
+## Formatter
+
+```sh
+d fmt
+d fmt src examples
+d fmt --check src
+d fmt --stdout src/main.dev
+```
+
+ใช้ indentation 4 spaces, LF และ newline ท้ายไฟล์ รักษา token, ข้อความ, comment และตำแหน่งขึ้นบรรทัดเดิม ไม่ขยาย body บรรทัดเดียวเป็นหลายบรรทัด ตรวจทุก input ก่อนเขียนไฟล์ `--check` ไม่เขียนและคืน exit 1 ถ้าต้องจัดรูปแบบ `--stdout` ต้องมีไฟล์เดียว ค่าเริ่มต้นคือ modules directory ใน project
+
+## Language server และ VS Code
+
+`d lsp --stdio` มี parser diagnostics, keyword/type completion และชื่อ function/type ในไฟล์ปัจจุบัน, hover signatures, Go to Definition, Outline และ Format Document ใช้ full document sync และ UTF-16 positions ตาม LSP ยังไม่มี workspace type checker, cross-file navigation, local variable definitions หรือ rename
+
+Extension source อยู่ใน `editors/vscode` ใช้ Node.js 22 ขึ้นไป รัน `npm ci`, `npm run check`, `npm run package` ในโฟลเดอร์นั้น แล้วใช้ **Extensions: Install from VSIX** ตั้งค่า `devlang.executablePath` ให้ชี้ไป `d` ใหม่ เปิด trusted project และ `.dev` ยังไม่ได้ publish Marketplace
+
+## Debugger integration
+
+```sh
+d debug src/main.dev
+d debug src/main.dev --debugger gdb
+d debug src/main.dev --no-launch
+d debug --vscode
+```
+
+สร้าง native `out/debug/app[.exe]` ด้วย O0, DWARF symbols และ frame pointers รองรับ breakpoint ที่บรรทัด `.dev` ผ่าน source mapping ชื่อตัวแปร/function ใน debugger ยังเป็น generated C names และอาจเห็น helper frames Windows Clang ที่ target MSVC ต้องมี LLD เพื่อรักษา DWARF section names; LLDB บาง distribution ต้องมี Python DLL รุ่นที่ตรงกันบน PATH
+
+ติดตั้ง CodeLLDB และ DevLang extension สำหรับ VS Code แล้ว `d debug --vscode` เพื่อสร้าง tasks/launch (ไม่เขียนทับไฟล์เดิม) เปิด entry `.dev` และกด F5 LLDB/GDB เป็น debugger ภายนอก ฟีเจอร์นี้รองรับ native เท่านั้น ยังไม่รองรับ interpreter/JSON runtime debugging
+
+ดู [reference เครื่องมือ](#/docs/tooling-reference) สำหรับข้อจำกัดและการทดสอบ และ [ตัวอย่าง project](https://github.com/d-osc/DevLang/tree/main/examples/tooling)

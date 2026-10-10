@@ -1,0 +1,90 @@
+{
+  "name": "devlang-language",
+  "displayName": "DevLang",
+  "description": "DevLang syntax, formatting, language server and native breakpoint support.",
+  "version": "0.1.0",
+  "publisher": "d-osc",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/d-osc/DevLang.git"
+  },
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:devlang"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "The language server launches the configured DevLang executable."
+    }
+  },
+  "scripts": {
+    "check": "node --check extension.js",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "vscode-languageclient": "10.1.2"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "4.0.0"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "devlang",
+        "aliases": [
+          "DevLang",
+          "dev"
+        ],
+        "extensions": [
+          ".dev"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "devlang",
+        "scopeName": "source.devlang",
+        "path": "./syntaxes/devlang.tmLanguage.json"
+      }
+    ],
+    "breakpoints": [
+      {
+        "language": "devlang"
+      }
+    ],
+    "configuration": {
+      "title": "DevLang",
+      "properties": {
+        "devlang.executablePath": {
+          "type": "string",
+          "default": "d",
+          "scope": "machine",
+          "description": "Path to the latest d executable. Restart the extension host after changing it."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "[devlang]": {
+        "editor.defaultFormatter": "d-osc.devlang-language",
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4
+      }
+    },
+    "commands": [
+      {
+        "command": "devlang.restartServer",
+        "title": "DevLang: Restart Language Server"
+      }
+    ]
+  }
+}

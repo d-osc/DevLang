@@ -1,0 +1,9 @@
+version = 1
+
+[packages.math]
+root = "../math"
+sha256 = "a9b3aef14cf6cc79b65c20984017b6ee6257457ee089844c448897afbf571b99"
+modules = "src"
+
+[packages.math.source]
+path = "../math"
