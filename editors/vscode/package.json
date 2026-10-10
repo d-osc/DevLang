@@ -2,7 +2,7 @@
   "name": "devlang-language",
   "displayName": "DevLang",
   "description": "DevLang syntax, formatting, language server and native breakpoint support.",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "publisher": "n-devs",
   "license": "MIT",
   "repository": {
@@ -82,6 +82,77 @@
         "editor.defaultFormatter": "n-devs.devlang-language",
         "editor.insertSpaces": true,
         "editor.tabSize": 4
+      },
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": "comment.line.devlang",
+            "settings": {
+              "foreground": "#82958A",
+              "fontStyle": "italic"
+            }
+          },
+          {
+            "scope": "keyword.control.devlang",
+            "settings": {
+              "foreground": "#C6AEED"
+            }
+          },
+          {
+            "scope": "storage.type.devlang",
+            "settings": {
+              "foreground": "#C6AEED"
+            }
+          },
+          {
+            "scope": "string.quoted.double.devlang",
+            "settings": {
+              "foreground": "#B5D99A"
+            }
+          },
+          {
+            "scope": "constant.character.escape.devlang",
+            "settings": {
+              "foreground": "#E9CB8B"
+            }
+          },
+          {
+            "scope": "constant.numeric.devlang",
+            "settings": {
+              "foreground": "#ECB78F"
+            }
+          },
+          {
+            "scope": "constant.language.devlang",
+            "settings": {
+              "foreground": "#ECB78F"
+            }
+          },
+          {
+            "scope": "entity.name.function.devlang",
+            "settings": {
+              "foreground": "#E5CE94"
+            }
+          },
+          {
+            "scope": "entity.name.type.devlang",
+            "settings": {
+              "foreground": "#91DCC6"
+            }
+          },
+          {
+            "scope": "support.type.devlang",
+            "settings": {
+              "foreground": "#91DCC6"
+            }
+          },
+          {
+            "scope": "keyword.operator.devlang",
+            "settings": {
+              "foreground": "#9FCBE5"
+            }
+          }
+        ]
       }
     },
     "commands": [
@@ -95,13 +166,6 @@
         "id": "devlang-icons",
         "label": "DevLang File Icons",
         "path": "./devlang-icons.json"
-      }
-    ],
-    "themes": [
-      {
-        "label": "DevLang Forest",
-        "uiTheme": "vs-dark",
-        "path": "./themes/devlang-forest.json"
       }
     ]
   },

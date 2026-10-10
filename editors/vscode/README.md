@@ -15,9 +15,9 @@ includes unsaved edits. Configure `devlang.executablePath` to a current CLI
 with `fmt` support; the CLI is not bundled in this extension.
 For file icons, select **Preferences: File Icon Theme** → **DevLang File Icons**.
 The language also supplies a default .dev icon; other icon themes may override it.
-For the coordinated dark editor palette, select **Preferences: Color Theme** →
-**DevLang Forest**. Keywords are lavender, strings green, numbers peach,
-functions gold and types mint. The theme is optional for other projects.
+DevLang syntax colors apply only to DevLang token scopes, keeping your existing
+VS Code theme. Keywords are lavender, strings green, numbers peach,
+functions gold and types mint. Override these using editor.tokenColorCustomizations.
 Diagnostics currently cover lexer/parser errors only. Symbols, hover and
 definition cover top-level functions and types in the current open document;
 there is no workspace type checker, cross-file navigation or rename yet.
