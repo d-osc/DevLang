@@ -1,0 +1,9 @@
+use "std/random"
+
+fn main() {
+    random.seed(42)
+    let value = random.int(0, 10)
+    print(value >= 0 && value < 10)
+    return 0
+}
+return main()

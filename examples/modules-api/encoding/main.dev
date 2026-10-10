@@ -1,0 +1,8 @@
+use "std/encoding"
+
+fn main() {
+    let bytes = encoding.encode("Dev 🚀", "utf-16le")
+    print(encoding.decode(bytes, "utf-16le"))
+    return 0
+}
+return main()

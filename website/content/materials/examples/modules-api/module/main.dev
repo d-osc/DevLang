@@ -1,0 +1,8 @@
+use "std/module"
+
+fn main() {
+    print(module.isBuiltin("std/fs"))
+    print(module.builtinModules().len())
+    return 0
+}
+return main()

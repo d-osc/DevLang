@@ -1,0 +1,9 @@
+use "std/fs/promises"
+
+fn main() {
+    await(promises.writeFile("hello.txt", "Hello"))
+    print(await(promises.readFile("hello.txt", "utf8")))
+    await(promises.unlink("hello.txt"))
+    return 0
+}
+return main()

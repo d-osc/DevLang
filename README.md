@@ -9,7 +9,7 @@ Source ล่าสุดมี `d new`, package manager แบบ path/Git (`d 
 
 เว็บไซต์คู่มือภาษาไทยและ reference: [เปิดเว็บไซต์ DevLang](https://d-osc.github.io/DevLang/) ([Sites mirror](https://devlang-docs.pineapplestudio7.chatgpt.site), [source](website/README.md)) · Skill สำหรับ AI coding agents: [devlang](skills/devlang/SKILL.md)
 
-[ตัวอย่างพร้อมคำสั่งรันและ ZIP 54 ชุด](https://d-osc.github.io/DevLang/#/examples) ครอบคลุมเงื่อนไข/operators, loops, types, modules, collections, generics, closures, tasks, C FFI และ runtime/native APIs ดู source แยกเรื่องใน [examples/howto](examples/howto/README.md)
+[ตัวอย่างพร้อมคำสั่งรันและ ZIP 100 ชุด](https://d-osc.github.io/DevLang/#/examples) ครอบคลุมเงื่อนไข/operators, loops, types, modules, collections, generics, closures, tasks, C FFI และ runtime/native APIs ดู source แยกเรื่องใน [examples/howto](examples/howto/README.md)
 
 Runtime เพิ่ม [Result, timers และ child_process](docs/control-libs.md),
 [SQLite, CSV, TOML และ YAML](docs/storage-libs.md) และ [TLS/WebSocket](docs/secure-network.md)
@@ -312,3 +312,5 @@ environments (native: 64 unique pairs per signature per module). Try
 `callback_context(f)` supports C APIs with userdata and managed environment cleanup,
 without the native 64-instance limit. `then(task, next)` chains work without waiting
 in the caller. Try `examples/features/continuations.dev`; tasks still use OS threads.
+
+คู่มือแยกแต่ละ module: [Module API](https://d-osc.github.io/DevLang/#/docs/module-api) — 42 runtime modules และ 4 native bindings พร้อม signatures, ตัวอย่างและข้อจำกัด

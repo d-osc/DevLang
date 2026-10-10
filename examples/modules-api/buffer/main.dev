@@ -1,0 +1,9 @@
+use "std/buffer"
+
+fn main() {
+    let bytes = buffer.from("Dev", "utf8")
+    print(bytes.toString("utf8"))
+    bytes.close()
+    return 0
+}
+return main()

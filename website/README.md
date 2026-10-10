@@ -25,7 +25,7 @@ Standalone Site clones use the tracked snapshots in `content/materials` and `con
 
 ## Example catalog
 
-`content/examples.json` defines 54 focused and integrated examples, their topic,
+`content/examples.json` defines 100 focused and integrated examples, their topic,
 mode, commands, prerequisites, input and related documentation page. It covers
 conditions/logical aliases, operators, types/casts, loops, functions/recursion,
 modules, structs/methods, enums/matching, Ref/recursive layouts, Vec/Map/Slice,
@@ -46,3 +46,5 @@ C/header dependencies and bundled stdlib source. CI uses these snapshots without
 requiring a Windows executable. Example ZIPs preserve paths from the repository
 root and include imports/C dependencies; the native stdlib example also includes
 its buildable source. Every example page lists the exact validation mode.
+
+Per-module API pages are registered by content/module-docs.json. Rebuild/check them with python scripts/build_module_docs.py [--check] [--d target/release/d.exe] from the repository root. Each module links to its independently validated example.

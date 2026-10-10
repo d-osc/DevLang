@@ -1,0 +1,14 @@
+use "std/child_process"
+use "std/process"
+use "std/encoding"
+
+fn main() {
+    let args = Vec<str>()
+    args.push("-e")
+    args.push("print(42)")
+    let output = child_process.execFileSync(process.execPath(), args, child_process.options())
+    print(output.success)
+    print(encoding.decode(output.stdout, "utf8"))
+    return 0
+}
+return main()

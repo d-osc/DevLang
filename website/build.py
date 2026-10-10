@@ -20,7 +20,7 @@ GROUPS = {
     'เริ่มต้น': ['intro', 'install', 'layout', 'cli', 'tooling', 'packages'],
     'พื้นฐานภาษา': ['variables', 'types', 'operators', 'loops', 'functions', 'strings-arrays', 'modules'],
     'ข้อมูลและ abstraction': ['structs', 'enums-match', 'references', 'collections', 'generics', 'closures'],
-    'ระบบและ interoperability': ['tasks', 'sync', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'fs-http', 'node-core', 'limitations', 'ai'],
+    'ระบบและ interoperability': ['module-api-intro', 'tasks', 'sync', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'fs-http', 'node-core', 'limitations', 'ai'],
 }
 REFERENCES = {
     'packages-reference': ('Workspaces and dependency versions', 'docs/packages.md'),
@@ -46,6 +46,12 @@ REFERENCES = {
     'runtime-performance': ('Runtime benchmarks', 'docs/runtime-compute.md'),
 }
 EXAMPLES = json.loads((HERE / 'content/examples.json').read_text(encoding='utf-8'))
+MODULE_CATALOG = json.loads((HERE / 'content/module-docs.json').read_text(encoding='utf-8'))
+REFERENCES['module-api'] = ('Module API — รายการทั้งหมด', 'docs/modules/index.md')
+for key, item in MODULE_CATALOG.items():
+    REFERENCES['std-' + key.replace('/', '-')] = (
+        item['name'] + (' · Native' if item['mode'] == 'native' else ''),
+        'docs/modules/' + key.replace('/', '-') + '.md')
 
 
 def bundle(source, output, root):
@@ -87,7 +93,10 @@ def main():
         group = next(name for name, ids in GROUPS.items() if slug in ids)
         raw.append(dict(id=slug, title=title, text='# ' + title + '\n' + text, group=group, source='website/content/guide.md', language='TH'))
     for slug, (title, path) in REFERENCES.items():
-        raw.append(dict(id=slug, title=title, text=(REPO / path).read_text(encoding='utf-8'), group='Reference · EN', source=path, language='EN'))
+        module_page = slug == 'module-api' or slug.startswith('std-')
+        raw.append(dict(id=slug, title=title, text=(REPO / path).read_text(encoding='utf-8'),
+                        group='Module API' if module_page else 'Reference · EN', source=path,
+                        language='TH' if module_page else 'EN'))
     markdown = MarkdownIt('commonmark', {'html': False}).enable('table')
     link_map = {str((REPO / path).resolve()): slug for slug, (_, path) in REFERENCES.items()}
     documents = []
@@ -203,6 +212,7 @@ def main():
     downloads.mkdir(exist_ok=True)
     bundle(REPO / 'skills/devlang', downloads / 'devlang-skill.zip', 'devlang')
     bundle(REPO / 'examples', downloads / 'devlang-examples.zip', 'examples')
+    bundle(REPO / 'docs/modules', downloads / 'devlang-module-api.zip', 'modules')
     for example in examples:
         folder = (REPO / example['path']).parent
         with zipfile.ZipFile(downloads / (example['id'] + '.zip'), 'w', zipfile.ZIP_DEFLATED) as archive:
@@ -221,7 +231,7 @@ def main():
     shutil.copy2(REPO / 'skills/devlang/SKILL.md', dist / 'SKILL.md')
     llms = '# DevLang\n\n> Source interpreter and native compiler with explicit main invocation.\n\n## AI skill\n\n- [Skill](SKILL.md): essential coding and validation rules.\n- [Skill bundle](downloads/devlang-skill.zip): self-contained references and verification helper.\n\n## Documentation\n\n' + '\n'.join(f'- [{page["title"]}](markdown/{page["id"]}.md): {page["group"]}' for page in raw)
     (dist / 'llms.txt').write_text(llms + '\n', encoding='utf-8')
-    content = dict(version='v0.4.0', documents=documents, examples=examples, groups=list(GROUPS) + ['Reference · EN'])
+    content = dict(version='v0.4.0', documents=documents, examples=examples, groups=list(GROUPS) + ['Module API', 'Reference · EN'])
     (dist / 'content.json').write_text(json.dumps(content, ensure_ascii=False), encoding='utf-8')
     print(f'Built {len(documents)} articles and {len(examples)} executable examples -> {dist}')
 

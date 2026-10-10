@@ -41,7 +41,7 @@ Without an explicit seed, the OS supplies the initial seed. Equal seeds and equa
 call sequences produce repeatable results. Each task interpreter has separate
 state. Integer generation uses rejection sampling to avoid modulo bias.
 These APIs are **not cryptographically secure**; do not use them for passwords,
-tokens, keys or security nonces. There is no crypto module in this change.
+tokens, keys or security nonces. Use std/crypto.secureBytes for cryptographic random bytes.
 
 ## Strings
 
@@ -67,7 +67,7 @@ Unicode scalars are not grapheme clusters (Thai marks and combined emoji can
 contain multiple scalars). Negative/out-of-range character indices fail;
 substring does not clamp or swap indices. An empty replacement pattern follows
 UTF-8 character boundaries. Generated text is limited to 8 MiB and split to 65,536
-parts / 8 MiB of text. There are no regex or Unicode normalization APIs yet.
+parts / 8 MiB of text. Use std/regex for regular expressions; Unicode normalization is not implemented.
 
 ## Datetime
 

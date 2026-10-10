@@ -1,0 +1,11 @@
+use "std/archive"
+use "std/encoding"
+
+fn main() {
+    let entries = Vec<archive.Entry>()
+    entries.push(archive.Entry("hello.txt", encoding.encode("Hello", "utf8")))
+    let bytes = archive.writeZIP(entries)
+    print(encoding.decode(archive.readZIP(bytes, "hello.txt"), "utf8"))
+    return 0
+}
+return main()

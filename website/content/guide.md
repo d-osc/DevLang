@@ -1460,3 +1460,11 @@ d pkg update
 Git จะเลือก tag สูงสุดที่ตรงเงื่อนไข เช่น `v1.2.3` และตรวจ version ใน manifest ด้วย `install` รักษา commit เดิม ส่วน `update` เลือก tag ใหม่ `--locked` ตรวจ source/requirements/content และกู้ checkout ที่ขาดโดยใช้ commit เดิม ระบุ `rev` พร้อม `version` ไม่ได้
 
 ยังเป็น namespace เดียว: constraints ที่ใช้ version ที่เลือกเดียวกันได้จะแชร์ package แต่ไม่มี backtracking หรือหลาย version ของชื่อเดียวกัน และยังไม่มี public registry/publish ถ้า add/remove ติดตั้งไม่สำเร็จจะคืน manifest เดิม การติดตั้ง `--workspace` ไม่เป็น transaction ทั้งกลุ่ม
+
+# [module-api-intro] คู่มือแต่ละ Module
+
+เปิด [Module API](#/docs/module-api) เพื่อดูหน้าของ builtin ครบ 42 runtime modules และ native C stdlib 4 bindings แต่ละหน้ามี import, signatures และ types, ตัวอย่างพร้อมคำสั่ง, errors, resource ownership และข้อจำกัดของโหมด
+
+ค้นหาด้วยชื่อ เช่น `std/fs`, `std/http`, `std/json`, `std/sync` หรือเลือกกลุ่ม Module API ใน sidebar ตัวอย่างของแต่ละหน้ามี ZIP และผลลัพธ์ที่รันตรวจไว้ใน [Examples](#/examples?category=Module%20API)
+
+ชื่อ `std/io`, `std/strings`, `std/time` มีทั้ง runtime และ native API แต่ signature ไม่เหมือนกัน เลือกหน้าที่ระบุ Native เมื่อต้อง build/link stdlib ส่วน `std/memory` เป็น native binding; source runtime ใช้ managed Ref/Vec/Map หรือ C FFI ตามงาน

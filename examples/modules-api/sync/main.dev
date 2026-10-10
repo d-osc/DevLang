@@ -1,0 +1,15 @@
+use "std/sync"
+
+fn main() {
+    let channel = sync.channel<i64>(1)
+    let worker = spawn(fn() { channel.send(42)
+        channel.close() })
+    match channel.receive() {
+        Item(value) => { print(value) }
+        Empty => { print("empty") }
+        Closed => { print("closed") }
+    }
+    await(worker)
+    return 0
+}
+return main()

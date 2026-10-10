@@ -1,0 +1,7 @@
+use "std/toml"
+
+fn main() {
+    print(toml.toJSON("name = 'Dev'\nactive = true\n"))
+    return 0
+}
+return main()

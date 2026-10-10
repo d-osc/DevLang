@@ -1,0 +1,9 @@
+use "std/time"
+
+fn main() {
+    let start = time.now_ns()
+    time.sleep_ms(1)
+    print(time.now_ns() >= start)
+    return 0
+}
+return main()

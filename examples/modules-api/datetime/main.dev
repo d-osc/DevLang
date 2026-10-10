@@ -1,0 +1,7 @@
+use "std/datetime"
+
+fn main() {
+    print(datetime.iso(datetime.parse("2026-01-01T00:00:00Z")))
+    return 0
+}
+return main()

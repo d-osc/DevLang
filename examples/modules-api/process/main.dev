@@ -1,0 +1,7 @@
+use "std/process"
+
+fn main() {
+    print(process.pid() > 0)
+    return 0
+}
+return main()

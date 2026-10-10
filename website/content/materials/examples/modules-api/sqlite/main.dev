@@ -1,0 +1,10 @@
+use "std/sqlite"
+
+fn main() {
+    let db = sqlite.open(":memory:")
+    let params = Vec<sqlite.Value>()
+    print(db.query("SELECT 42 AS answer", params).rows.len())
+    db.close()
+    return 0
+}
+return main()

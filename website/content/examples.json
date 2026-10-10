@@ -744,5 +744,615 @@
       "d -C examples/workspace run --package app",
       "d -C examples/workspace build --package app --release -o out/app.exe"
     ]
+  },
+  {
+    "id": "api-math",
+    "title": "std/math",
+    "category": "Module API",
+    "path": "examples/modules-api/math/main.dev",
+    "description": "คำนวณ f64, ราก, logarithm, ตรีโกณมิติ และปัดเศษ",
+    "doc": "std-math",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/math/main.dev"
+    ]
+  },
+  {
+    "id": "api-random",
+    "title": "std/random",
+    "category": "Module API",
+    "path": "examples/modules-api/random/main.dev",
+    "description": "สุ่มแบบทำซ้ำได้ด้วย seed สำหรับ simulation และการทดสอบ",
+    "doc": "std-random",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/random/main.dev"
+    ]
+  },
+  {
+    "id": "api-strings",
+    "title": "std/strings",
+    "category": "Module API",
+    "path": "examples/modules-api/strings/main.dev",
+    "description": "จัดการข้อความ Unicode, ค้นหา, แยก และแทนที่ข้อความ",
+    "doc": "std-strings",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/strings/main.dev"
+    ]
+  },
+  {
+    "id": "api-datetime",
+    "title": "std/datetime",
+    "category": "Module API",
+    "path": "examples/modules-api/datetime/main.dev",
+    "description": "แปลง Unix milliseconds, RFC3339 และปฏิทิน",
+    "doc": "std-datetime",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/datetime/main.dev"
+    ]
+  },
+  {
+    "id": "api-test",
+    "title": "std/test",
+    "category": "Module API",
+    "path": "examples/modules-api/test/main.dev",
+    "description": "assertions และชุดทดสอบแบบ callback",
+    "doc": "std-test",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/test/main.dev"
+    ]
+  },
+  {
+    "id": "api-log",
+    "title": "std/log",
+    "category": "Module API",
+    "path": "examples/modules-api/log/main.dev",
+    "description": "เขียน log ตามระดับไปยัง stderr หรือไฟล์",
+    "doc": "std-log",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/log/main.dev"
+    ]
+  },
+  {
+    "id": "api-regex",
+    "title": "std/regex",
+    "category": "Module API",
+    "path": "examples/modules-api/regex/main.dev",
+    "description": "ค้นหาและแทนที่ข้อความด้วย regular expressions",
+    "doc": "std-regex",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/regex/main.dev"
+    ]
+  },
+  {
+    "id": "api-encoding",
+    "title": "std/encoding",
+    "category": "Module API",
+    "path": "examples/modules-api/encoding/main.dev",
+    "description": "แปลงข้อความและ bytes ตาม encoding",
+    "doc": "std-encoding",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/encoding/main.dev"
+    ]
+  },
+  {
+    "id": "api-crypto",
+    "title": "std/crypto",
+    "category": "Module API",
+    "path": "examples/modules-api/crypto/main.dev",
+    "description": "hash, HMAC, secure random และ authenticated encryption",
+    "doc": "std-crypto",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/crypto/main.dev"
+    ]
+  },
+  {
+    "id": "api-compression",
+    "title": "std/compression",
+    "category": "Module API",
+    "path": "examples/modules-api/compression/main.dev",
+    "description": "บีบอัด bytes ด้วย gzip, zlib และ deflate",
+    "doc": "std-compression",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/compression/main.dev"
+    ]
+  },
+  {
+    "id": "api-archive",
+    "title": "std/archive",
+    "category": "Module API",
+    "path": "examples/modules-api/archive/main.dev",
+    "description": "สร้างและอ่าน ZIP/TAR ในหน่วยความจำ",
+    "doc": "std-archive",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/archive/main.dev"
+    ]
+  },
+  {
+    "id": "api-uuid",
+    "title": "std/uuid",
+    "category": "Module API",
+    "path": "examples/modules-api/uuid/main.dev",
+    "description": "สร้างและตรวจ UUID",
+    "doc": "std-uuid",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/uuid/main.dev"
+    ]
+  },
+  {
+    "id": "api-dns",
+    "title": "std/dns",
+    "category": "Module API",
+    "path": "examples/modules-api/dns/main.dev",
+    "description": "resolve host ด้วย DNS resolver ของระบบปฏิบัติการ",
+    "doc": "std-dns",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/dns/main.dev"
+    ]
+  },
+  {
+    "id": "api-cli",
+    "title": "std/cli",
+    "category": "Module API",
+    "path": "examples/modules-api/cli/main.dev",
+    "description": "แยก command-line flags, values และ positionals",
+    "doc": "std-cli",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/cli/main.dev"
+    ]
+  },
+  {
+    "id": "api-result",
+    "title": "std/result",
+    "category": "Module API",
+    "path": "examples/modules-api/result/main.dev",
+    "description": "จับ runtime errors และจัดการ Result<T>",
+    "doc": "std-result",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/result/main.dev"
+    ]
+  },
+  {
+    "id": "api-timers",
+    "title": "std/timers",
+    "category": "Module API",
+    "path": "examples/modules-api/timers/main.dev",
+    "description": "ตั้งเวลา callback และควบคุม event pump",
+    "doc": "std-timers",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/timers/main.dev"
+    ]
+  },
+  {
+    "id": "api-child_process",
+    "title": "std/child_process",
+    "category": "Module API",
+    "path": "examples/modules-api/child_process/main.dev",
+    "description": "เริ่มและจัดการโปรแกรมภายนอกพร้อม timeout และ output",
+    "doc": "std-child_process",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/child_process/main.dev"
+    ],
+    "notes": "เริ่ม child process ของ runtime executable ปัจจุบันและเก็บ output โดยไม่ผ่าน shell"
+  },
+  {
+    "id": "api-sqlite",
+    "title": "std/sqlite",
+    "category": "Module API",
+    "path": "examples/modules-api/sqlite/main.dev",
+    "description": "ฐานข้อมูล SQLite พร้อม parameter binding และ transactions",
+    "doc": "std-sqlite",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/sqlite/main.dev"
+    ]
+  },
+  {
+    "id": "api-csv",
+    "title": "std/csv",
+    "category": "Module API",
+    "path": "examples/modules-api/csv/main.dev",
+    "description": "อ่านและเขียนตาราง CSV",
+    "doc": "std-csv",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/csv/main.dev"
+    ]
+  },
+  {
+    "id": "api-toml",
+    "title": "std/toml",
+    "category": "Module API",
+    "path": "examples/modules-api/toml/main.dev",
+    "description": "แปลง TOML กับ JSON value model",
+    "doc": "std-toml",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/toml/main.dev"
+    ]
+  },
+  {
+    "id": "api-yaml",
+    "title": "std/yaml",
+    "category": "Module API",
+    "path": "examples/modules-api/yaml/main.dev",
+    "description": "แปลง YAML subset กับ JSON value model",
+    "doc": "std-yaml",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/yaml/main.dev"
+    ]
+  },
+  {
+    "id": "api-tls",
+    "title": "std/tls",
+    "category": "Module API",
+    "path": "examples/modules-api/tls/main.dev",
+    "description": "เชื่อมต่อและเปิด server TLS พร้อมตรวจ certificate",
+    "doc": "std-tls",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/tls/main.dev"
+    ],
+    "notes": "ตัวอย่างเริ่มต้นนี้แสดง options โดยไม่ติดต่อเครือข่ายหรือเริ่ม process ดูตัวอย่างใช้งานจริงในสัญญา API ด้านล่าง"
+  },
+  {
+    "id": "api-websocket",
+    "title": "std/websocket",
+    "category": "Module API",
+    "path": "examples/modules-api/websocket/main.dev",
+    "description": "ส่งข้อความ WS/WSS แบบ text และ binary",
+    "doc": "std-websocket",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/websocket/main.dev"
+    ],
+    "notes": "ตัวอย่างนี้ bind loopback port ที่ OS เลือก แล้วปิด handle ทันที ทดสอบการสร้าง resource โดยไม่ต้องมี server ภายนอก; ไม่ได้ทดสอบรับส่งข้อมูล"
+  },
+  {
+    "id": "api-path",
+    "title": "std/path",
+    "category": "Module API",
+    "path": "examples/modules-api/path/main.dev",
+    "description": "จัดรูปแบบและประกอบ path แบบ lexical",
+    "doc": "std-path",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/path/main.dev"
+    ]
+  },
+  {
+    "id": "api-os",
+    "title": "std/os",
+    "category": "Module API",
+    "path": "examples/modules-api/os/main.dev",
+    "description": "ข้อมูล platform, memory และระบบปฏิบัติการ",
+    "doc": "std-os",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/os/main.dev"
+    ]
+  },
+  {
+    "id": "api-process",
+    "title": "std/process",
+    "category": "Module API",
+    "path": "examples/modules-api/process/main.dev",
+    "description": "ข้อมูล process, environment และ working directory",
+    "doc": "std-process",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/process/main.dev"
+    ]
+  },
+  {
+    "id": "api-module",
+    "title": "std/module",
+    "category": "Module API",
+    "path": "examples/modules-api/module/main.dev",
+    "description": "ค้นหา builtin และ resolve imports ของ DevLang",
+    "doc": "std-module",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/module/main.dev"
+    ]
+  },
+  {
+    "id": "api-url",
+    "title": "std/url",
+    "category": "Module API",
+    "path": "examples/modules-api/url/main.dev",
+    "description": "อ่าน/ประกอบ URL และ query parameters",
+    "doc": "std-url",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/url/main.dev"
+    ]
+  },
+  {
+    "id": "api-buffer",
+    "title": "std/buffer",
+    "category": "Module API",
+    "path": "examples/modules-api/buffer/main.dev",
+    "description": "จัดการ binary buffer และอ่าน/เขียน integers",
+    "doc": "std-buffer",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/buffer/main.dev"
+    ]
+  },
+  {
+    "id": "api-events",
+    "title": "std/events",
+    "category": "Module API",
+    "path": "examples/modules-api/events/main.dev",
+    "description": "ส่ง event ด้วย callback และ listener IDs",
+    "doc": "std-events",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/events/main.dev"
+    ]
+  },
+  {
+    "id": "api-stream",
+    "title": "std/stream",
+    "category": "Module API",
+    "path": "examples/modules-api/stream/main.dev",
+    "description": "อ่าน/เขียน file stream แบบ bytes",
+    "doc": "std-stream",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/stream/main.dev"
+    ]
+  },
+  {
+    "id": "api-net",
+    "title": "std/net",
+    "category": "Module API",
+    "path": "examples/modules-api/net/main.dev",
+    "description": "TCP clients, servers และ IP validation",
+    "doc": "std-net",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/net/main.dev"
+    ],
+    "notes": "ตัวอย่างนี้ bind loopback port ที่ OS เลือก แล้วปิด handle ทันที ทดสอบการสร้าง resource โดยไม่ต้องมี server ภายนอก; ไม่ได้ทดสอบรับส่งข้อมูล"
+  },
+  {
+    "id": "api-dgram",
+    "title": "std/dgram",
+    "category": "Module API",
+    "path": "examples/modules-api/dgram/main.dev",
+    "description": "UDP sockets และ datagrams",
+    "doc": "std-dgram",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/dgram/main.dev"
+    ],
+    "notes": "ตัวอย่างนี้ bind loopback port ที่ OS เลือก แล้วปิด handle ทันที ทดสอบการสร้าง resource โดยไม่ต้องมี server ภายนอก; ไม่ได้ทดสอบรับส่งข้อมูล"
+  },
+  {
+    "id": "api-sync",
+    "title": "std/sync",
+    "category": "Module API",
+    "path": "examples/modules-api/sync/main.dev",
+    "description": "channels, atomic mutex updates และ cooperative cancellation ข้าม worker",
+    "doc": "std-sync",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/sync/main.dev"
+    ]
+  },
+  {
+    "id": "api-json",
+    "title": "std/json",
+    "category": "Module API",
+    "path": "examples/modules-api/json/main.dev",
+    "description": "JSON values, object literals และ typed accessors",
+    "doc": "std-json",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/json/main.dev"
+    ]
+  },
+  {
+    "id": "api-don",
+    "title": "std/don",
+    "category": "Module API",
+    "path": "examples/modules-api/don/main.dev",
+    "description": "Dev Object Notation พร้อม references และ object access",
+    "doc": "std-don",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/don/main.dev"
+    ]
+  },
+  {
+    "id": "api-fs",
+    "title": "std/fs",
+    "category": "Module API",
+    "path": "examples/modules-api/fs/main.dev",
+    "description": "อ่าน/เขียนไฟล์และจัดการ directories",
+    "doc": "std-fs",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/fs/main.dev"
+    ]
+  },
+  {
+    "id": "api-fs-promises",
+    "title": "std/fs/promises",
+    "category": "Module API",
+    "path": "examples/modules-api/fs-promises/main.dev",
+    "description": "filesystem operations บน worker threads ที่คืน Task<T>",
+    "doc": "std-fs-promises",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/fs-promises/main.dev"
+    ]
+  },
+  {
+    "id": "api-http",
+    "title": "std/http",
+    "category": "Module API",
+    "path": "examples/modules-api/http/main.dev",
+    "description": "HTTP/HTTPS client และ HTTP server callbacks",
+    "doc": "std-http",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/http/main.dev"
+    ],
+    "notes": "ตัวอย่างนี้ bind loopback port ที่ OS เลือก แล้วปิด handle ทันที ทดสอบการสร้าง resource โดยไม่ต้องมี server ภายนอก; ไม่ได้ทดสอบรับส่งข้อมูล"
+  },
+  {
+    "id": "api-io",
+    "title": "std/io",
+    "category": "Module API",
+    "path": "examples/modules-api/io/main.dev",
+    "description": "อ่าน/เขียนข้อความบน console และไฟล์ UTF-8",
+    "doc": "std-io",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/io/main.dev"
+    ]
+  },
+  {
+    "id": "api-time",
+    "title": "std/time",
+    "category": "Module API",
+    "path": "examples/modules-api/time/main.dev",
+    "description": "วัดเวลาที่ผ่านไปด้วยนาฬิกา monotonic และพัก thread",
+    "doc": "std-time",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/time/main.dev"
+    ]
+  },
+  {
+    "id": "api-args",
+    "title": "std/args",
+    "category": "Module API",
+    "path": "examples/modules-api/args/main.dev",
+    "description": "อ่าน arguments ของโปรแกรมที่ส่งหลัง --",
+    "doc": "std-args",
+    "mode": "runtime",
+    "commands": [
+      "d examples/modules-api/args/main.dev"
+    ]
+  },
+  {
+    "id": "api-native-io",
+    "title": "std/io · Native",
+    "category": "Module API",
+    "path": "examples/modules-api/native-io/main.dev",
+    "description": "Native C stdlib: File and console I/O",
+    "doc": "std-native-io",
+    "mode": "native",
+    "commands": [
+      "python stdlib/build.py",
+      "d build examples/modules-api/native-io/main.dev --release --module-dir std=stdlib/modules --link stdlib/lib/libdevruntime.a -o out/native-io.exe",
+      "out/native-io.exe"
+    ],
+    "native_args": [
+      "--module-dir",
+      "std=stdlib/modules",
+      "--link",
+      "stdlib/lib/libdevruntime.a"
+    ],
+    "package_roots": [
+      "stdlib/modules",
+      "stdlib/src",
+      "stdlib/include"
+    ]
+  },
+  {
+    "id": "api-native-time",
+    "title": "std/time · Native",
+    "category": "Module API",
+    "path": "examples/modules-api/native-time/main.dev",
+    "description": "Native C stdlib: Time",
+    "doc": "std-native-time",
+    "mode": "native",
+    "commands": [
+      "python stdlib/build.py",
+      "d build examples/modules-api/native-time/main.dev --release --module-dir std=stdlib/modules --link stdlib/lib/libdevruntime.a -o out/native-time.exe",
+      "out/native-time.exe"
+    ],
+    "native_args": [
+      "--module-dir",
+      "std=stdlib/modules",
+      "--link",
+      "stdlib/lib/libdevruntime.a"
+    ],
+    "package_roots": [
+      "stdlib/modules",
+      "stdlib/src",
+      "stdlib/include"
+    ]
+  },
+  {
+    "id": "api-native-strings",
+    "title": "std/strings · Native",
+    "category": "Module API",
+    "path": "examples/modules-api/native-strings/main.dev",
+    "description": "Native C stdlib: Strings",
+    "doc": "std-native-strings",
+    "mode": "native",
+    "commands": [
+      "python stdlib/build.py",
+      "d build examples/modules-api/native-strings/main.dev --release --module-dir std=stdlib/modules --link stdlib/lib/libdevruntime.a -o out/native-strings.exe",
+      "out/native-strings.exe"
+    ],
+    "native_args": [
+      "--module-dir",
+      "std=stdlib/modules",
+      "--link",
+      "stdlib/lib/libdevruntime.a"
+    ],
+    "package_roots": [
+      "stdlib/modules",
+      "stdlib/src",
+      "stdlib/include"
+    ]
+  },
+  {
+    "id": "api-native-memory",
+    "title": "std/memory · Native",
+    "category": "Module API",
+    "path": "examples/modules-api/native-memory/main.dev",
+    "description": "Native C stdlib: Memory",
+    "doc": "std-native-memory",
+    "mode": "native",
+    "commands": [
+      "python stdlib/build.py",
+      "d build examples/modules-api/native-memory/main.dev --release --module-dir std=stdlib/modules --link stdlib/lib/libdevruntime.a -o out/native-memory.exe",
+      "out/native-memory.exe"
+    ],
+    "native_args": [
+      "--module-dir",
+      "std=stdlib/modules",
+      "--link",
+      "stdlib/lib/libdevruntime.a"
+    ],
+    "package_roots": [
+      "stdlib/modules",
+      "stdlib/src",
+      "stdlib/include"
+    ]
   }
 ]

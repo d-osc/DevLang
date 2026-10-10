@@ -1,0 +1,7 @@
+use "std/crypto"
+
+fn main() {
+    print(crypto.hashText("sha256", "abc"))
+    return 0
+}
+return main()

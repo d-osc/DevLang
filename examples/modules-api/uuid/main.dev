@@ -1,0 +1,8 @@
+use "std/uuid"
+
+fn main() {
+    let id = uuid.v4()
+    print(uuid.isValid(id) && uuid.version(id) == 4)
+    return 0
+}
+return main()

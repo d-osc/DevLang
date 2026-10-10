@@ -1,0 +1,7 @@
+use "std/io"
+
+fn main() {
+    io.writeln("Hello native")
+    return 0
+}
+return main()

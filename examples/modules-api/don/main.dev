@@ -1,0 +1,8 @@
+use "std/don"
+
+fn main() {
+    let config = don.parse("version: 'v1.0.0'\nrev: @version")
+    print(config.rev)
+    return 0
+}
+return main()

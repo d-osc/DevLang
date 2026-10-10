@@ -1,0 +1,13 @@
+use "std/cli"
+
+fn main() {
+    let options = Vec<cli.Option>()
+    options.push(cli.Option("name", "n", true))
+    let argv = Vec<str>()
+    argv.push("--name")
+    argv.push("Dev")
+    let parsed = cli.parse(argv, options)
+    print(parsed.values.get("name"))
+    return 0
+}
+return main()

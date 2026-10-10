@@ -1,0 +1,13 @@
+use "std/log"
+use "std/fs"
+
+fn main() {
+    log.toFile("module.log")
+    log.info("Hello DevLang")
+    log.flush()
+    log.toStderr()
+    print(fs.exists("module.log"))
+    fs.remove_file("module.log")
+    return 0
+}
+return main()

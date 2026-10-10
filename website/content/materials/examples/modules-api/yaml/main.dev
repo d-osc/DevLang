@@ -1,0 +1,7 @@
+use "std/yaml"
+
+fn main() {
+    print(yaml.toJSON("name: Dev\nactive: true\n"))
+    return 0
+}
+return main()

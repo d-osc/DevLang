@@ -1,0 +1,8 @@
+use "std/tls"
+
+fn main() {
+    let options = tls.options()
+    print(options.timeoutMs)
+    return 0
+}
+return main()

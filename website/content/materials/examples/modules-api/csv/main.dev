@@ -1,0 +1,9 @@
+use "std/csv"
+
+fn main() {
+    let table = csv.parse("name,age\nDev,18\n", ",", true)
+    print(table.headers[0])
+    print(table.rows[0][0])
+    return 0
+}
+return main()

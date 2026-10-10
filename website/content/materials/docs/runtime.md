@@ -1,5 +1,8 @@
 # Interpreter API
 
+See [the per-module API index](modules/index.md) for all 42 builtins and their
+individual signatures, examples and runtime/native contracts.
+
 `std/dns` provides OS host resolution; `std/cli` parses schema-defined program
 arguments. See [DNS and CLI contracts](system-libs.md).
 

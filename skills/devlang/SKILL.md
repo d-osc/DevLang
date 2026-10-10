@@ -9,6 +9,10 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
 
 ## Choose context and mode
 
+- Use `docs/modules/index.md` in a checkout or the website Module API index for
+  per-module signatures and runnable examples. Source-runtime builtins and native
+  C stdlib bindings have separate pages; never mix their signatures.
+
 - For cross-worker channels, mutexes and cooperative cancellation, read
   `docs/sync.md`. `std/sync` handles share state across spawn/captured copies;
   ordinary payload data keeps value semantics. Match Item/Empty/Closed from

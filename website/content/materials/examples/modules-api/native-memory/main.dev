@@ -1,0 +1,13 @@
+use "std/memory"
+
+fn main() {
+    unsafe {
+        let data = memory.alloc(16 as usize)
+        if data == null { return 1 }
+        memory.fill(data, 0 as u8, 16 as usize)
+        memory.free(data)
+        print("released")
+    }
+    return 0
+}
+return main()

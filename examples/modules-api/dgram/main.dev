@@ -1,0 +1,10 @@
+use "std/dgram"
+
+fn main() {
+    let socket = dgram.createSocket("udp4")
+    socket.bind(0, "127.0.0.1")
+    print(socket.address().port > 0)
+    socket.close()
+    return 0
+}
+return main()

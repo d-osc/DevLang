@@ -1,0 +1,7 @@
+use "std/dns"
+
+fn main() {
+    print(dns.lookupOne("127.0.0.1", 4).address)
+    return 0
+}
+return main()

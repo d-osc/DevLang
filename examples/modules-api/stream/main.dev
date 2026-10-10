@@ -1,0 +1,15 @@
+use "std/stream"
+use "std/encoding"
+use "std/fs"
+
+fn main() {
+    let writer = stream.createWriteStream("stream.txt", false)
+    writer.write(encoding.encode("Hello", "utf8"))
+    writer.end()
+    let reader = stream.createReadStream("stream.txt")
+    print(encoding.decode(reader.read(32), "utf8"))
+    reader.close()
+    fs.remove_file("stream.txt")
+    return 0
+}
+return main()

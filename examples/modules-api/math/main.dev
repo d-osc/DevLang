@@ -1,0 +1,7 @@
+use "std/math"
+
+fn main() {
+    print(math.sqrt(9.0))
+    return 0
+}
+return main()

@@ -1,0 +1,7 @@
+use "std/path"
+
+fn main() {
+    print(path.basename(path.join("examples", "hello.dev")))
+    return 0
+}
+return main()

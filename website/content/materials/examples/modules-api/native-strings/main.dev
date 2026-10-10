@@ -1,0 +1,12 @@
+use "std/strings"
+
+fn main() {
+    unsafe {
+        let text = strings.new("Hello")
+        if text == null { return 1 }
+        print(strings.view(text))
+        strings.free(text)
+    }
+    return 0
+}
+return main()

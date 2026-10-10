@@ -1,0 +1,9 @@
+use "std/regex"
+
+fn main() {
+    let pattern = regex.compile("[0-9]+", "")
+    print(pattern.find("port=3000").text)
+    pattern.close()
+    return 0
+}
+return main()

@@ -1,0 +1,10 @@
+use "std/test"
+
+fn main() {
+    test.case("addition", fn() { test.equal(19 + 23, 42, "sum") })
+    let report = test.run()
+    print(report.passed)
+    if report.failed > 0 { return 1 }
+    return 0
+}
+return main()

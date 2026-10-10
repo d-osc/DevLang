@@ -1,0 +1,10 @@
+use "std/timers"
+
+fn main() {
+    timers.setInterval(fn(t timers.Timer) {
+        print(t.ticks())
+        if t.ticks() >= 2 { t.cancel() }
+    }, 1)
+    return 0
+}
+return main()

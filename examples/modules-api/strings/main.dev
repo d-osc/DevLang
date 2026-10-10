@@ -1,0 +1,8 @@
+use "std/strings"
+
+fn main() {
+    print(strings.charLength("Dev 🚀"))
+    print(strings.toUpperCase("dev"))
+    return 0
+}
+return main()

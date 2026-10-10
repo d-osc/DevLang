@@ -1,0 +1,10 @@
+use "std/url"
+
+fn main() {
+    let params = url.searchParams("name=Dev")
+    params.set("page", "1")
+    print(params.get("name"))
+    params.close()
+    return 0
+}
+return main()

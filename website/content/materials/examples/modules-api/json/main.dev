@@ -1,0 +1,9 @@
+use "std/json"
+
+fn main() {
+    let user = { name: "Dev", age: 18 }
+    print(user.name)
+    print(json.int(json.get(user, "age")))
+    return 0
+}
+return main()

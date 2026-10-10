@@ -1,0 +1,9 @@
+use "std/fs"
+
+fn main() {
+    fs.writeFileSync("hello.txt", "Hello")
+    print(fs.readFileSync("hello.txt", "utf8"))
+    fs.unlinkSync("hello.txt")
+    return 0
+}
+return main()

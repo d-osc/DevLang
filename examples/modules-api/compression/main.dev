@@ -1,0 +1,10 @@
+use "std/compression"
+use "std/encoding"
+
+fn main() {
+    let bytes = encoding.encode("Hello", "utf8")
+    let packed = compression.gzip(bytes, 6)
+    print(encoding.decode(compression.gunzip(packed), "utf8"))
+    return 0
+}
+return main()

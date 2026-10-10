@@ -1,0 +1,10 @@
+use "std/result"
+
+fn main() {
+    let outcome = result.attempt(fn() i64 { result.raise("failed")
+        return 0 })
+    print(result.isErr(outcome))
+    print(result.unwrapOr(outcome, 42))
+    return 0
+}
+return main()

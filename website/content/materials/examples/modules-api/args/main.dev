@@ -1,0 +1,7 @@
+use "std/args"
+
+fn main() {
+    print(args.len())
+    return 0
+}
+return main()

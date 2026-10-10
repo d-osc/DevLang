@@ -268,5 +268,235 @@
     "source_sha256": "7c57d7d4048ad1acf58524af90de7e75313219fbb0daa19b3ca0c0a4115c41f1",
     "validation_sha256": "7b18ef06c782d07a505dcd859905c9233e0cc014907c3966d6222115632d336a",
     "output": "42\n"
+  },
+  "api-math": {
+    "source_sha256": "929665df15faaf91d4b0e9fe54fcdcf29be9b04f4fea1dfe6b03c46f9f58e4d5",
+    "validation_sha256": "5b232d9bc3c10542748208672cd1ca5555205fc03da6ff80f944ba9d7bd1deb4",
+    "output": "3\n"
+  },
+  "api-random": {
+    "source_sha256": "8ee179ce6de4993a3c7cde2fb73f660522a769c61713168e015019b8c2f9191c",
+    "validation_sha256": "46078abc6d22a5bbfb1ef46bac7cbfa7652a31ebe60d5e943b7ed7cf68320c44",
+    "output": "true\n"
+  },
+  "api-strings": {
+    "source_sha256": "cffab00bd009360bde11cf0e6dcabe5515066d4fa49ca4eb435d86f60afd5271",
+    "validation_sha256": "63deccd6f4ab179d8ad464f52bc1148f161124749a389cbdbbb803d9266dbc76",
+    "output": "5\nDEV\n"
+  },
+  "api-datetime": {
+    "source_sha256": "2347edfdb48b35ab382ea8a768cba950794da5142aff2747ccc2019d3153710b",
+    "validation_sha256": "a952464403d0d96d068e7c5361225146648e556cb3f5b1a20d89143aaf82a1db",
+    "output": "2026-01-01T00:00:00.000Z\n"
+  },
+  "api-test": {
+    "source_sha256": "1ead94d55b2c17c8f045ea4b9ee0b00553b8ef95ad1483eb0787d9de5ad392b0",
+    "validation_sha256": "be50d631501fae46aae17445dab4305957468393716f2a3818dbf03ab3b8682d",
+    "output": "1\n"
+  },
+  "api-log": {
+    "source_sha256": "5e9a124bb759b8c2875dbbbdb85ad4d1a8104ab5bb156b6a4a4dcef437cbd71a",
+    "validation_sha256": "5792c6144f4470dd8e23ad9219daba1905f21f915490d8ae21d77fdc4965d420",
+    "output": "true\n"
+  },
+  "api-regex": {
+    "source_sha256": "05f4489f118c7845fd07bd2d083f8cc35f8b970d9bf682171394cbbe12fe818b",
+    "validation_sha256": "354a80eb592073508d75f110bfeb343ad887742697eab9aeb2907d5407e6fc06",
+    "output": "3000\n"
+  },
+  "api-encoding": {
+    "source_sha256": "73c416d5ec8b830483eb86fa7bcddbd84eaa5f0ecd842bababaa8dff17987d3e",
+    "validation_sha256": "f9f87bc80cbe2344271cc4d22189870e5965a14e8461a9ada8becaf9d26bb4f5",
+    "output": "Dev 🚀\n"
+  },
+  "api-crypto": {
+    "source_sha256": "6a559d49e6466d53716e09281b5ed7e970944fbcf305b999d8409a7df0b5b85f",
+    "validation_sha256": "78f709c701c683b804a043fa698bec230cd317788995dbf1db5391629030bed9",
+    "output": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\n"
+  },
+  "api-compression": {
+    "source_sha256": "ebb8b5b9f2c699e05137e3b033f35626c354412890e8a4bfde79c5d5a802df8f",
+    "validation_sha256": "89fb90a9ee7a9bda9ccb26ee1a5c2695e847bbc1b6479c799290822dc670dc55",
+    "output": "Hello\n"
+  },
+  "api-archive": {
+    "source_sha256": "1bc7330d4d94f260c7db9f80ce1e43fc49e1c5650b7c6a4a7036c1985598ecf8",
+    "validation_sha256": "bd7802aa279082cd6df314963422353b62332f86a69ced97325f43bc9586073c",
+    "output": "Hello\n"
+  },
+  "api-uuid": {
+    "source_sha256": "b71bd54630c56dc35a0a0d34373c73b345534123c56c9a54bc9924170c9dd19e",
+    "validation_sha256": "94f4242c20b4267e82b303b714ce919e5d39b3b42585c4f2cce31dd9b7cc13cb",
+    "output": "true\n"
+  },
+  "api-dns": {
+    "source_sha256": "8d226ac091b30698d6e1b0f63b95351d131d98abce16ff8adfc31c4c42a5af61",
+    "validation_sha256": "9c92db972feff4e409929bca06676d152e983029c6985cd2704463e24e00f78d",
+    "output": "127.0.0.1\n"
+  },
+  "api-cli": {
+    "source_sha256": "27965ad734fb021e977fee52a0ae2d05947686e12639c4d6df1f54d3a21a0f2c",
+    "validation_sha256": "58de131dc77c8947a3c3520773d4bac6e939bf1b5df78bddbd6f55c23ab10231",
+    "output": "Dev\n"
+  },
+  "api-result": {
+    "source_sha256": "fde2e8d82becc366879108bd210485563c6de807e222610db92860baa374f178",
+    "validation_sha256": "172114b93ffd02d1b2e11a5cd78d73173b98b9a064a5bbba2123525d49b74fee",
+    "output": "true\n42\n"
+  },
+  "api-timers": {
+    "source_sha256": "fd18bf459cb67964b68226e37f7da8ca7c8e52c5e12e3fae3f86da68cc703c16",
+    "validation_sha256": "0e5bd07bf85370cdeba94d439cf6a72e6759798edcd095f82b9972de023ab4f6",
+    "output": "1\n2\n"
+  },
+  "api-child_process": {
+    "source_sha256": "aa97fa58db09979ca9feca05119171435be7a612550cc4fb4de0dea735c239a4",
+    "validation_sha256": "a454eb03d5d53f2bb5ef752e012c9719970547af1f34669da1c1f116c4536109",
+    "output": "true\n42\n\n"
+  },
+  "api-sqlite": {
+    "source_sha256": "a9789a92307c1bc8f21dabbc8d8bced14cb1842eef15f84f22a227a9ad7633ad",
+    "validation_sha256": "aec9ef44af843b19e24173fbeeb3363a82f2b291e9acae1f82b1641a2b88d169",
+    "output": "1\n"
+  },
+  "api-csv": {
+    "source_sha256": "cd82add1efcd43875b56b19a8be9aec7af88f8f400edb89c261b19753a9b384e",
+    "validation_sha256": "9726476327a9815de519001370a2c5f58d03a023b867e7d0880f2ea569ec8d32",
+    "output": "name\nDev\n"
+  },
+  "api-toml": {
+    "source_sha256": "3e827e0868c0d054614f6788faba07a2a199d76bbab83c9902f76a34a18040c0",
+    "validation_sha256": "577e5151b500614ba149b491a5bee33b157ac4420ba997a30373bb5c06756b32",
+    "output": "{\"active\":true,\"name\":\"Dev\"}\n"
+  },
+  "api-yaml": {
+    "source_sha256": "bee062a905979f1935a9a7628eded361052dbd34af07f8cf1845a22b1bd7c51e",
+    "validation_sha256": "71aac6ba66e349db250ed2d065e03d9ceb7c7e33badf54c80d6fb147e7c97060",
+    "output": "{\"active\":true,\"name\":\"Dev\"}\n"
+  },
+  "api-tls": {
+    "source_sha256": "d6cdb18d1e2ec1956b1b87ae59216fdbe7e736e2d4fb287b22d3b5ad449e8f87",
+    "validation_sha256": "a585b239616767b8fe9a068b3bb4657e45fd2965cae7418090380a6d9cfbb0d2",
+    "output": "10000\n"
+  },
+  "api-websocket": {
+    "source_sha256": "eda63037c1681bba4a07575c855cbdc8af57961bb5cb94bd39b89581c73e08f4",
+    "validation_sha256": "f4250b9560b145543c06e79d2a7758ef22f1df8a2137c32fc43f779f84e6ede1",
+    "output": "true\n"
+  },
+  "api-path": {
+    "source_sha256": "eb36fdde1e36456b103901e6f32eedb8bb30f2694425ab9fcb890d2e27a0adb9",
+    "validation_sha256": "4fcb691441e76b4a65a78c4214f63cf69e15dca92171c8d19e95ac6e5fc2f22e",
+    "output": "hello.dev\n"
+  },
+  "api-os": {
+    "source_sha256": "74c755733be93b4701f9347c73c13c7be939538fd705f4c762a6f716995fd2cd",
+    "validation_sha256": "9b343870eef779bbb53de74c6d8cbb28e6ef1616ee45ddbf20b72be906c368ae",
+    "output": "true\n"
+  },
+  "api-process": {
+    "source_sha256": "b8459c86d18b0ebac9ec404a0346283cf63eb16f911ca280bb827c627a606d90",
+    "validation_sha256": "a319840257b7c470ebf48bdc337a58a834bd7d6346995fec2361bec7acf7f6d4",
+    "output": "true\n"
+  },
+  "api-module": {
+    "source_sha256": "cc749aa63d0651db8045736e632af4e2929e1de56fcda0a05f845cf1d9c18f9e",
+    "validation_sha256": "99a33594ed4aa29883ae424f0be1af805342484c6442ec3ae3f1c710a538e72d",
+    "output": "true\n42\n"
+  },
+  "api-url": {
+    "source_sha256": "6a3e6295fccf02361c37109708e7951f2fdfa74967433ac77e5355060f50dd47",
+    "validation_sha256": "f1a49129b610e8e0a0b39c007008f7413cb3aa67ec96e9f0acceba91dbd36b66",
+    "output": "Dev\n"
+  },
+  "api-buffer": {
+    "source_sha256": "af2c487c60cab0d334a60c290ef436553bb8903204533e936e966d1e30c05c07",
+    "validation_sha256": "dd9c6330bced5ed7d9e1944cfc4a248429ad4bd908854d07038111ce1fd16e88",
+    "output": "Dev\n"
+  },
+  "api-events": {
+    "source_sha256": "d625e5c49558c7e5fcae48b159f97c5d15d861ab00893f13d9f12d98d06a8c70",
+    "validation_sha256": "729df9f3b40982a32f6772b88f2857b8a58ba0a7ca7be02c45c444b1861c6043",
+    "output": "Dev\n"
+  },
+  "api-stream": {
+    "source_sha256": "b3ee1eb66df1068fb6d87894c1b0c23f3e57e8681c5b214788226f4575166933",
+    "validation_sha256": "097aa1efd36498359b741023ba41764fdbbc33936e010330186464df3b79aec2",
+    "output": "Hello\n"
+  },
+  "api-net": {
+    "source_sha256": "8afbb959d84a528e9385407d643e8309ae2329a803e0effb612987326d7841ca",
+    "validation_sha256": "81a0b17fdb7c18201b183ce38e9be653963dec2005944e972259094269a68a52",
+    "output": "true\n"
+  },
+  "api-dgram": {
+    "source_sha256": "751876b882405f0664cd5ec90a558559ee2d3c12829735cdf63fde2593a2c9ab",
+    "validation_sha256": "41c5aaaadb6e94fd0e83d526183cdbc1dfec21bfa00ce76f5701b092a22f5d80",
+    "output": "true\n"
+  },
+  "api-sync": {
+    "source_sha256": "3899f9947985abf0701334e13c4b3ef23c3d1a22bac63e599bd3a586a9bc06cc",
+    "validation_sha256": "a303ee25807fb803883e37754b7106408630467e62310d9bba4cd5823ad14217",
+    "output": "42\n"
+  },
+  "api-json": {
+    "source_sha256": "f908325450779fdec34c28956e230b62cc75ea244dc0ba399f2ed63af3daa28c",
+    "validation_sha256": "6df45c30f34794323d762c45f45fafde9900f8161629de8fe85a8063bc3109f9",
+    "output": "Dev\n18\n"
+  },
+  "api-don": {
+    "source_sha256": "c28a4d14045d1e80b670468f366131f74e25857ccfdf1a9e8a936ce5538082a7",
+    "validation_sha256": "3d0a46ed1982ea29eaf54c5b2d3fd0ef05ef3a0b196e9588b0769125e1ad6f0a",
+    "output": "v1.0.0\n"
+  },
+  "api-fs": {
+    "source_sha256": "853e0f1398cef426c09b8c88605b6765c3beb3b3b03f3cff3027bc0af93f8477",
+    "validation_sha256": "9646579eb81b803d5e70ac693449052e185bbbd107acd34d55bc6cdba98211c5",
+    "output": "Hello\n"
+  },
+  "api-fs-promises": {
+    "source_sha256": "e413796b22011ce8f5c5917ea9a46117d2e74ac7019d149075f1a2a7f746c1fd",
+    "validation_sha256": "48f82173709ac55136169be91f4af9553aff4bf8bb1025d33a6e94b745108ab3",
+    "output": "Hello\n"
+  },
+  "api-http": {
+    "source_sha256": "a7458b120434e8079360d5dd0cfcdc0a9669f884029beb8cb4aae9ccf59e3a5b",
+    "validation_sha256": "a7e176f595001814cbc49c7dee4a7ad6562d166e83fc88165b6278478dcb72b4",
+    "output": "server closed\n"
+  },
+  "api-io": {
+    "source_sha256": "a6b7fe6c806f9e6f735a9816866ba196ea3e53e01b4f85230b4844457f3aa423",
+    "validation_sha256": "057fb1491a173635ab474c06044ff68ec0a836f4d2dd15e1a4bff37d7a79b243",
+    "output": "Hello DevLang\n"
+  },
+  "api-time": {
+    "source_sha256": "1b17a049828fcdbab896ae35137aef745ac1c477effd197328ec92f96358843a",
+    "validation_sha256": "dfe1a40b3f9bf291d6376f5ede9294457a3eca2ead68f7ff5f82b4f332296c0e",
+    "output": "true\n"
+  },
+  "api-args": {
+    "source_sha256": "327b39267b6931570473faa5b8b78f9eb75374592f31c85c2fe12a1efc1cce46",
+    "validation_sha256": "8df5b5859a48399f1c5da1cc870569b7d719163c650003782a44c588f5a2732d",
+    "output": "0\n"
+  },
+  "api-native-io": {
+    "source_sha256": "fba349bfa61385b45da5d35fbd465f6a684e4fe44bc2768f468bd22d6842331d",
+    "validation_sha256": "e5faa0d4877398a8b6cab64e8aff9f8bbc7c2007d0ca2cbf2ebbe0e95aaff26e",
+    "output": "Hello native\n"
+  },
+  "api-native-time": {
+    "source_sha256": "0d4b1e06871fac834ca50a361849d9f14985cc5590e1f4a961c97bb4bae0323c",
+    "validation_sha256": "13fa710532c0ca1174b25da31f9635c0d9b4b8fa6fc5b0f1e195b985b382a288",
+    "output": "true\n"
+  },
+  "api-native-strings": {
+    "source_sha256": "21b07ec431c15aa3c64597c50e008996837393eade36e49f685c05a3ab2eb6b3",
+    "validation_sha256": "38535d1956d21879bfe7055c48c958dbdd03ce272808d1d85161eccb10021fba",
+    "output": "Hello\n"
+  },
+  "api-native-memory": {
+    "source_sha256": "d44234ae5c3a8fa011ba07bda376c37789d270fed59c77a41c77f5742fe07a92",
+    "validation_sha256": "562cc824dbf534724d6e391bd3247b33e96b9af32fcfe67c6d3865d4cfd749a9",
+    "output": "released\n"
   }
 }

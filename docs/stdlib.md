@@ -1,5 +1,8 @@
 # Standalone Dev runtime v1 / compiler v0.4
 
+Individual bindings: [memory](modules/native-memory.md), [strings](modules/native-strings.md),
+[io](modules/native-io.md), [time](modules/native-time.md). Their APIs differ from source-runtime builtins.
+
 An optional native library for hosted Windows and Linux programs. It introduces
 no VM, garbage collector, background threads or automatic application heap.
 The C runtime builds independently with `python stdlib/build.py`, without Rust
