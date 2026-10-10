@@ -1480,6 +1480,8 @@ CLI ใช้ `d pkg add math --url URL --sha256 HASH` ไฟล์ archive ต�
 
 ประกาศ CLI ด้วย `bin: { mycli: 'src/cli.dev' }` ใน root ของ manifest หลัง install ใช้ `d exec mycli -- arguments` หรือ launcher ใน `.dev/bin` ได้ Windows ใช้ `.cmd`; Unix ใช้ shell script ดูรายการด้วย `d pkg bin` bin ของ dependency ใช้ module mappings ของโปรเจกต์ผู้ใช้และรันด้วย runtime ไม่ต้อง compile `--production` เอา launcher ของเครื่องมือพัฒนาออก ไม่แก้ global PATH ชื่อคำสั่งซ้ำหรือพาธออกนอก package จะถูกปฏิเสธ ตัวอย่างอยู่ใน `examples/package-bin`
 
+ติดตั้งคำสั่งส่วนกลางด้วย `d pkg install -g` หรือ `--global` แล้วเรียก `mycli` ได้ตรง ๆ โฟลเดอร์คือ `~/.devlang/bin` (Windows: `%USERPROFILE%\.devlang\bin`) ระบบเพิ่ม user PATH บน Windows หรือ startup file ของ bash/zsh/profile บน Unix ต้องเปิดโปรแกรม terminal ใหม่หลังเพิ่ม PATH ครั้งแรก launcher อ้างอิง source project จึงต้องเก็บโฟลเดอร์เดิมไว้ ใช้ `pkg update --global` อัปเดต และ `pkg uninstall --global` ถอนคำสั่งของโปรเจกต์นี้ โดยไม่ลบ source/cache หรือคำสั่งของโปรเจกต์อื่น
+
 ยังเป็น namespace เดียว: constraints ที่ใช้ version ที่เลือกเดียวกันได้จะแชร์ package แต่ไม่มี backtracking หรือหลาย version ของชื่อเดียวกัน และยังไม่มี public registry/publish ถ้า add/remove ติดตั้งไม่สำเร็จจะคืน manifest เดิม การติดตั้ง `--workspace` ไม่เป็น transaction ทั้งกลุ่ม
 
 # [module-api-intro] คู่มือแต่ละ Module

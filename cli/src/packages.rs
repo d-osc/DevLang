@@ -32,6 +32,7 @@ fn is_false(value: &bool) -> bool {
 include!("workspace.rs");
 include!("package_archives.rs");
 include!("package_bins.rs");
+include!("global_bins.rs");
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Package {
@@ -753,21 +754,24 @@ pub fn command(args: &[String]) -> Result<i32, String> {
         .ok_or("no package.don or dev.toml; use d new NAME")?;
     match args.first().map(String::as_str) {
         Some("install") | Some("update") => {
-            let mut locked=false; let mut all=false; let mut production=false;
+            let mut locked=false; let mut all=false; let mut production=false; let mut global=false;
             for option in &args[1..] {
                 match option.as_str() {
                     "--locked" if !locked && args[0] == "install" => locked=true,
                     "--workspace" if !all => all=true,
                     "--production" if !production => production=true,
-                    _ => return Err("pkg install [--locked] [--workspace] [--production]; pkg update [--workspace] [--production]".into()),
+                    "--global" | "-g" if !global => global=true,
+                    _ => return Err("pkg install [--locked] [--workspace] [--production] [--global|-g]; pkg update [--workspace] [--production] [--global|-g]".into()),
                 }
             }
+            if global && all { return Err("--global with --workspace is unsupported; select one member using --package NAME".into()); }
             if all {
                 let root=workspace_root(&project)?.ok_or("--workspace needs workspace.members")?;
                 let members=workspace_members(&root)?;
                 install_mode(&root,locked,args[0]=="update",production)?;
                 for (name,at) in members { println!("package {name}"); install_mode(&at,locked,args[0]=="update",production)?; }
             } else { install_mode(&project, locked, args[0] == "update", production)?; }
+            if global { install_global_bins(&project)?; }
         }
         Some("workspace") if args.len()==1 => {
             let root=workspace_root(&project)?.ok_or("no workspace.members")?;
@@ -808,7 +812,8 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             let lock: Lock = if lock_path(&project).exists() { read(&lock_path(&project))? } else { Lock::default() };
             for (name, entry) in package_bins(&project, &lock)? { println!("{name} {}", entry.display()); }
         }
-        _ => return Err("pkg add NAME --path DIR | --url URL --sha256 HEX | --git URL | --workspace [--tag TAG | --branch NAME | --version REQUIREMENT]; pkg install [--locked] [--workspace] [--production]; pkg update [--workspace] [--production]; pkg workspace; pkg remove NAME [--dev]; pkg list".into()),
+        Some("uninstall") if args.len() == 2 && matches!(args[1].as_str(), "--global" | "-g") => uninstall_global_bins(&project)?,
+        _ => return Err("pkg add NAME --path DIR | --url URL --sha256 HEX | --git URL | --workspace [--tag TAG | --branch NAME | --version REQUIREMENT]; pkg install [--locked] [--workspace] [--production] [--global|-g]; pkg update [--workspace] [--production] [--global|-g]; pkg workspace; pkg remove NAME [--dev]; pkg list".into()),
     }
     Ok(0)
 }

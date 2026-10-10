@@ -99,9 +99,11 @@ package: { name: 'my_cli' }
 bin: { mycli: 'src/cli.dev' }
 ```
 
-`pkg install` creates local launchers in `.dev/bin` (`NAME.cmd` on Windows; executable shell scripts on Unix). `d exec NAME [-- arguments]` runs a command from the current package or installed dependency with devrun and the consumer project's module mappings. `d pkg bin` lists commands. Program arguments are forwarded literally and child exit codes are preserved. Working directory is the consumer project root. No global PATH changes are made. Reinstall to regenerate launchers after moving the project or `d`.
+`pkg install` creates local launchers in `.dev/bin` (`NAME.cmd` on Windows; executable shell scripts on Unix). `d exec NAME [-- arguments]` runs a command from the current package or installed dependency with devrun and the consumer project's module mappings. `d pkg bin` lists commands. Program arguments are forwarded literally and child exit codes are preserved. Working directory is the consumer project root. Ordinary installation does not change global PATH. Reinstall to regenerate launchers after moving the project or `d`.
 
 Command names support ASCII letters, digits, underscore and hyphen, beginning with a letter or underscore; reserved Windows device names are rejected. Entries are `.dev` files inside the package. Duplicate names (case-insensitive), missing files and escaping paths fail install. Production installation removes generated development-only launchers but preserves custom files and cached dependencies. Locked installs refresh launchers. See [the complete bin example](../examples/package-bin/README.md).
+
+`pkg install -g` / `--global` exports the installed graph's bins to the user's `~/.devlang/bin` (`%USERPROFILE%\.devlang\bin` on Windows). Windows adds it to user PATH; Unix updates the detected bash/zsh/profile startup file. Reopen the terminal application after the first PATH update, then invoke command names directly. Global launchers reference the source project and current `d`; keep both in place. `pkg update --global` refreshes them and `pkg uninstall --global` removes the current project's exported commands. Other projects' commands and custom files are protected from overwrites. Combine with `--production`/`--locked`; select one workspace member with `--package` rather than combining `--global --workspace`. `DEVLANG_HOME` relocates the global directory; `DEVLANG_NO_PATH_UPDATE=1` opts out of persistent PATH changes.
 
 ## Development dependencies
 

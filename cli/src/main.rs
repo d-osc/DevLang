@@ -18,6 +18,8 @@ const HELP: &str = "Dev Lang
   d new NAME                              Create a project with package.don
   d exec NAME [-- arguments]              Run a local or installed package bin
   d pkg bin                              List available bin commands
+  d pkg install -g|--global               Install bins on the user PATH
+  d pkg uninstall -g|--global             Remove this project's global bins
   d pkg add|install|update|remove|list|workspace  Manage path/Git/workspace dependencies
   d don check|fmt|fmt-source|to-json|from-json FILE   Validate or convert data (output to stdout)
   d fmt [--check|--stdout] [FILES/DIRS]     Format source (defaults to src/)
