@@ -13,6 +13,14 @@ d = Path(parser.parse_args().d).resolve()
 repo = Path(__file__).resolve().parents[1]
 with tempfile.TemporaryDirectory(prefix='dev global bins ') as temporary:
     root = Path(temporary)
+    original_d = d
+    tools = root / 'original tools'
+    tools.mkdir()
+    for tool in ['d', 'devrun', 'devc']:
+        filename = tool + ('.exe' if os.name == 'nt' else '')
+        source = d.parent / filename
+        if source.exists(): shutil.copy2(source, tools / filename)
+    d = tools / d.name
     home = root / 'global home'
     project = root / 'project'
     shutil.copytree(repo / 'examples/package-bin', project, ignore=shutil.ignore_patterns('.dev', 'package-lock.don'))
@@ -60,4 +68,17 @@ with tempfile.TemporaryDirectory(prefix='dev global bins ') as temporary:
     args = ['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', 'math-add; exit $LASTEXITCODE'] if os.name == 'nt' else ['math-add']
     result = subprocess.run(args, cwd=elsewhere, env=env, capture_output=True, timeout=45)
     assert result.returncode == 7
+    # Global sources and runtime remain usable when the original tree is gone.
+    assert project.resolve().is_relative_to(root.resolve())
+    project.rename(root / 'moved-source')
+    assert tools.resolve().is_relative_to(root.resolve())
+    tools.rename(root / 'moved-tools')
+    d = original_d
+    named('hello', 'Hello from package bin')
+    result = subprocess.run(args, cwd=elsewhere, env=env, capture_output=True, timeout=45)
+    assert result.returncode == 7
+    listing = command('pkg', 'list', '--global', cwd=elsewhere)
+    assert 'bin_app' in listing
+    command('pkg', 'uninstall', '--global', 'bin_app', cwd=elsewhere)
+    assert not (home / 'bin' / filename('math-add')).exists()
 print('PASS: -g/--global, command lookup from unrelated cwd, ownership, custom files, production, update and uninstall')

@@ -43,7 +43,7 @@ math-add
 
 `--global` is an alias of `-g`. It installs the current package graph and exports its bins in `%USERPROFILE%\.devlang\bin` on Windows (or `~/.devlang/bin` on Unix). Windows adds that directory to the user PATH; Unix appends an export to `.bashrc`, `.zshrc` or `.profile` for the detected shell. A running parent shell cannot have its PATH changed by a child process; reopen the terminal application after first install. Existing PATH entries are retained.
 
-Global launchers reference this source project and the installing `d` executable. Keep the project and runtime files; moving them requires reinstall. Commands can be invoked from any directory and run with the installed consumer project as working directory. There is no package registry lookup or source snapshot copy.
+Global installation copies the source graph into `.devlang/packages` and caches the runtime in `.devlang/runtime`. Commands can be invoked from any directory after moving/deleting the original project and runtime; their working directory is the snapshot root. Reinstall to pick up source edits. There is no public registry lookup.
 
 Use `pkg install -g --production` to exclude development tools, `pkg update --global` to update dependencies and refresh exported bins, and `pkg uninstall --global` from this project to remove its global launchers. Uninstall leaves PATH, sources and caches intact. Another project's command with the same name and custom global launchers are not overwritten. `--global --workspace` is rejected; choose a member using `--package NAME` instead.
 
@@ -58,3 +58,5 @@ Commands from the current package and all installed dependencies are available. 
 `pkg install --production` removes generated launchers for development-only tools, so `dev-check` becomes unavailable; `hello` and `math-add` remain. Locked installs refresh launchers too. It does not delete dependency caches or overwrite custom files in `.dev/bin`.
 
 Command names begin with an ASCII letter or underscore and may contain letters, digits, underscores and hyphens. Windows reserved device names are rejected. Duplicate names, including case-only differences, fail install. Entry paths must be `.dev` files inside their owning package; absolute paths, `..` and escaping symlinks are rejected. Local bins do not override dependency bins.
+
+From any directory, use `d pkg list --global` and `d pkg uninstall --global bin_app`, including after deleting the original project. Uninstall removes exported commands but retains snapshots and runtime caches.

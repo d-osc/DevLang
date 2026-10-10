@@ -1,6 +1,12 @@
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct GlobalBin { project: String }
+struct GlobalBin {
+    project: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    package: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    snapshot: Option<String>,
+}
 fn global_home() -> Result<PathBuf, String> {
     let home = if let Some(home) = std::env::var_os("DEVLANG_HOME") { PathBuf::from(home) }
     else {
@@ -12,8 +18,7 @@ fn global_home() -> Result<PathBuf, String> {
 }
 const GLOBAL_MARKER: &str = "@rem DevLang global bin\n";
 const GLOBAL_SH_MARKER: &str = "#!/bin/sh\n# DevLang global bin\n";
-fn global_launcher(name: &str, project: &str) -> Result<String, String> {
-    let executable = std::env::current_exe().map_err(|e| e.to_string())?;
+fn global_launcher(name: &str, project: &str, executable: &Path) -> Result<String, String> {
     let executable = executable.to_str().ok_or("non-UTF8 d path")?;
     if executable.contains(['\r', '\n']) || project.contains(['\r', '\n']) { return Err("unsupported newline in launcher path".into()); }
     if cfg!(windows) {
@@ -74,8 +79,10 @@ fn install_global_bins(project: &Path) -> Result<(), String> {
         if registry.iter().any(|(key, owner)| key.eq_ignore_ascii_case(name) && (key != name || owner.project != project)) { return Err(format!("global command '{name}' is owned by another package")); }
         let path = directory.join(global_filename(name));
         if path.exists() && (!registry.contains_key(name) || !global_owned(&path)?) { return Err(format!("refusing to overwrite global command '{name}'")); }
-        global_launcher(name, &project)?;
     }
+    let package_name = manifest(Path::new(&project))?.package.name;
+    let (snapshot, runtime) = make_global_snapshot(&home, Path::new(&project), &lock)?;
+    let snapshot_text = snapshot.to_str().ok_or("non-UTF8 snapshot path")?;
     let stale = registry.iter().filter(|(name, owner)| owner.project == project && !bins.contains_key(*name)).map(|(name, _)| name.clone()).collect::<Vec<_>>();
     for name in stale {
         let path = directory.join(global_filename(&name));
@@ -84,9 +91,9 @@ fn install_global_bins(project: &Path) -> Result<(), String> {
     }
     for name in bins.keys() {
         let path = directory.join(global_filename(name));
-        std::fs::write(&path, global_launcher(name, &project)?).map_err(|e| e.to_string())?;
+        std::fs::write(&path, global_launcher(name, snapshot_text, &runtime)?).map_err(|e| e.to_string())?;
         #[cfg(unix)] { use std::os::unix::fs::PermissionsExt; std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).map_err(|e| e.to_string())?; }
-        registry.insert(name.clone(), GlobalBin { project: project.clone() });
+        registry.insert(name.clone(), GlobalBin { project: project.clone(), package: Some(package_name.clone()), snapshot: Some(snapshot_text.to_owned()) });
     }
     write(&home.join("bins.don"), &registry)?;
     if !bins.is_empty() { register_global_path(&directory)?; }
@@ -94,9 +101,11 @@ fn install_global_bins(project: &Path) -> Result<(), String> {
     Ok(())
 }
 fn uninstall_global_bins(project: &Path) -> Result<(), String> {
+    uninstall_global_owner(&dunce::canonicalize(project).map_err(|e| e.to_string())?.to_string_lossy())
+}
+fn uninstall_global_owner(project: &str) -> Result<(), String> {
     let home = global_home()?;
     if !home.exists() { return Ok(()); }
-    let project = dunce::canonicalize(project).map_err(|e| e.to_string())?.to_string_lossy().into_owned();
     let mut registry = global_registry(&home)?;
     let names = registry.iter().filter(|(_, owner)| owner.project == project).map(|(name, _)| name.clone()).collect::<Vec<_>>();
     let directory = home.join("bin");
@@ -109,4 +118,18 @@ fn uninstall_global_bins(project: &Path) -> Result<(), String> {
     write(&home.join("bins.don"), &registry)?;
     println!("removed this project's global commands");
     Ok(())
+}
+fn list_global_packages() -> Result<i32, String> {
+    let home = global_home()?;
+    for (name, item) in global_registry(&home)? {
+        println!("{}: {name} {}", item.package.as_deref().unwrap_or("legacy"), item.snapshot.as_deref().unwrap_or(&item.project));
+    }
+    Ok(0)
+}
+fn uninstall_global_named(name: &str) -> Result<i32, String> {
+    let registry = global_registry(&global_home()?)?;
+    let owners = registry.values().filter(|item| item.package.as_deref() == Some(name)).map(|item| item.project.clone()).collect::<BTreeSet<_>>();
+    if owners.len() != 1 { return Err("global package is missing or ambiguous; use pkg list --global".into()); }
+    uninstall_global_owner(owners.iter().next().unwrap())?;
+    Ok(0)
 }

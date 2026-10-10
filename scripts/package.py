@@ -56,8 +56,9 @@ def main():
     shutil.copy2(repo / "LICENSE", bundle / "LICENSE")
     shutil.copy2(repo / "runtime/THIRD_PARTY_NOTICES.md", bundle / "THIRD_PARTY_NOTICES.md")
     for directory in (compiler, runtime, interpreter, bundle):
-        for document in ("advanced.md","language.md","runtime.md","json.md","tooling.md","map-performance.md","map-benchmark-windows.json","map-benchmark-linux.json"):
+        for document in ("advanced.md","language.md","runtime.md","json.md","tooling.md","packages.md","don.md","map-performance.md","map-benchmark-windows.json","map-benchmark-linux.json"):
             shutil.copy2(repo / "docs" / document,directory / document)
+        shutil.copytree(repo / "docs/modules", directory / "docs/modules", dirs_exist_ok=True)
         lines = [hashlib.sha256(p.read_bytes()).hexdigest() + "  " + p.relative_to(directory).as_posix()
                  for p in sorted(directory.rglob("*")) if p.is_file() and p.name != "SHA256SUMS"]
         (directory / "SHA256SUMS").write_text("\n".join(lines) + "\n")

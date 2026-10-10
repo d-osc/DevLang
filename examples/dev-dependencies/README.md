@@ -36,4 +36,4 @@ d pkg add testkit --path ../testkit --dev
 d pkg remove testkit --dev
 ```
 
-Run these two commands from the app directory. Add/remove rewrites the manifest and installs in development mode. A namespace cannot be declared in both dependencies sections. `pkg install/update --workspace --production` applies production mode to each selected package. Peer dependencies are not implemented.
+Run these two commands from the app directory. Add/remove rewrites the manifest and installs in development mode. A namespace cannot be declared in both dependencies sections. `pkg install/update --workspace --production` applies production mode to each selected package. Peer dependencies validate a consumer-supplied version; see `../peer-dependencies`.

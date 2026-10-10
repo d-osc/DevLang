@@ -1,0 +1,3 @@
+use "plugin/lib" as plugin
+fn main() { print(plugin.answer()); return 0 }
+return main()

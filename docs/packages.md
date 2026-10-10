@@ -103,7 +103,7 @@ bin: { mycli: 'src/cli.dev' }
 
 Command names support ASCII letters, digits, underscore and hyphen, beginning with a letter or underscore; reserved Windows device names are rejected. Entries are `.dev` files inside the package. Duplicate names (case-insensitive), missing files and escaping paths fail install. Production installation removes generated development-only launchers but preserves custom files and cached dependencies. Locked installs refresh launchers. See [the complete bin example](../examples/package-bin/README.md).
 
-`pkg install -g` / `--global` exports the installed graph's bins to the user's `~/.devlang/bin` (`%USERPROFILE%\.devlang\bin` on Windows). Windows adds it to user PATH; Unix updates the detected bash/zsh/profile startup file. Reopen the terminal application after the first PATH update, then invoke command names directly. Global launchers reference the source project and current `d`; keep both in place. `pkg update --global` refreshes them and `pkg uninstall --global` removes the current project's exported commands. Other projects' commands and custom files are protected from overwrites. Combine with `--production`/`--locked`; select one workspace member with `--package` rather than combining `--global --workspace`. `DEVLANG_HOME` relocates the global directory; `DEVLANG_NO_PATH_UPDATE=1` opts out of persistent PATH changes.
+`pkg install -g` / `--global` exports the installed graph's bins to the user's `~/.devlang/bin` (`%USERPROFILE%\.devlang\bin` on Windows). Windows adds it to user PATH; Unix updates the detected bash/zsh/profile startup file. Reopen the terminal application after the first PATH update, then invoke command names directly. Global installation snapshots the package graph under `.devlang/packages` and caches `d`/`devrun` (and `devc` when available) under `.devlang/runtime`. Exported commands continue to run after moving or deleting the original source or installing executable. Their working directory is the snapshot root; reinstall to include source edits. `pkg update --global` refreshes them and `pkg uninstall --global` removes the current project's exported commands. From any directory, `pkg list --global` lists installed packages and `pkg uninstall --global PACKAGE_NAME` removes their commands, even when the source is gone. Snapshots/runtime caches remain on disk. Other projects' commands and custom files are protected from overwrites. Combine with `--production`/`--locked`; select one workspace member with `--package` rather than combining `--global --workspace`. `DEVLANG_HOME` relocates the global directory; `DEVLANG_NO_PATH_UPDATE=1` opts out of persistent PATH changes.
 
 ## Development dependencies
 
@@ -126,3 +126,15 @@ The canonical lock is `package-lock.don`, serialized as DON. Old `dev.lock` TOML
 New dependency hashes exclude `package-lock.don` anywhere in the tree, alongside existing excluded build/cache directories. Locks describe resolution metadata, so changing a member lock does not invalidate every consumer or introduce a recursive workspace hash. Source files and manifests are still hashed by exact bytes. Older version-1 hashes that included lockfiles remain verifiable; locked installation preserves them. Ordinary install refreshes local hashes and migrates matching cached hashes to the new rule.
 
 See [the complete workspace example](../examples/workspace/README.md) and `scripts/smoke_workspaces.py` for runtime/native builds, local Git version tags, pinned restoration, legacy hashes and failed-add rollback.
+
+## Peer dependencies
+
+A library can require a version supplied by its consumer without installing its own copy:
+
+```don
+peerDependencies: { math: '^1.2' }
+```
+
+The complete installed graph must provide `math` with a manifest `version` matching this semantic version requirement. The root package itself may also provide a peer by its package name and version. Missing peers, missing versions and incompatible versions fail installation and run/build checks. Peers are not downloaded automatically. A development dependency can provide a peer in development mode; production mode requires a production provider.
+
+Use `d pkg add math --peer --version '^1.2'` or `d pkg remove math --peer`. `--peer` cannot be combined with source options or `--dev`. See `examples/peer-dependencies` for an app, plugin and shared math library.

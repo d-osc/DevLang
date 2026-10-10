@@ -35,3 +35,5 @@ Validate website examples and every module's documented sample:
 python website/build.py --d target/release/d.exe
 python scripts/build_module_docs.py --d target/release/d.exe
 ```
+
+`peer-dependencies/` demonstrates a plugin requiring the consumer’s shared `math` version, with verification of missing and incompatible peers.

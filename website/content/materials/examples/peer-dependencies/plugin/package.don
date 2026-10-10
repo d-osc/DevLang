@@ -1,0 +1,5 @@
+version: '1.0.0'
+package: { name: 'plugin', entry: 'src/lib.dev' }
+peerDependencies: {
+    math: '^1.2'
+}

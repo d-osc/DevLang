@@ -33,6 +33,8 @@ include!("workspace.rs");
 include!("package_archives.rs");
 include!("package_bins.rs");
 include!("global_bins.rs");
+include!("peers.rs");
+include!("global_snapshots.rs");
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Package {
@@ -103,6 +105,8 @@ pub struct Manifest {
     pub dependencies: BTreeMap<String, Dependency>,
     #[serde(default, rename = "devDependencies", alias = "dev-dependencies", skip_serializing_if = "BTreeMap::is_empty")]
     pub dev_dependencies: BTreeMap<String, Dependency>,
+    #[serde(default, rename = "peerDependencies", skip_serializing_if = "BTreeMap::is_empty")]
+    pub peer_dependencies: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub bin: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -220,6 +224,10 @@ pub fn manifest(root: &Path) -> Result<Manifest, String> {
     }
     relative(&m.package.entry)?;
     relative(&m.package.modules)?;
+    for (name, requirement) in &m.peer_dependencies {
+        if !identifier(name) { return Err("invalid peer dependency namespace".into()); }
+        peer_requirement(requirement)?;
+    }
     for (name, entry) in &m.bin {
         if !bin_name(name) { return Err("invalid bin command name".into()); }
         relative(entry)?;
@@ -597,6 +605,7 @@ fn install_mode(project: &Path, locked: bool, refresh: bool, production: bool) -
             result.packages.insert(name, resolved);
         }
     }
+    verify_peers(project, &result)?;
     if locked {
         if result != previous {
             return Err("dependencies differ from package-lock.don".into());
@@ -706,6 +715,7 @@ pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
         }
     }
     dirs.sort();
+    verify_peers(project, &lock)?;
     Ok(dirs)
 }
 pub fn new(path: &Path) -> Result<i32, String> {
@@ -731,6 +741,7 @@ pub fn new(path: &Path) -> Result<i32, String> {
             },
             dependencies: BTreeMap::new(),
             dev_dependencies: BTreeMap::new(),
+            peer_dependencies: BTreeMap::new(),
             bin: BTreeMap::new(),
             workspace: None,
         },
@@ -750,6 +761,8 @@ pub fn new(path: &Path) -> Result<i32, String> {
     Ok(0)
 }
 pub fn command(args: &[String]) -> Result<i32, String> {
+    if args.len() == 2 && args[0] == "list" && matches!(args[1].as_str(), "-g" | "--global") { return list_global_packages(); }
+    if args.len() == 3 && args[0] == "uninstall" && matches!(args[1].as_str(), "-g" | "--global") { return uninstall_global_named(&args[2]); }
     let project = root(&std::env::current_dir().map_err(|e| e.to_string())?)
         .ok_or("no package.don or dev.toml; use d new NAME")?;
     match args.first().map(String::as_str) {
@@ -783,15 +796,28 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             let mut dep = Dependency { path: None, git: None, rev: None, branch: None, url: None, sha256: None, version: None, workspace: false };
             let mut at = 2;
             let mut development = false;
+            let mut peer = false;
             let mut seen=BTreeSet::new();
             while at < args.len() {
                 let option = if args[at] == "--rev" { "--tag" } else { args[at].as_str() };
                 if !seen.insert(option.to_owned()) { return Err("duplicate dependency option".into()); }
                 if args[at] == "--workspace" { dep.workspace=true; at+=1; continue; }
                 if args[at] == "--dev" { development=true; at+=1; continue; }
+                if args[at] == "--peer" { peer=true; at+=1; continue; }
                 let value = args.get(at + 1).ok_or("dependency option needs value")?.clone();
                 match args[at].as_str() { "--path" => { let absolute = dunce::canonicalize(&value).map_err(|e| e.to_string())?; dep.path = Some(pathdiff::diff_paths(&absolute,&project).unwrap_or(absolute).to_string_lossy().replace('\\', "/")); }, "--git" => dep.git = Some(value), "--tag" | "--rev" => dep.rev = Some(value), "--url" => dep.url = Some(value), "--sha256" => dep.sha256 = Some(value), "--branch" => dep.branch = Some(value), "--version" => dep.version=Some(value), _ => return Err("unknown dependency option".into()) }
                 at += 2;
+            }
+            if peer {
+                if development || dep.path.is_some() || dep.git.is_some() || dep.url.is_some() || dep.workspace || dep.rev.is_some() || dep.branch.is_some() || dep.sha256.is_some() {
+                    return Err("--peer requires only --version; do not specify a source or --dev".into());
+                }
+                let requirement = dep.version.ok_or("--peer requires --version REQUIREMENT")?;
+                peer_requirement(&requirement)?;
+                let mut m = manifest(&project)?;
+                m.peer_dependencies.insert(name.clone(), requirement);
+                change_manifest(&project, &m)?;
+                return Ok(0);
             }
             validate_dependency(&dep)?;
             let mut m = manifest(&project)?;
@@ -800,8 +826,13 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             root_dependencies(&m, false)?;
             change_manifest(&project,&m)?;
         }
-        Some("remove") if args.len() == 2 || (args.len() == 3 && args[2] == "--dev") => {
+        Some("remove") if args.len() == 2 || (args.len() == 3 && matches!(args[2].as_str(), "--dev" | "--peer")) => {
             let mut m = manifest(&project)?;
+            if args.get(2).is_some_and(|a| a == "--peer") {
+                m.peer_dependencies.remove(&args[1]).ok_or("peer dependency does not exist")?;
+                change_manifest(&project, &m)?;
+                return Ok(0);
+            }
             let dependencies = if args.len() == 3 { &mut m.dev_dependencies } else { &mut m.dependencies };
             dependencies.remove(&args[1]).ok_or("dependency does not exist")?;
             change_manifest(&project,&m)?;
@@ -813,7 +844,7 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             for (name, entry) in package_bins(&project, &lock)? { println!("{name} {}", entry.display()); }
         }
         Some("uninstall") if args.len() == 2 && matches!(args[1].as_str(), "--global" | "-g") => uninstall_global_bins(&project)?,
-        _ => return Err("pkg add NAME --path DIR | --url URL --sha256 HEX | --git URL | --workspace [--tag TAG | --branch NAME | --version REQUIREMENT]; pkg install [--locked] [--workspace] [--production] [--global|-g]; pkg update [--workspace] [--production] [--global|-g]; pkg workspace; pkg remove NAME [--dev]; pkg list".into()),
+        _ => return Err("pkg add NAME --path DIR | --url URL --sha256 HEX | --git URL | --workspace [--tag TAG | --branch NAME | --version REQUIREMENT]; pkg install [--locked] [--workspace] [--production] [--global|-g]; pkg update [--workspace] [--production] [--global|-g]; pkg workspace; pkg add NAME --peer --version REQUIREMENT; pkg remove NAME [--dev|--peer]; pkg list [--global]".into()),
     }
     Ok(0)
 }

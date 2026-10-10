@@ -1,0 +1,2 @@
+use "math/lib" as math
+fn answer() i64 { return math.add(19, 23) }

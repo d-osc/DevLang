@@ -1,0 +1,6 @@
+version: '1.0.0'
+package: { name: 'peer_app' }
+dependencies: {
+    math: { path: '../math' }
+    plugin: { path: '../plugin' }
+}

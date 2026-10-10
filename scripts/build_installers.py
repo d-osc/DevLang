@@ -35,7 +35,7 @@ def main():
                     if not file.resolve().is_relative_to(source.resolve()) or hashlib.sha256(file.read_bytes()).hexdigest() != digest:
                         raise ValueError(f'Invalid package checksum: {file}')
                 shutil.copytree(source, destination)
-            shutil.copytree(repo / 'examples', stage / 'examples', ignore=shutil.ignore_patterns('.dev-cache', '*.exe', '*.dll', '*.so'))
+            shutil.copytree(repo / 'examples', stage / 'examples', ignore=shutil.ignore_patterns('.dev', '.dev-cache', 'dev.lock', 'package-lock.don', 'node_modules', '__pycache__', 'target', 'out', '*.exe', '*.dll', '*.so'))
             (stage / 'SHA256SUMS').write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.relative_to(stage).as_posix() + '\n' for p in sorted(stage.rglob('*')) if p.is_file() and p != stage / 'SHA256SUMS'), encoding='utf-8')
             if platform.startswith('windows'):
                 payload = Path(temporary) / 'payload.zip'
