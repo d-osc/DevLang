@@ -88,7 +88,7 @@ dependencies: {
 .\target\release\d.exe -C examples/github-tag/app run
 ```
 
-ถ้าใช้ `tag: 'v1.2.0'` จะยังเลือก tag นั้น ต้องแก้เป็น `v1.3.0` ก่อน update `pkg install` ปกติคง commit ที่ lock ไว้; `pkg update` resolve ใหม่; `pkg install --locked` ยืนยัน commit/hash ตาม `dev.lock` เดิม ควร commit `dev.lock` และไม่ commit `.dev/packages` หลีกเลี่ยงการย้าย tag ที่เผยแพร่แล้ว
+ถ้าใช้ `tag: 'v1.2.0'` จะยังเลือก tag นั้น ต้องแก้เป็น `v1.3.0` ก่อน update `pkg install` ปกติคง commit ที่ lock ไว้; `pkg update` resolve ใหม่; `pkg install --locked` ยืนยัน commit/hash ตาม `package-lock.don` เดิม ควร commit `package-lock.don` และไม่ commit `.dev/packages` หลีกเลี่ยงการย้าย tag ที่เผยแพร่แล้ว
 
 เพิ่ม dependency ด้วย CLI ได้เช่นกัน:
 
@@ -136,6 +136,6 @@ dependencies: {
 
 `branch` เลือก remote branch โดยตรง แม้มี tag ชื่อเดียวกันก็ไม่สับสน รองรับชื่อเช่น `feature/new-api` ต้องมี branch จริง ใช้พร้อม `tag`/`version` หรือ dependency แบบ path/workspace ไม่ได้
 
-`install` ครั้งแรกเลือก commit ปัจจุบันของ branch แล้วบันทึกใน `dev.lock`; install ครั้งต่อไปคง commit เดิม ใช้ `pkg update` เพื่อเลือก commit ใหม่ และ `install --locked` เพื่อใช้ commit เดิมตาม lock
+`install` ครั้งแรกเลือก commit ปัจจุบันของ branch แล้วบันทึกใน `package-lock.don`; install ครั้งต่อไปคง commit เดิม ใช้ `pkg update` เพื่อเลือก commit ใหม่ และ `install --locked` เพื่อใช้ commit เดิมตาม lock
 
 ตัวอย่างนี้ทดสอบการ install tag, run ทั้งสอง source engines และ locked install ด้วย Git repository ในเครื่อง การเข้าถึง GitHub จริงต้องเปลี่ยน URL และเผยแพร่ library/tag ตามขั้นตอนข้างต้น

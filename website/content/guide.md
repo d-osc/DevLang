@@ -940,7 +940,7 @@ d pkg list
 d pkg remove math
 ```
 
-Commit manifest และ `dev.lock`; ignore `.dev/` และ `out/` Lockfile เก็บ commit ของ Git และ SHA-256 ของ package files `install` รักษา Git commit เดิมและบันทึก local edits ที่ตั้งใจ `update` resolve Git refs ใหม่ `--locked` ติดตั้ง checkout ที่ขาดด้วย commit เดิมและตรวจเนื้อหาโดยไม่แก้ lock การรัน/build ตรวจ lock แต่ไม่ดาวน์โหลดอัตโนมัติ Git ใช้ HTTPS/file URL และต้องมี Git ติดตั้ง รองรับ transitive dependencies แบบ namespace เดียว ถ้าชื่อชนกันคนละ source จะเป็น error รองรับ workspace และเลือก Git tag ตาม SemVer แล้ว ดู [Workspace และ versions](#/docs/packages) ยังไม่มี registry หรือ publish command
+Commit manifest และ `package-lock.don`; ignore `.dev/` และ `out/` Lockfile เก็บ commit ของ Git และ SHA-256 ของ package files `install` รักษา Git commit เดิมและบันทึก local edits ที่ตั้งใจ `update` resolve Git refs ใหม่ `--locked` ติดตั้ง checkout ที่ขาดด้วย commit เดิมและตรวจเนื้อหาโดยไม่แก้ lock การรัน/build ตรวจ lock แต่ไม่ดาวน์โหลดอัตโนมัติ Git ใช้ HTTPS/file URL และต้องมี Git ติดตั้ง รองรับ transitive dependencies แบบ namespace เดียว ถ้าชื่อชนกันคนละ source จะเป็น error รองรับ workspace และเลือก Git tag ตาม SemVer แล้ว ดู [Workspace และ versions](#/docs/packages) ยังไม่มี registry หรือ publish command
 
 ## Formatter
 
@@ -1151,7 +1151,7 @@ Datetime เป็นเวลาปฏิทิน Unix milliseconds ต่า�
 ใช้ `std/fs` อ่านเขียนไฟล์ และ `d don check|fmt|to-json|from-json FILE` ตรวจหรือแปลงข้อมูล
 คำสั่ง format/convert ส่งออก stdout ไม่แก้ไฟล์ต้นฉบับ แต่ output ไม่เก็บ comments เดิม
 
-`d new` สร้าง `package.don`; dependencies ยังใช้ path/Git และ lock เป็น `dev.lock` แบบ TOML เดิม
+`d new` สร้าง `package.don`; lock ใช้ `package-lock.don` ในรูปแบบ DON รองรับการอ่าน `dev.lock` แบบ TOML เดิม และ install ที่สำเร็จจะสร้าง lock ชื่อใหม่โดยเก็บไฟล์เก่าไว้ ถ้ามีทั้งสองไฟล์จะใช้ `package-lock.don` ก่อน
 โปรเจกต์ `dev.toml` เดิมยังใช้ได้ API `std/don` รองรับ runtime ยังไม่มี native build
 อ่าน [คู่มือ DON และ API](../../docs/don.md) และลอง `d examples/don/main.dev`
 
@@ -1433,7 +1433,7 @@ dependencies: {
 }
 ```
 
-Library `libs/math/package.don` ต้องมี `package.name: 'math'` และ `version` ที่ตรงเงื่อนไข จากนั้น import ด้วย `use "math/lib"` แต่ละ member มี `dev.lock` และ cache ของตัวเอง
+Library `libs/math/package.don` ต้องมี `package.name: 'math'` และ `version` ที่ตรงเงื่อนไข จากนั้น import ด้วย `use "math/lib"` แต่ละ member มี `package-lock.don` และ cache ของตัวเอง
 
 ```sh
 d -C examples/workspace pkg workspace

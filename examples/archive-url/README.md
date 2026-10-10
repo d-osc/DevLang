@@ -50,7 +50,7 @@ CLI เพิ่ม dependency ได้ด้วย:
 d pkg add math --url https://YOUR_HOST/dev-math-1.2.0.zip --sha256 YOUR_64_CHARACTER_SHA256 --version '=1.2.0'
 ```
 
-`sha256` จำเป็นเสมอ ระบบตรวจ bytes ของ archive ก่อนแตกไฟล์ บันทึก source และ hash ของไฟล์ package ใน `dev.lock`; cache ที่มีอยู่จะถูกตรวจเนื้อหา และเมื่อ cache หายสามารถดาวน์โหลดกลับด้วย locked install ได้ ถ้า archive บน server เปลี่ยน checksum จะไม่ตรง ต้องแก้ URL/hash แล้ว install หรือ update ใหม่
+`sha256` จำเป็นเสมอ ระบบตรวจ bytes ของ archive ก่อนแตกไฟล์ บันทึก source และ hash ของไฟล์ package ใน `package-lock.don`; cache ที่มีอยู่จะถูกตรวจเนื้อหา และเมื่อ cache หายสามารถดาวน์โหลดกลับด้วย locked install ได้ ถ้า archive บน server เปลี่ยน checksum จะไม่ตรง ต้องแก้ URL/hash แล้ว install หรือ update ใหม่
 
 ## ตัวอย่างรันได้ทันทีโดยไม่ต้องมีเว็บภายนอก
 

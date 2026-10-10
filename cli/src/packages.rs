@@ -48,6 +48,24 @@ fn entry() -> String {
 mod manifest_tests {
     use super::*;
     #[test]
+    fn legacy_lock_migrates_to_don_after_locked_verification() {
+        let root = std::env::temp_dir().join(format!("dev-lock-migration-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        std::fs::create_dir(&root).unwrap();
+        std::fs::write(root.join("package.don"), "package: { name: 'migration' }").unwrap();
+        let old = "version = 1\n[packages]\n";
+        std::fs::write(root.join("dev.lock"), old).unwrap();
+        install(&root, true, false).unwrap();
+        let lock: Lock = read(&root.join("package-lock.don")).unwrap();
+        assert_eq!(lock.version, 1);
+        assert!(lock.packages.is_empty());
+        assert_eq!(std::fs::read_to_string(root.join("dev.lock")).unwrap(), old);
+        // A malformed new lock must not silently fall back to the old one.
+        std::fs::write(root.join("package-lock.don"), "invalid:").unwrap();
+        assert!(install(&root, true, false).is_err());
+        for file in ["package.don", "dev.lock", "package-lock.don"] { std::fs::remove_file(root.join(file)).unwrap(); }
+        std::fs::remove_dir(root).unwrap();
+    }
+    #[test]
     fn tag_is_canonical_and_rev_remains_a_legacy_alias() {
         let current = serde_json::json!({"git":"https://github.com/example/math.git","tag":"v1.2.0"});
         let legacy = serde_json::json!({"git":"https://github.com/example/math.git","rev":"v1.2.0"});
@@ -132,6 +150,11 @@ fn locked_root(project: &Path, name: &str, item: &Locked) -> Result<PathBuf, Str
         }
     }
     Ok(project.join(&item.root))
+}
+fn lock_path(project: &Path) -> PathBuf {
+    let current = project.join("package-lock.don");
+    if current.exists() || !project.join("dev.lock").exists() { current }
+    else { project.join("dev.lock") }
 }
 fn read<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, String> {
     if path.extension().is_some_and(|ext| ext == "don") {
@@ -243,7 +266,7 @@ fn tree_hash_mode(root: &Path, include_lock: bool) -> Result<String, String> {
                     files(root, &path, result, include_lock)?;
                 }
             } else if ty.is_file()
-                && (include_lock || path.file_name().is_none_or(|name| name != "dev.lock"))
+                && (include_lock || path.file_name().is_none_or(|name| name != "package-lock.don" && name != "dev.lock"))
             {
                 result.push(path.strip_prefix(root).unwrap().to_owned());
             }
@@ -450,7 +473,7 @@ fn resolve(
     let sha256 = if locked {
         if let Some(old) = previous.filter(|old| old.source == *dep) {
             if !tree_matches(&path, &old.sha256)? {
-                return Err(format!("dependency {name} content changed from dev.lock"));
+                return Err(format!("dependency {name} content changed from package-lock.don"));
             }
             old.sha256.clone()
         } else {
@@ -471,13 +494,14 @@ fn resolve(
 }
 
 pub fn install(project: &Path, locked: bool, refresh: bool) -> Result<(), String> {
-    let previous: Lock = if project.join("dev.lock").exists() {
-        read(&project.join("dev.lock"))?
+    let old_path = lock_path(project);
+    let previous: Lock = if old_path.exists() {
+        read(&old_path)?
     } else {
         Lock::default()
     };
     if locked && previous.version != 1 {
-        return Err("--locked needs an existing version 1 dev.lock".into());
+        return Err("--locked needs an existing version 1 package-lock.don".into());
     }
     let mut result = Lock {
         version: 1,
@@ -516,7 +540,7 @@ pub fn install(project: &Path, locked: bool, refresh: bool) -> Result<(), String
                 continue;
             }
             if locked && previous.packages.get(&name).is_none_or(|p| p.source != dep) {
-                return Err(format!("dependency {name} differs from dev.lock"));
+                return Err(format!("dependency {name} differs from package-lock.don"));
             }
             let resolved = resolve(
                 project,
@@ -534,7 +558,7 @@ pub fn install(project: &Path, locked: bool, refresh: bool) -> Result<(), String
                     p
                 }) != Some(resolved.clone())
             {
-                return Err(format!("dependency {name} content changed from dev.lock"));
+                return Err(format!("dependency {name} content changed from package-lock.don"));
             }
             let dep_root = project.join(&resolved.root);
             pending.push((dep_root.clone(), manifest(&dep_root)?.dependencies));
@@ -547,23 +571,26 @@ pub fn install(project: &Path, locked: bool, refresh: bool) -> Result<(), String
     }
     if locked {
         if result != previous {
-            return Err("dependencies differ from dev.lock".into());
+            return Err("dependencies differ from package-lock.don".into());
         }
-        println!("dependencies verified against dev.lock");
+        if old_path.file_name().is_some_and(|n| n == "dev.lock") {
+            write(&project.join("package-lock.don"), &previous)?;
+        }
+        println!("dependencies verified against package-lock.don");
         Ok(())
     } else {
-        write(&project.join("dev.lock"), &result)
+        write(&project.join("package-lock.don"), &result)
     }
 }
 pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
     let m = manifest(project)?;
-    if m.dependencies.is_empty() && !project.join("dev.lock").exists() {
+    if m.dependencies.is_empty() && !lock_path(project).exists() {
         return Ok(Vec::new());
     }
     let lock: Lock =
-        read(&project.join("dev.lock")).map_err(|e| format!("{e}; run d pkg install"))?;
+        read(&lock_path(project)).map_err(|e| format!("{e}; run d pkg install"))?;
     if lock.version != 1 {
-        return Err("unsupported dev.lock version".into());
+        return Err("unsupported package-lock.don version".into());
     }
     let mut pending = vec![(project.to_owned(), m.dependencies)];
     let mut visited = BTreeSet::new();
@@ -634,7 +661,7 @@ pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
         }
     }
     if visited.len() != lock.packages.len() {
-        return Err("dev.lock contains stale dependencies; run d pkg install".into());
+        return Err("package-lock.don contains stale dependencies; run d pkg install".into());
     }
     for (name, item) in &lock.packages {
         let expected: BTreeSet<_> = std::iter::once(item.source.clone())
@@ -642,7 +669,7 @@ pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
             .collect();
         if declarations.get(name) != Some(&expected) {
             return Err(
-                "dev.lock contains stale dependency requirements; run d pkg install".into(),
+                "package-lock.don contains stale dependency requirements; run d pkg install".into(),
             );
         }
     }
@@ -682,7 +709,7 @@ pub fn new(path: &Path) -> Result<i32, String> {
     std::fs::write(path.join(".gitignore"), ".dev/\nout/\n").map_err(|e| e.to_string())?;
     std::fs::write(
         path.join(".gitattributes"),
-        "*.dev text eol=lf\n*.don text eol=lf\n*.toml text eol=lf\ndev.lock text eol=lf\n",
+        "*.dev text eol=lf\n*.don text eol=lf\n*.toml text eol=lf\npackage-lock.don text eol=lf\n",
     )
     .map_err(|e| e.to_string())?;
     println!("created {}", path.display());

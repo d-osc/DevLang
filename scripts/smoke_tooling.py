@@ -6,7 +6,6 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
-import tomllib
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -39,14 +38,14 @@ def main():
         command('build','--release','-o',root/'native.exe',cwd=app)
         assert subprocess.check_output([str(root/'native.exe')],text=True)=='42\n'
         assert 'math' in command('pkg','list',cwd=app).stdout
-        lock=tomllib.loads((app/'dev.lock').read_text())
+        lock=json.loads(subprocess.check_output([str(binary), "don", "to-json", str(app/'package-lock.don')], text=True, encoding="utf-8"))
         assert set(lock['packages'])=={'math','base'}
         (base/'src/lib.dev').write_text('fn number() i64 { return 43 }\n',encoding='utf-8')
         command('run',cwd=app,error='content changed')
         command('pkg','install',cwd=app)
         assert command('run',cwd=app).stdout=='43\n'
         command('pkg','remove','math',cwd=app)
-        assert not tomllib.loads((app/'dev.lock').read_text())['packages']
+        assert not json.loads(subprocess.check_output([str(binary), "don", "to-json", str(app/'package-lock.don')], text=True, encoding="utf-8"))['packages']
         # Local Git repository: no external network, HEAD pinning and explicit update.
         def git(*args):
             return subprocess.check_output(['git','-C',str(base),*args],text=True).strip()
@@ -58,17 +57,17 @@ def main():
         (base/'src/lib.dev').write_text('fn number() i64 { return 44 }\n',encoding='utf-8')
         git('add','.'); git('commit','-m','next')
         command('pkg','install',cwd=app)
-        assert tomllib.loads((app/'dev.lock').read_text())['packages']['base']['commit']==first
+        assert json.loads(subprocess.check_output([str(binary), "don", "to-json", str(app/'package-lock.don')], text=True, encoding="utf-8"))['packages']['base']['commit']==first
         assert command('run',cwd=app).stdout=='43\n'
-        first_lock=tomllib.loads((app/'dev.lock').read_text())['packages']['base']
+        first_lock=json.loads(subprocess.check_output([str(binary), "don", "to-json", str(app/'package-lock.don')], text=True, encoding="utf-8"))['packages']['base']
         (app/first_lock['root']).rename(root/'held-checkout')
-        old_lock=(app/'dev.lock').read_bytes()
+        old_lock=(app/'package-lock.don').read_bytes()
         command('pkg','install','--locked',cwd=app)
-        assert (app/'dev.lock').read_bytes()==old_lock
+        assert (app/'package-lock.don').read_bytes()==old_lock
         assert command('run',cwd=app).stdout=='43\n'
         command('pkg','update',cwd=app)
         assert command('run',cwd=app).stdout=='44\n'
-        locked=tomllib.loads((app/'dev.lock').read_text())['packages']['base']
+        locked=json.loads(subprocess.check_output([str(binary), "don", "to-json", str(app/'package-lock.don')], text=True, encoding="utf-8"))['packages']['base']
         checkout=app/locked['root']
         (checkout/'src/lib.dev').write_text('fn number() i64 { return 99 }\n')
         command('pkg','install','--locked',cwd=app,error='dependency changed')

@@ -74,7 +74,7 @@ def main():
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(REPO / path, target)
         for path in ('examples', 'skills/devlang', 'stdlib'):
-            ignored = ['.dev-cache', '__pycache__', '*.exe', '*.dll', '*.so', '*.a', '*.o']
+            ignored = ['.dev', '.dev-cache', 'dev.lock', 'package-lock.don', '__pycache__', '*.exe', '*.dll', '*.so', '*.a', '*.o']
             if path == 'stdlib':
                 ignored.append('lib')
             shutil.copytree(REPO / path, materials / path, dirs_exist_ok=True,
@@ -179,7 +179,7 @@ def main():
                 if item.get('project_root'):
                     project = Path(work) / 'project'
                     original = REPO / item['project_root']
-                    shutil.copytree(original, project, ignore=shutil.ignore_patterns('.dev', 'out', 'dev.lock'))
+                    shutil.copytree(original, project, ignore=shutil.ignore_patterns('.dev', 'out', 'dev.lock', 'package-lock.don'))
                     subprocess.run([launcher, '-C', str(project), 'pkg', 'install', '--workspace'],
                                    capture_output=True, check=True, timeout=30)
                     run_file = project / file.relative_to(original)

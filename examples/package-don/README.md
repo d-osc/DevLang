@@ -104,7 +104,7 @@ dependencies: {
 .\target\release\d.exe -C examples/package-don pkg update --workspace
 ```
 
-`pkg install` สร้าง `dev.lock` และ cache `.dev/packages` ของแต่ละ package ควร commit `dev.lock` และไม่ commit cache `install` ปกติคง Git commit ที่ lock ไว้; `update` เลือกใหม่; `install --locked` ต้องมี lock เดิมและตรวจเนื้อหา การเปลี่ยน source ของ path package ต้อง install ปกติอีกครั้งเพื่ออัปเดต hash
+`pkg install` สร้าง `package-lock.don` และ cache `.dev/packages` ของแต่ละ package ควร commit `package-lock.don` และไม่ commit cache `install` ปกติคง Git commit ที่ lock ไว้; `update` เลือกใหม่; `install --locked` ต้องมี lock เดิมและตรวจเนื้อหา การเปลี่ยน source ของ path package ต้อง install ปกติอีกครั้งเพื่ออัปเดต hash
 
 `pkg add`/`remove` อาจเขียน manifest ใหม่และไม่รักษา comments คำสั่งจัดรูปแบบที่รักษา comments และ references คือ:
 

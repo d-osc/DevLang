@@ -5,7 +5,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import tomllib
 
 d = Path(sys.argv[1]).resolve()
 base = Path(__file__).resolve().parent
@@ -32,7 +31,7 @@ with tempfile.TemporaryDirectory(prefix="dev-github-tag-") as temporary:
         command("pkg", "install", "--locked")
     command("pkg", "add", "math", "--git", lib.as_uri(), "--tag", "v1.2.0")
     assert command("run").strip() == "42"
-    lock = tomllib.loads((app / "dev.lock").read_text(encoding="utf-8"))
+    lock = json.loads(subprocess.check_output([str(d), "don", "to-json", str(app / "package-lock.don")], text=True, encoding="utf-8"))
     assert lock["packages"]["math"]["source"]["tag"] == "v1.2.0"
     assert "rev" not in lock["packages"]["math"]["source"]
     # A branch and tag with the same name must resolve to the branch.

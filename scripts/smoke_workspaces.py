@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
-import tomllib
 
 
 def main():
@@ -47,9 +46,9 @@ def main():
         (app/'src/main.dev').write_text('use "math/lib"\nfn main() { print(lib.value()) }\nmain()\n')
         assert all(name in command('pkg', 'workspace', cwd=app).stdout for name in ('app', 'math', 'base'))
         command('pkg', 'install', '--workspace', cwd=app)
-        previous = {at: (at/'dev.lock').read_bytes() for at in (workspace, app, math, base)}
+        previous = {at: (at/'package-lock.don').read_bytes() for at in (workspace, app, math, base)}
         command('pkg', 'install', '--workspace', '--locked', cwd=workspace)
-        assert all((at/'dev.lock').read_bytes() == value for at, value in previous.items())
+        assert all((at/'package-lock.don').read_bytes() == value for at, value in previous.items())
         no_cc = dict(os.environ, PATH='', DEV_CC='missing')
         for engine in ('auto', 'ast'):
             assert command('run', '--package', 'app', '--engine', engine, cwd=workspace, env=no_cc).stdout == '42\n'
@@ -62,7 +61,7 @@ def main():
         command('run', '--package', 'missing', cwd=workspace, error='not found')
         command('run', '--package', 'app', '--package', 'app', cwd=workspace, error='duplicate')
         # Dependency lock metadata must not create circular workspace hashes.
-        (base/'dev.lock').write_text('# extra lock comment\n' + previous[base].decode())
+        (base/'package-lock.don').write_text('# extra lock comment\n' + previous[base].decode())
         assert command('run', '--package', 'app', cwd=workspace).stdout == '42\n'
         (base/'src/lib.dev').write_text('fn value() i64 { return 43 }\n')
         command('run', '--package', 'app', cwd=workspace, error='content changed')
@@ -73,9 +72,9 @@ def main():
         command('pkg', 'add', 'base', '--workspace', '--version', '=9.0.0', cwd=app, error='does not satisfy')
         assert (app/'package.don').read_bytes() == original
         command('pkg', 'add', 'base', '--workspace', '--version', '^1', cwd=app)
-        combined_lock = (app/'dev.lock').read_bytes()
+        combined_lock = (app/'package-lock.don').read_bytes()
         command('pkg', 'install', '--locked', cwd=app)
-        assert (app/'dev.lock').read_bytes() == combined_lock
+        assert (app/'package-lock.don').read_bytes() == combined_lock
         assert command('run', cwd=app).stdout == '43\n'
         command('pkg', 'remove', 'base', cwd=app)
         original = (app/'package.don').read_bytes()
@@ -119,7 +118,7 @@ def main():
         package(consumer, 'consumer')
         (consumer/'src/main.dev').write_text('use "remote/lib"\nprint(lib.value())\n')
         command('pkg', 'add', 'remote', '--git', repo.as_uri(), '--version', '^1.0', cwd=consumer)
-        lock = lambda: tomllib.loads((consumer/'dev.lock').read_text())['packages']['remote']
+        lock = lambda: json.loads(subprocess.check_output([str(d), "don", "to-json", str(consumer/'package-lock.don')], text=True, encoding="utf-8"))['packages']['remote']
         assert lock()['resolved_version'] == '1.2.0' and lock()['commit'] == commits['1.2.0']
         assert command('run', cwd=consumer).stdout == '12\n'
         release('1.2.1', 121)
@@ -128,17 +127,17 @@ def main():
         command('pkg', 'update', cwd=consumer)
         assert lock()['resolved_version'] == '1.2.1'
         assert command('run', cwd=consumer).stdout == '121\n'
-        pinned = (consumer/'dev.lock').read_bytes()
+        pinned = (consumer/'package-lock.don').read_bytes()
         (consumer/lock()['root']).rename(root/'saved-checkout')
         command('pkg', 'install', '--locked', cwd=consumer)
-        assert (consumer/'dev.lock').read_bytes() == pinned
+        assert (consumer/'package-lock.don').read_bytes() == pinned
         for req, expected in [('=1.0.0', '1.0.0'), ('~1.2', '1.2.1'), ('>=1.0, <1.2', '1.0.0'), ('=1.3.0-beta.1', '1.3.0-beta.1'), ('*', '2.0.0')]:
             command('pkg', 'add', 'remote', '--git', repo.as_uri(), '--version', req, cwd=consumer)
             assert lock()['resolved_version'] == expected
         before = (consumer/'package.don').read_bytes()
-        before_lock = (consumer/'dev.lock').read_bytes()
+        before_lock = (consumer/'package-lock.don').read_bytes()
         command('pkg', 'add', 'remote', '--git', repo.as_uri(), '--version', '=9.0.0', cwd=consumer, error='no Git SemVer tag')
-        assert (consumer/'package.don').read_bytes() == before and (consumer/'dev.lock').read_bytes() == before_lock
+        assert (consumer/'package.don').read_bytes() == before and (consumer/'package-lock.don').read_bytes() == before_lock
         command('pkg', 'add', 'remote', '--git', repo.as_uri(), '--version', '^1', '--rev', 'HEAD', cwd=consumer, error='cannot be combined')
         command('pkg', 'add', 'remote', '--git', repo.as_uri(), '--version', '^1', '--version', '^2', cwd=consumer, error='duplicate')
         release('3.0.0', 30, 'v4.0.0')
@@ -150,8 +149,8 @@ def main():
         # Path version constraints use the package's manifest version.
         command('pkg', 'add', 'local', '--path', base, '--version', '=1.0.0', cwd=standalone)
         command('pkg', 'install', '--locked', cwd=standalone)
-        # Legacy v1 hashes included dev.lock. Preserve them on locked install.
-        legacy = tomllib.loads((standalone/'dev.lock').read_text())
+        # Legacy v1 hashes included package-lock.don. Preserve them on locked install.
+        legacy = json.loads(subprocess.check_output([str(d), "don", "to-json", str(standalone/'package-lock.don')], text=True, encoding="utf-8"))
         h = hashlib.sha256()
         files = sorted([f for f in base.rglob('*') if f.is_file()], key=lambda f: f.relative_to(base).as_posix())
         for file in files:
@@ -159,10 +158,10 @@ def main():
             content = file.read_bytes()
             h.update(len(name).to_bytes(8, 'little')); h.update(name)
             h.update(len(content).to_bytes(8, 'little')); h.update(content)
-        text = (standalone/'dev.lock').read_text().replace(legacy['packages']['local']['sha256'], h.hexdigest())
-        (standalone/'dev.lock').write_text(text)
+        text = (standalone/'package-lock.don').read_text().replace(legacy['packages']['local']['sha256'], h.hexdigest())
+        (standalone/'package-lock.don').write_text(text)
         command('pkg', 'install', '--locked', cwd=standalone)
-        assert (standalone/'dev.lock').read_text() == text
+        assert (standalone/'package-lock.don').read_text() == text
         command('--version')
     print(f'PASS: {count} workspace/SemVer commands; runtime, native, local Git tags, lock restoration and legacy hashes')
 

@@ -59,9 +59,9 @@ Credential-bearing HTTPS URLs are rejected; use Git's existing credential setup.
 Git dependencies are checked out in `.dev/packages/NAME-COMMIT`, without running
 package install/build scripts. Submodules and symlink packages are unsupported.
 
-Commit your manifest and `dev.lock`; ignore `.dev/` and `out/`. The versioned TOML
+Commit your manifest and `package-lock.don`; ignore `.dev/` and `out/`. The versioned DON
 lockfile records source declarations, pinned Git commits, module directories and
-SHA-256 hashes of package files (excluding .git/.dev/target/dist/out/node_modules and dev.lock files).
+SHA-256 hashes of package files (excluding .git/.dev/target/dist/out/node_modules and package-lock.don files).
 `pkg install` keeps existing matching Git commits pinned, resolves new sources,
 and accepts intentional local content changes. `pkg update` resolves requested
 Git refs again. `--locked` restores missing Git checkouts at the pinned commit

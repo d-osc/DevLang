@@ -45,7 +45,7 @@ d -C examples/workspace pkg install --workspace --locked
 
 `--package NAME` selects a member and changes the command's working directory before execution. It works with run/build/check/emit and tooling commands such as fmt/pkg/debug. Relative source paths, outputs and program file I/O therefore use that member directory. `--package` after the program argument separator `--` is passed to the program. The root's own package name may also be selected.
 
-`pkg workspace` lists members. `pkg add math --workspace [--version REQUIREMENT]` adds a member dependency; run it from the consumer or with `--package app`. Each member keeps its own `dev.lock` and `.dev/packages` cache. `pkg install --workspace` / `pkg update --workspace` process the root and every member in name order. `--locked` is available only for install and needs existing locks for all packages.
+`pkg workspace` lists members. `pkg add math --workspace [--version REQUIREMENT]` adds a member dependency; run it from the consumer or with `--package app`. Each member keeps its own `package-lock.don` and `.dev/packages` cache. `pkg install --workspace` / `pkg update --workspace` process the root and every member in name order. `--locked` is available only for install and needs existing locks for all packages.
 
 Members must be 1–128 explicit relative directories with no `..`, globs, repeated/overlapping paths, symlinks, duplicate package names, or nested member workspaces. The root package must have a different name from its members. Its entry may be unused when selecting members.
 
@@ -86,7 +86,7 @@ The URL above is a placeholder. Git version resolution enumerates repository tag
 
 Requirements follow [the semver crate syntax](https://docs.rs/semver/latest/semver/struct.VersionReq.html); they are not npm's full range syntax. `||`, space-separated comparator intersections and hyphen ranges are unsupported. Ordinary ranges/wildcards do not automatically opt into prereleases. Requirements are capped at 256 bytes.
 
-Local/workspace requirements validate the member's manifest version; they do not fetch another version. Git requirements select a tag during initial install or explicit `pkg update`. Regular install keeps a matching locked commit pinned. `--locked` restores the exact old commit and verifies its contents even if newer tags exist. `resolved_version` in dev.lock records the selected version. `tag` remains available for arbitrary Git refs but cannot be combined with a dependency version.
+Local/workspace requirements validate the member's manifest version; they do not fetch another version. Git requirements select a tag during initial install or explicit `pkg update`. Regular install keeps a matching locked commit pinned. `--locked` restores the exact old commit and verifies its contents even if newer tags exist. `resolved_version` in package-lock.don records the selected version. `tag` remains available for arbitrary Git refs but cannot be combined with a dependency version.
 
 Within one package graph, namespaces remain flat. Different version declarations for the same source can share an already selected version when it satisfies both requirements; all declarations are recorded in the lock. Different sources, incompatible constraints or a later constraint that excludes the selected version are rejected. There is no backtracking to a lower tag, multi-version namespace support, or npm-style global solver yet. Dependencies with and without version requirements for the same namespace are not merged.
 
@@ -94,6 +94,8 @@ Within one package graph, namespaces remain flat. Different version declarations
 
 ## Lock and content hashes
 
-New dependency hashes exclude `dev.lock` anywhere in the tree, alongside existing excluded build/cache directories. Locks describe resolution metadata, so changing a member lock does not invalidate every consumer or introduce a recursive workspace hash. Source files and manifests are still hashed by exact bytes. Older version-1 hashes that included lockfiles remain verifiable; locked installation preserves them. Ordinary install refreshes local hashes and migrates matching cached hashes to the new rule.
+The canonical lock is `package-lock.don`, serialized as DON. Old `dev.lock` TOML files remain readable. A successful install (including `--locked`) creates the new DON file when migrating from the legacy lock, preserving resolved commits and content checks. The old file is retained; when both exist the new name takes precedence. New hashes exclude both lock names.
+
+New dependency hashes exclude `package-lock.don` anywhere in the tree, alongside existing excluded build/cache directories. Locks describe resolution metadata, so changing a member lock does not invalidate every consumer or introduce a recursive workspace hash. Source files and manifests are still hashed by exact bytes. Older version-1 hashes that included lockfiles remain verifiable; locked installation preserves them. Ordinary install refreshes local hashes and migrates matching cached hashes to the new rule.
 
 See [the complete workspace example](../examples/workspace/README.md) and `scripts/smoke_workspaces.py` for runtime/native builds, local Git version tags, pinned restoration, legacy hashes and failed-add rollback.

@@ -140,7 +140,7 @@ d run
 `package.don` takes precedence when both it and legacy `dev.toml` exist.
 Legacy TOML manifests remain supported. Dependency projects can use either format.
 `d pkg add/remove` rewrites the manifest, so comments are not retained. Locking
-continues to use the existing **`dev.lock` in TOML**, not a new DON/JSON lock schema.
+uses **`package-lock.don` in DON**. Legacy `dev.lock` TOML files remain readable; successful install writes the new DON lock without deleting the old file. When both exist, `package-lock.don` takes precedence.
 This does not implement Node `package.json` fields such as scripts, imports,
 semver registries or automatic downloads beyond the existing path/Git package APIs.
 

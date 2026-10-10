@@ -11,7 +11,6 @@ import sys
 import tarfile
 import tempfile
 import threading
-import tomllib
 import zipfile
 
 d = Path(sys.argv[1]).resolve()
@@ -55,13 +54,13 @@ with tempfile.TemporaryDirectory(prefix='dev-archive-url-') as temporary:
             assert command('run').strip() == '42'
             assert command('run', '--engine', 'ast').strip() == '42'
             command('pkg', 'install', '--locked')
-            lock = tomllib.loads((app / 'dev.lock').read_text())
+            lock = json.loads(subprocess.check_output([str(d), "don", "to-json", str(app / 'package-lock.don')], text=True, encoding="utf-8"))
             cached = app / lock['packages']['math']['root']
             cached.rename(root / ('saved-' + extension))
             command('pkg', 'install', '--locked')
             command('pkg', 'update')
         command('pkg', 'add', 'math', '--url', dep['url'], '--sha256', dep['sha256'], '--version', '=1.2.0')
-        lock = tomllib.loads((app / 'dev.lock').read_text())
+        lock = json.loads(subprocess.check_output([str(d), "don", "to-json", str(app / 'package-lock.don')], text=True, encoding="utf-8"))
         cached = app / lock['packages']['math']['root']
         source_file = cached / 'src/lib.dev'
         original = source_file.read_bytes()
