@@ -18,6 +18,10 @@ pub struct Dependency {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub branch: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sha256: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub workspace: bool,
@@ -26,6 +30,7 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 include!("workspace.rs");
+include!("package_archives.rs");
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Package {
@@ -117,6 +122,13 @@ fn locked_root(project: &Path, name: &str, item: &Locked) -> Result<PathBuf, Str
         }
         if item.root != format!(".dev/packages/{name}-{commit}") {
             return Err("Git lock path must match its package and commit".into());
+        }
+    }
+    if item.source.url.is_some() {
+        let digest = item.source.sha256.as_deref().ok_or("archive lock needs sha256")?;
+        if digest.len() != 64 || !digest.bytes().all(|c| c.is_ascii_hexdigit())
+            || item.root != format!(".dev/packages/{name}-archive-{}", digest.to_lowercase()) {
+            return Err("invalid archive lock path".into());
         }
     }
     Ok(project.join(&item.root))
@@ -269,6 +281,8 @@ fn resolve(
     let mut selected_version = None;
     let (path, commit) = if dep.workspace {
         (workspace_dependency(parent, name)?, None)
+    } else if dep.url.is_some() {
+        (fetch_archive(project, name, dep, previous)?, None)
     } else {
         match (&dep.path, &dep.git) {
             (Some(p), None) if dep.rev.is_none() => (
@@ -422,7 +436,7 @@ fn resolve(
     if !path.join(&modules).is_dir() {
         return Err("dependency module directory does not exist".into());
     }
-    let stored = if dep.git.is_some() {
+    let stored = if dep.git.is_some() || dep.url.is_some() {
         path.strip_prefix(project)
             .map_err(|e| e.to_string())?
             .to_string_lossy()
@@ -699,9 +713,9 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             for (name,at) in workspace_members(&root)? { println!("{name} {}",at.display()); }
         }
         Some("add") => {
-            let name = args.get(1).ok_or("pkg add NAME --path DIR | --git URL [--tag TAG | --branch NAME]")?;
+            let name = args.get(1).ok_or("pkg add NAME --path DIR | --url URL --sha256 HEX | --git URL [--tag TAG | --branch NAME]")?;
             if !identifier(name) { return Err("invalid dependency name".into()); }
-            let mut dep = Dependency { path: None, git: None, rev: None, branch: None, version: None, workspace: false };
+            let mut dep = Dependency { path: None, git: None, rev: None, branch: None, url: None, sha256: None, version: None, workspace: false };
             let mut at = 2;
             let mut seen=BTreeSet::new();
             while at < args.len() {
@@ -709,7 +723,7 @@ pub fn command(args: &[String]) -> Result<i32, String> {
                 if !seen.insert(option.to_owned()) { return Err("duplicate dependency option".into()); }
                 if args[at] == "--workspace" { dep.workspace=true; at+=1; continue; }
                 let value = args.get(at + 1).ok_or("dependency option needs value")?.clone();
-                match args[at].as_str() { "--path" => { let absolute = dunce::canonicalize(&value).map_err(|e| e.to_string())?; dep.path = Some(pathdiff::diff_paths(&absolute,&project).unwrap_or(absolute).to_string_lossy().replace('\\', "/")); }, "--git" => dep.git = Some(value), "--tag" | "--rev" => dep.rev = Some(value), "--branch" => dep.branch = Some(value), "--version" => dep.version=Some(value), _ => return Err("unknown dependency option".into()) }
+                match args[at].as_str() { "--path" => { let absolute = dunce::canonicalize(&value).map_err(|e| e.to_string())?; dep.path = Some(pathdiff::diff_paths(&absolute,&project).unwrap_or(absolute).to_string_lossy().replace('\\', "/")); }, "--git" => dep.git = Some(value), "--tag" | "--rev" => dep.rev = Some(value), "--url" => dep.url = Some(value), "--sha256" => dep.sha256 = Some(value), "--branch" => dep.branch = Some(value), "--version" => dep.version=Some(value), _ => return Err("unknown dependency option".into()) }
                 at += 2;
             }
             validate_dependency(&dep)?;
@@ -717,7 +731,7 @@ pub fn command(args: &[String]) -> Result<i32, String> {
         }
         Some("remove") if args.len() == 2 => { let mut m = manifest(&project)?; m.dependencies.remove(&args[1]).ok_or("dependency does not exist")?; change_manifest(&project,&m)?; }
         Some("list") if args.len() == 1 => { for (name, dir) in mappings(&project)? { println!("{name} {}", dir.display()); } }
-        _ => return Err("pkg add NAME --path DIR | --git URL | --workspace [--tag TAG | --branch NAME | --version REQUIREMENT]; pkg install [--locked] [--workspace]; pkg update [--workspace]; pkg workspace; pkg remove NAME; pkg list".into()),
+        _ => return Err("pkg add NAME --path DIR | --url URL --sha256 HEX | --git URL | --workspace [--tag TAG | --branch NAME | --version REQUIREMENT]; pkg install [--locked] [--workspace]; pkg update [--workspace]; pkg workspace; pkg remove NAME; pkg list".into()),
     }
     Ok(0)
 }

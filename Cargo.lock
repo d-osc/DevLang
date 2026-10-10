@@ -299,13 +299,17 @@ dependencies = [
  "dev-lang",
  "dev-syntax",
  "dunce",
+ "flate2",
  "pathdiff",
  "semver",
  "serde",
  "serde_json",
  "sha2",
+ "tar",
  "toml 0.8.23",
+ "ureq",
  "url",
+ "zip",
 ]
 
 [[package]]

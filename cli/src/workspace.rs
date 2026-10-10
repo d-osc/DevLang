@@ -121,10 +121,18 @@ fn semver_tag(repo: &Path, req: &semver::VersionReq) -> Result<(String, semver::
     Ok(selected)
 }
 fn validate_dependency(dep: &Dependency) -> Result<(), String> {
-    if usize::from(dep.path.is_some()) + usize::from(dep.git.is_some()) + usize::from(dep.workspace)
+    if usize::from(dep.path.is_some()) + usize::from(dep.git.is_some()) + usize::from(dep.workspace) + usize::from(dep.url.is_some())
         != 1
     {
-        return Err("dependency needs exactly one of path, git or workspace".into());
+        return Err("dependency needs exactly one of path, git, url or workspace".into());
+    }
+    if dep.url.is_some() {
+        let digest = dep.sha256.as_deref().ok_or("url dependency requires sha256")?;
+        if digest.len() != 64 || !digest.bytes().all(|c| c.is_ascii_hexdigit()) {
+            return Err("archive sha256 must contain 64 hexadecimal characters".into());
+        }
+    } else if dep.sha256.is_some() {
+        return Err("sha256 is only supported for url dependencies".into());
     }
     if dep.rev.is_some() && (dep.git.is_none() || dep.version.is_some()) {
         return Err("tag is Git-only and cannot be combined with version".into());
@@ -161,6 +169,8 @@ fn compatible_source(
         || a.git != b.git
         || a.rev != b.rev
         || a.branch != b.branch
+        || a.url != b.url
+        || a.sha256 != b.sha256
         || a.workspace != b.workspace
         || a.version.is_none()
         || b.version.is_none()

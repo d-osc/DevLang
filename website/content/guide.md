@@ -1461,6 +1461,21 @@ Git จะเลือก tag สูงสุดที่ตรงเงื่�
 
 หากต้องการเลือก branch โดยตรง ใช้ `branch: 'main'` ใน Git dependency หรือ `d pkg add math --git URL --branch main` รองรับชื่อเช่น `feature/new-api` เลือก remote branch แม้มี tag ชื่อเดียวกัน `branch` ใช้พร้อม `tag` หรือ dependency `version` ไม่ได้ `install` ล็อก commit เดิม และ `pkg update` เลือก commit ล่าสุดของ branch
 
+Dependency จาก archive ใช้ `url: 'https://YOUR_HOST/math.zip'` และ `sha256: 'HASH_64_HEX_CHARACTERS'` รองรับ `.zip`, `.tar`, `.tar.gz`, `.tgz` และ HTTP(S)/file URLs ต้องเปลี่ยนเป็น URL และ checksum จริง `version` ใช้ตรวจ manifest ภายใน archive ได้ แต่ `tag`/`branch` ใช้กับ URL ไม่ได้
+
+```don
+package: { name: 'archive_app' }
+dependencies: {
+    math: {
+        url: 'https://YOUR_HOST/math-1.2.0.zip'
+        sha256: 'REPLACE_WITH_64_CHARACTER_SHA256'
+        version: '=1.2.0'
+    }
+}
+```
+
+CLI ใช้ `d pkg add math --url URL --sha256 HASH` ไฟล์ archive ต้องมี manifest ที่ root หรือ wrapper directory เดียว `install --locked` ตรวจเนื้อหา cache และกู้ไฟล์ที่ขาดจากดาวน์โหลดที่ checksum ตรงกันได้ ตัวอย่างรันจริงด้วย HTTP localhost อยู่ใน `examples/archive-url/verify.py`
+
 ยังเป็น namespace เดียว: constraints ที่ใช้ version ที่เลือกเดียวกันได้จะแชร์ package แต่ไม่มี backtracking หรือหลาย version ของชื่อเดียวกัน และยังไม่มี public registry/publish ถ้า add/remove ติดตั้งไม่สำเร็จจะคืน manifest เดิม การติดตั้ง `--workspace` ไม่เป็น transaction ทั้งกลุ่ม
 
 # [module-api-intro] คู่มือแต่ละ Module

@@ -125,7 +125,7 @@ main()
 DevLang manifest schema**, shown above: `package.name`, `package.entry`,
 `package.modules`, optional root `version` (string), and `dependencies`. Version
 is metadata and is checked against dependency `version` requirements when supplied.
-A dependency uses `path`, `git` with optional `tag`, `branch` or `version`, or `workspace: true`. Git selectors are mutually exclusive.
+A dependency uses `path`, `git` with optional `tag`, `branch` or `version`, `url` with required archive `sha256` and optional `version`, or `workspace: true`. Git selectors are mutually exclusive.
 See [workspaces and SemVer](packages.md) for the resolver contracts. Entry/modules paths must be relative without `..`; package
 names and dependency namespaces must be Dev identifiers.
 

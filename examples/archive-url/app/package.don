@@ -1,0 +1,9 @@
+// Template only. Replace URL and sha256 with your actual archive values.
+package: { name: 'archive_app' }
+dependencies: {
+    math: {
+        url: 'https://example.com/dev-math-1.2.0.zip'
+        sha256: 'REPLACE_WITH_64_CHARACTER_SHA256'
+        version: '=1.2.0'
+    }
+}
