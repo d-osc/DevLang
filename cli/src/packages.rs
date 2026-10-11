@@ -472,7 +472,7 @@ fn resolve_selected(
                 let cache = project.join(".dev/packages");
                 std::fs::create_dir_all(&cache).map_err(|e| e.to_string())?;
                 let temp = cache.join(format!(
-                    "{cache_name}-fetch-{}-{}",
+                    "fetch-{}-{}",
                     std::process::id(),
                     std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
@@ -491,6 +491,8 @@ fn resolve_selected(
                         "-c",
                         "core.autocrlf=false",
                         "clone",
+                        "-c",
+                        "core.longpaths=true",
                         "--no-checkout",
                         "--",
                         remote,
