@@ -4,14 +4,14 @@ Offline installers include `d`, the compiler, source runtime, standard library a
 
 ## Windows x86_64
 
-Download `devlang-setup-v0.5.0-windows-x86_64.exe`, double-click it, and click **Install**. Everything is embedded in this single file; no extraction or additional downloads are needed. Open a new terminal and run `d --help`. The default directory is `%LOCALAPPDATA%\Programs\DevLang`; the installer adds it to your user PATH and registers DevLang in Windows Installed apps. Windows 10/11 x86_64 with the built-in .NET Framework and Windows PowerShell is supported.
+Download `devlang-setup-v0.5.1-windows-x86_64.exe`, double-click it, and click **Install**. Everything is embedded in this single file; no extraction or additional downloads are needed. Open a new terminal and run `d --help`. The default directory is `%LOCALAPPDATA%\Programs\DevLang`; the installer adds it to your user PATH and registers DevLang in Windows Installed apps. Windows 10/11 x86_64 with the built-in .NET Framework and Windows PowerShell is supported.
 
 The ZIP installer remains available: extract all files and open `install.cmd`.
 
 Custom or unattended installation:
 
 ```powershell
-.\devlang-setup-v0.5.0-windows-x86_64.exe --silent --prefix "C:\Tools\DevLang" --log "install.log"
+.\devlang-setup-v0.5.1-windows-x86_64.exe --silent --prefix "C:\Tools\DevLang" --log "install.log"
 ```
 
 The EXE also accepts `--no-path` and `--no-registration`. For the ZIP installer:
@@ -33,7 +33,7 @@ For a custom location, pass the same `-Prefix` when uninstalling. Restart the te
 Requires Python 3.9+, glibc 2.39+ and libgcc. Download the `.py` installer and run:
 
 ```sh
-python3 devlang-setup-v0.5.0-linux-x86_64.py
+python3 devlang-setup-v0.5.1-linux-x86_64.py
 export PATH="$HOME/.local/bin:$PATH"
 d --help
 ```
@@ -53,6 +53,6 @@ These installers are not digitally signed.
 Build release installers from the repository's prepared `dist` packages:
 
 ```sh
-python scripts/build_installers.py --version v0.5.0
-python scripts/build_installers.py --version v0.5.0 --windows-exe
+python scripts/build_installers.py --version v0.5.1
+python scripts/build_installers.py --version v0.5.1 --windows-exe
 ```

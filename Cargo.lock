@@ -294,7 +294,7 @@ checksum = "4583a4551df46e2792f82ceeac45e850d2e2d5debba0b91f102385cda5b11f06"
 
 [[package]]
 name = "dev-cli"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "dev-lang",
  "dev-syntax",
@@ -314,14 +314,14 @@ dependencies = [
 
 [[package]]
 name = "dev-lang"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "dev-syntax",
 ]
 
 [[package]]
 name = "dev-runtime"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "aes-gcm",
  "base64",

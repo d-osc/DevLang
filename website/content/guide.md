@@ -53,7 +53,7 @@ d --eval 'print(40 + 2)'
 รัน offline installer ด้วย Python 3.9 ขึ้นไป ชุด binary Linux x86_64 ต้องการ glibc 2.39 ขึ้นไป
 
 ```sh
-python3 devlang-setup-v0.5.0-linux-x86_64.py
+python3 devlang-setup-v0.5.1-linux-x86_64.py
 export PATH="$HOME/.local/bin:$PATH"
 d --help
 ```
@@ -170,7 +170,7 @@ print(wide)
 
 Numeric types ไม่ผสมกันโดยอัตโนมัติ ใช้ `as` แปลงอย่างชัดเจน Literal ที่เกินช่วง type เป็น error การ cast จำนวนเต็มเป็นจำนวนเต็มยังใช้ wrapping ส่วน float เป็นจำนวนเต็มตัดทศนิยมเข้าหาศูนย์ และตรวจว่าผลอยู่ในช่วงชนิดปลายทาง `NaN`, `Infinity` และค่าที่เกินช่วงจะเป็น error `float-to-integer cast out of range` ทั้ง runtime สอง engine และ native build แบบ release การคำนวณจำนวนเต็มยังไม่ใช่การตรวจ overflow ทุกกรณี
 
-การตรวจ float cast นี้อยู่ใน source ล่าสุดหลัง v0.5.0; binary ของ release v0.5.0 ที่เผยแพร่แล้วไม่มีการแก้ไขนี้
+การตรวจ float cast นี้รวมอยู่ใน release v0.5.1
 
 # [operators] Operators และเงื่อนไข
 
@@ -823,7 +823,7 @@ Skill เน้น syntax จริง, explicit main invocation, การแ�
 
 `use "std/json"` ให้ source runtime อ่านและสร้าง JSON ได้โดยไม่ต้องใช้ C library รองรับ object, array, string, number, bool และ null รวมข้อมูลซ้อนกัน
 
-ใช้ชุดติดตั้ง v0.5.0 หรือ build ด้วย `cargo build --release -p dev-runtime -p dev-cli` Native compiler ยังไม่รองรับ module นี้
+ใช้ชุดติดตั้ง v0.5.1 หรือ build ด้วย `cargo build --release -p dev-runtime -p dev-cli` Native compiler ยังไม่รองรับ module นี้
 
 ## Object literal และ user.name
 
@@ -905,7 +905,7 @@ Unicode/escapes รองรับ UTF-8 และ surrogate pairs ตัวเ�
 
 # [tooling] เครื่องมือพัฒนา: packages, formatter, LSP และ debugger
 
-เครื่องมือเหล่านี้อยู่ในชุดติดตั้ง v0.5.0 หรือ build ด้วย `cargo build --release` และใช้ `d`, `devrun`, `devc` ที่ build ชุดเดียวกัน
+เครื่องมือเหล่านี้อยู่ในชุดติดตั้ง v0.5.1 หรือ build ด้วย `cargo build --release` และใช้ `d`, `devrun`, `devc` ที่ build ชุดเดียวกัน
 
 ## สร้าง project และจัดการ dependencies
 

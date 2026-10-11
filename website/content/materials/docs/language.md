@@ -52,7 +52,7 @@ destination integer type; NaN, infinity and out-of-range values produce
 in both source engines and optimized native builds. Integer-to-integer casts
 keep their existing wrapping behavior.
 The float-cast checks are available in current source builds; the published
-v0.5.0 binaries predate this change.
+Included in release v0.5.1.
 
 ```dev
 let x i32 = 42
@@ -350,8 +350,7 @@ fn main() {
 main()
 ```
 
-This runtime parity fix is available in current source; published v0.5.0 binaries
-predate it.
+This runtime parity fix is included in release v0.5.1.
 
 Raw pointers also support an explicit `as bool` inside `unsafe`: a null pointer
 becomes `false`, and any non-null address becomes `true`. This only checks the
@@ -363,7 +362,7 @@ fn has_address(p *i64) bool {
 }
 ```
 
-This pointer cast parity fix is available in current source, after v0.5.0.
+This pointer cast parity fix is included in release v0.5.1.
 
 ### Native string address casts
 
@@ -375,7 +374,7 @@ mutable pointer remain rejected, including inside `unsafe`.
 
 The source runtime owns its string values and does not implement string address
 casts, even inside `unsafe`; use the supported FFI string interface instead.
-These additional native safety checks are available in current source after v0.5.0.
+These additional native safety checks are included in release v0.5.1.
 
 ### Callback address casts
 
@@ -397,5 +396,4 @@ unsafe {
 
 The caller must keep the callback owner alive and preserve its actual C signature.
 A cast does not validate an address or make an incompatible signature callable.
-These callback cast checks and runtime conversions are available in current source
-after v0.5.0.
+These callback cast checks and runtime conversions are included in release v0.5.1.
