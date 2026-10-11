@@ -1,6 +1,6 @@
 //! In-memory numeric execution plan. No native backend, disk cache or JIT.
 //! Unsupported or ill-typed plans fall back to the ordinary AST interpreter.
-use crate::engine::{convert, wrap, Value};
+use crate::engine::{convert, float_to_integer, wrap, Value};
 use dev_syntax::ast::*;
 use std::{cell::RefCell, collections::HashMap};
 
@@ -370,7 +370,7 @@ impl Program {
                         numbers[*dst] = match to {
                             Kind::Int { .. } => Number::Int(to.normalize(match from {
                                 Kind::Int { .. } => numbers[*src].integer(),
-                                _ => value as i128,
+                                _ => float_to_integer(value, &self.types[*dst])?,
                             })),
                             Kind::Float { narrow } => Number::Float(if *narrow {
                                 match from {

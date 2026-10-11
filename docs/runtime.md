@@ -58,6 +58,9 @@ source filename. Time measures elapsed monotonic time since runtime startup.
 `print(value)` writes a line; string `+` concatenates. Fixed-width integer
 arithmetic wraps, division by zero and invalid shifts produce errors. Locals
 and parameters enforce declared types. Explicit numeric casts use `as`.
+Float-to-integer casts truncate toward zero and reject NaN, infinity and
+out-of-range truncated values, matching native execution. Integer casts retain
+wrapping behavior.
 Boolean operators short-circuit. Array indices are checked. Unexecuted code is
 not type-checked: use `devc check` for native programs, noting that runtime
 intrinsics and the native stdlib have different APIs.

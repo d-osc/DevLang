@@ -168,7 +168,9 @@ print(ratio)
 print(wide)
 ```
 
-Numeric types ไม่ผสมกันโดยอัตโนมัติ ใช้ `as` แปลงอย่างชัดเจน Literal ที่เกินช่วง type เป็น error การ cast ลดความกว้างอาจตัดค่าตามกฎ backend อย่าสมมติว่าจะตรวจ overflow ทุกกรณี
+Numeric types ไม่ผสมกันโดยอัตโนมัติ ใช้ `as` แปลงอย่างชัดเจน Literal ที่เกินช่วง type เป็น error การ cast จำนวนเต็มเป็นจำนวนเต็มยังใช้ wrapping ส่วน float เป็นจำนวนเต็มตัดทศนิยมเข้าหาศูนย์ และตรวจว่าผลอยู่ในช่วงชนิดปลายทาง `NaN`, `Infinity` และค่าที่เกินช่วงจะเป็น error `float-to-integer cast out of range` ทั้ง runtime สอง engine และ native build แบบ release การคำนวณจำนวนเต็มยังไม่ใช่การตรวจ overflow ทุกกรณี
+
+การตรวจ float cast นี้อยู่ใน source ล่าสุดหลัง v0.5.0; binary ของ release v0.5.0 ที่เผยแพร่แล้วไม่มีการแก้ไขนี้
 
 # [operators] Operators และเงื่อนไข
 

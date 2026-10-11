@@ -46,6 +46,14 @@ Without context, integer literals use `i64` and floating literals use `f64`. A t
 
 Numeric types do not implicitly mix. Use `as` for an explicit conversion:
 
+Float-to-integer casts truncate toward zero. The truncated value must fit the
+destination integer type; NaN, infinity and out-of-range values produce
+`float-to-integer cast out of range` with a source location. These checks apply
+in both source engines and optimized native builds. Integer-to-integer casts
+keep their existing wrapping behavior.
+The float-cast checks are available in current source builds; the published
+v0.5.0 binaries predate this change.
+
 ```dev
 let x i32 = 42
 let wide = x as i64

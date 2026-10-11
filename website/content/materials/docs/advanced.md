@@ -16,6 +16,9 @@ Fixed arrays, Vec, slices and string indexing check bounds in both modes.
 Integer division/remainder check zero; shifts check the count. Floating division
 keeps IEEE behavior. Signed minimum divided by -1 wraps to the minimum; its
 remainder is zero. Checks stay active in optimized native builds.
+Float-to-integer casts truncate toward zero and reject NaN, infinity and a
+truncated result outside the destination range. This includes the numeric
+execution plan used by the automatic source engine.
 
 Native raw dereference and volatile access check null/alignment; runtime foreign
 access also checks address overflow. Neither engine can establish the allocation

@@ -145,6 +145,21 @@ pub(crate) fn wrap(n: i128, t: &Type) -> i128 {
         n
     }
 }
+pub(crate) fn float_to_integer(n: f64, t: &Type) -> Result<i128, String> {
+    let (bits, signed) = match t {
+        Type::Int { bits, signed } => (*bits as u32, *signed),
+        Type::Size { signed } => (usize::BITS, *signed),
+        _ => unreachable!("integer cast destination"),
+    };
+    let upper = 2_f64.powi(if signed { bits - 1 } else { bits } as i32);
+    let lower = if signed { -upper } else { 0.0 };
+    let value = n.trunc();
+    if !value.is_finite() || value < lower || value >= upper {
+        return Err("float-to-integer cast out of range".into());
+    }
+    Ok(value as i128)
+}
+
 pub(crate) fn convert(v: Value, t: &Type, explicit: bool) -> Result<Value, String> {
     if &v.ty() == t {
         return Ok(v);
@@ -178,7 +193,7 @@ pub(crate) fn convert(v: Value, t: &Type, explicit: bool) -> Result<Value, Strin
                 ))
             }
             (Value::Float(n, _), t) if t.integer() => {
-                return Ok(Value::Int(wrap(*n as i128, t), t.clone()))
+                return Ok(Value::Int(float_to_integer(*n, t)?, t.clone()))
             }
             (Value::Float(n, _), Type::Float(bits)) => {
                 return Ok(Value::Float(

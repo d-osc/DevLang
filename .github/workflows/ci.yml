@@ -32,6 +32,8 @@ jobs:
         run: cargo build --workspace --release --locked
       - name: Rust tests
         run: cargo test --workspace --locked
+      - name: Numeric cast parity and safety
+        run: python scripts/smoke_numeric_casts.py --bin-dir target/release
       - name: Build native standard library
         run: python stdlib/build.py
       - name: Resolve executable paths

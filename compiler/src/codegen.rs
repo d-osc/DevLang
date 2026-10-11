@@ -1537,7 +1537,12 @@ impl Emitter<'_> {
                         "str is read-only; use a writable byte array for mutable memory",
                     );
                 }
-                (format!("(({})({}))", c_type(ty), v.code), ty.clone())
+                if matches!(v.ty, Type::Float(_)) && ty.integer() {
+                    self.uses_checks = true;
+                    (format!("dev_checked_float_cast_{}({}, {})", ty.name(), v.code, self.location(expr.span)), ty.clone())
+                } else {
+                    (format!("(({})({}))", c_type(ty), v.code), ty.clone())
+                }
             }
             ExprKind::Index(inner, index) => {
                 let v = self.expr(inner, None)?;
@@ -1990,6 +1995,20 @@ fn checked_helpers(hosted: bool) -> String {
     }
     out.push_str("static size_t dev_checked_index(uint64_t i,size_t n,const char *p,size_t l,size_t c) { if(i>=n) dev_checked_fail(p,l,c,\"array index out of bounds\"); return (size_t)i; }\nstatic uint8_t dev_checked_byte(const char *s,uint64_t i,const char *p,size_t l,size_t c) { if(!s || i>=strlen(s)) dev_checked_fail(p,l,c,\"string index out of bounds\"); return (uint8_t)s[i]; }\n");
     out.push_str("static void *dev_checked_pointer(uintptr_t v,size_t a,const char *p,size_t l,size_t c) { if(!v)dev_checked_fail(p,l,c,\"null pointer dereference\");if(v%a)dev_checked_fail(p,l,c,\"misaligned native pointer\");return (void *)v; }\n");
+    // Check the representable domain before C's float-to-integer conversion.
+    // Fractional values truncate toward zero, including -0.5 -> unsigned zero.
+    // Comparisons also reject NaN/infinity without a hosted math dependency.
+    for signed in [false, true] {
+        for bits in [8, 16, 32, 64, 0] {
+            let ty = if bits == 0 { Type::Size { signed } } else { Type::Int { bits, signed } };
+            let max = if bits == 0 {
+                if signed { "INTPTR_MAX".into() } else { "UINTPTR_MAX".into() }
+            } else { format!("{}INT{bits}_MAX", if signed { "" } else { "U" }) };
+            let upper = format!("((double){max}+1.0)");
+            let lower = if signed { format!("(-{upper})") } else { "0.0".into() };
+            out.push_str(&format!("static {} dev_checked_float_cast_{}(double a,const char *p,size_t l,size_t c) {{ if(!(a<{upper} && (a>={lower} || a>({lower}-1.0)))) dev_checked_fail(p,l,c,\"float-to-integer cast out of range\"); return ({})a; }}\n",c_type(&ty),ty.name(),c_type(&ty)));
+        }
+    }
     for signed in [false, true] {
         for bits in [8, 16, 32, 64] {
             let ty = Type::Int { bits, signed };
