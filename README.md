@@ -3,7 +3,7 @@
 Source ล่าสุดมี `d new`, package manager แบบ path/Git (`d pkg`), formatter
 (`d fmt`), language server (`d lsp`) และ native debugger (`d debug`) แล้ว
 ดู [เครื่องมือพัฒนา](docs/tooling.md) และ [VS Code extension](editors/vscode/README.md)
-ต้อง build จาก source; ตัวติดตั้ง v0.4.0 เดิมยังไม่มีเครื่องมือเหล่านี้
+ใช้ชุดติดตั้ง v0.5.0 หรือ build จาก source ล่าสุด
 
 ตัวติดตั้ง offline สำหรับ Windows/Linux และวิธีถอนการติดตั้ง: [คู่มือติดตั้ง](docs/install.md)
 
@@ -21,8 +21,7 @@ Runtime เพิ่ม [Result, timers และ child_process](docs/control-li
 
 Source runtime ล่าสุดรองรับ `use "std/json"`: parse/stringify, objects/arrays,
 typed access และแปลง struct/Map/Vec เป็น JSON ดู [JSON API](docs/json.md)
-และ [ตัวอย่าง](examples/json/main.dev) ต้อง build runtime จาก source ล่าสุด
-เพราะตัวติดตั้ง v0.4.0 เดิมยังไม่รวม API นี้
+และ [ตัวอย่าง](examples/json/main.dev) ใช้ runtime จากชุดติดตั้ง v0.5.0 หรือ build จาก source ล่าสุด
 
 ใช้คำสั่ง `d` ได้จาก bundle ใน `dist/d/<platform>/` หรือ `target/release/` หลัง `cargo build --release`:
 

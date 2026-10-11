@@ -264,7 +264,7 @@ def main():
     shutil.copy2(REPO / 'skills/devlang/SKILL.md', dist / 'SKILL.md')
     llms = '# DevLang\n\n> Source interpreter and native compiler with explicit main invocation.\n\n## AI skill\n\n- [Skill](SKILL.md): essential coding and validation rules.\n- [Skill bundle](downloads/devlang-skill.zip): self-contained references and verification helper.\n\n## Documentation\n\n' + '\n'.join(f'- [{page["title"]}](markdown/{page["id"]}.md): {page["group"]}' for page in raw)
     (dist / 'llms.txt').write_text(llms + '\n', encoding='utf-8')
-    content = dict(version='v0.4.0', documents=documents, examples=examples, groups=list(GROUPS) + ['Module API', 'Reference · EN'])
+    content = dict(version='v0.5.0', documents=documents, examples=examples, groups=list(GROUPS) + ['Module API', 'Reference · EN'])
     (dist / 'content.json').write_text(json.dumps(content, ensure_ascii=False), encoding='utf-8')
     print(f'Built {len(documents)} articles and {len(examples)} executable examples -> {dist}')
 

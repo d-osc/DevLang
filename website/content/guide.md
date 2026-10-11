@@ -53,7 +53,7 @@ d --eval 'print(40 + 2)'
 รัน offline installer ด้วย Python 3.9 ขึ้นไป ชุด binary Linux x86_64 ต้องการ glibc 2.39 ขึ้นไป
 
 ```sh
-python3 devlang-setup-v0.4.0-linux-x86_64.py
+python3 devlang-setup-v0.5.0-linux-x86_64.py
 export PATH="$HOME/.local/bin:$PATH"
 d --help
 ```
@@ -821,7 +821,7 @@ Skill เน้น syntax จริง, explicit main invocation, การแ�
 
 `use "std/json"` ให้ source runtime อ่านและสร้าง JSON ได้โดยไม่ต้องใช้ C library รองรับ object, array, string, number, bool และ null รวมข้อมูลซ้อนกัน
 
-**API ใหม่จาก source ล่าสุด**: ต้อง build ด้วย `cargo build --release -p dev-runtime -p dev-cli` ตัวติดตั้ง v0.4.0 เดิมยังไม่มี API นี้ Native compiler ยังไม่รองรับ module นี้
+ใช้ชุดติดตั้ง v0.5.0 หรือ build ด้วย `cargo build --release -p dev-runtime -p dev-cli` Native compiler ยังไม่รองรับ module นี้
 
 ## Object literal และ user.name
 
@@ -903,7 +903,7 @@ Unicode/escapes รองรับ UTF-8 และ surrogate pairs ตัวเ�
 
 # [tooling] เครื่องมือพัฒนา: packages, formatter, LSP และ debugger
 
-เครื่องมือเหล่านี้อยู่ใน source ล่าสุด ต้อง `cargo build --release` และใช้ `d`, `devrun`, `devc` ที่ build ชุดเดียวกัน ตัวติดตั้ง v0.4.0 เดิมยังไม่มี
+เครื่องมือเหล่านี้อยู่ในชุดติดตั้ง v0.5.0 หรือ build ด้วย `cargo build --release` และใช้ `d`, `devrun`, `devc` ที่ build ชุดเดียวกัน
 
 ## สร้าง project และจัดการ dependencies
 
