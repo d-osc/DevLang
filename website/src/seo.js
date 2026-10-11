@@ -14,8 +14,6 @@
       const parameters = new URLSearchParams(query);
       const language = new URL(location.href).searchParams.get('lang');
       if (language === 'en' || language === 'th') parameters.set('lang', language);
-      const section = parameters.get('section');
-      if (section) { parameters.delete('section'); destination.hash = section; }
       destination.search = parameters.toString();
       link.href = destination.href;
     });
