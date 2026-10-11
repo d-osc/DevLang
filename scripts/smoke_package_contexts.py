@@ -6,7 +6,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--d', required=True)
 d = Path(parser.parse_args().d).resolve()
 checks = 0
-with tempfile.TemporaryDirectory(prefix='dev peer contexts ') as tmp:
+with tempfile.TemporaryDirectory(prefix='dev peer contexts '+('long_'*8 if os.name == 'nt' else '')) as tmp:
     root = Path(tmp)
     env = {**os.environ, 'DEVLANG_HOME': str(root/'home'), 'DEVLANG_NO_PATH_UPDATE': '1', 'GIT_CONFIG_GLOBAL': str(root/'gitconfig'), 'GIT_CONFIG_NOSYSTEM': '1'}
     # Do not inherit a developer's long-path setting and hide Windows regressions.
