@@ -365,11 +365,14 @@ impl Program {
                         let value = match from {
                             Kind::Int { .. } => numbers[*src].integer() as f64,
                             Kind::Float { .. } => numbers[*src].float(),
-                            Kind::Bool => unreachable!(),
+                            Kind::Bool => {
+                                if numbers[*src].boolean() { 1.0 } else { 0.0 }
+                            },
                         };
                         numbers[*dst] = match to {
                             Kind::Int { .. } => Number::Int(to.normalize(match from {
                                 Kind::Int { .. } => numbers[*src].integer(),
+                                Kind::Bool => i128::from(numbers[*src].boolean()),
                                 _ => float_to_integer(value, &self.types[*dst])?,
                             })),
                             Kind::Float { narrow } => Number::Float(if *narrow {
@@ -380,7 +383,10 @@ impl Program {
                             } else {
                                 value
                             }),
-                            Kind::Bool => unreachable!(),
+                            Kind::Bool => Number::Bool(match from {
+                                Kind::Int { .. } => numbers[*src].integer() != 0,
+                                _ => value != 0.0,
+                            }),
                         };
                     }
                     Instruction::Array { dst, items } => {
@@ -747,7 +753,9 @@ impl Builder<'_> {
                 if from == *to {
                     src
                 } else {
-                    if !from.numeric() || !to.numeric() {
+                    if !(from.numeric() || from == Type::Bool)
+                        || !(to.numeric() || *to == Type::Bool)
+                    {
                         return None;
                     }
                     let dst = self.slot(to.clone(), Number::Void);

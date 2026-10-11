@@ -333,3 +333,22 @@ See `examples/features/main.dev` and run
 `python scripts/smoke_features.py --bin-dir target/release` for both execution paths.
 
 `ContextCallback<fn(T) R>` provides a managed C callback/userdata pair; `callback_context(f)` creates it. `then(task, next)` schedules a task continuation without waiting in the caller. See [advanced features](advanced.md) for ABI, lifetime and thread limits.
+
+### Explicit boolean casts
+
+Use `as` to convert explicitly between `bool` and numeric types. `false` becomes
+`0`, and `true` becomes `1`. Numeric zero (including `-0.0`) becomes `false`;
+other values, including floating-point NaN and infinity, become `true`.
+Conditions still require `bool`; numeric values are not converted implicitly.
+
+```dev
+fn main() {
+    let enabled = 3 as bool
+    let count = enabled as i64
+    if enabled { print(count) }
+}
+main()
+```
+
+This runtime parity fix is available in current source; published v0.5.0 binaries
+predate it.

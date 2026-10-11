@@ -171,6 +171,14 @@ pub(crate) fn convert(v: Value, t: &Type, explicit: bool) -> Result<Value, Strin
             return Err("payload enums cannot be cast to integers".into());
         }
         match (&v, t) {
+            (Value::Bool(n), t) if t.integer() => {
+                return Ok(Value::Int(i128::from(*n), t.clone()))
+            }
+            (Value::Bool(n), Type::Float(_)) => {
+                return Ok(Value::Float(if *n { 1.0 } else { 0.0 }, t.clone()))
+            }
+            (Value::Int(n, _), Type::Bool) => return Ok(Value::Bool(*n != 0)),
+            (Value::Float(n, _), Type::Bool) => return Ok(Value::Bool(*n != 0.0)),
             (Value::Enum(n, Type::Enum(_, vs), _), t)
                 if t.integer() && vs.iter().all(|(_, ts)| ts.is_empty()) =>
             {

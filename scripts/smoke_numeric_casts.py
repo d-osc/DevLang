@@ -1,4 +1,4 @@
-"""Exercise float cast boundaries in both interpreters and optimized native code."""
+"""Exercise boolean conversions and float cast boundaries in both interpreters and optimized native code."""
 import argparse
 import os
 from pathlib import Path
@@ -18,7 +18,8 @@ def main():
 
         def check(target, expression, expected=None, floating='f64'):
             nonlocal cases
-            code = f'fn cast(n {floating}) {target} {{ return n as {target} }}\nlet zero {floating}=0.0\nprint(cast({expression}))\n'
+            zero_type = floating if floating in ('f32', 'f64') else 'f64'
+            code = f'fn cast(n {floating}) {target} {{ return n as {target} }}\nlet zero {zero_type}=0.0\nprint(cast({expression}))\n'
             source.write_text(code, encoding='utf-8')
             for mode in ('auto', 'ast', 'native'):
                 command = ([str(folder / ('devc' + ext)), 'run', str(source), '--release', '-o', str(root / ('program' + ext))]
@@ -29,6 +30,16 @@ def main():
                 else:
                     assert result.returncode == 0 and result.stdout == expected + '\n', (mode, code, result.stdout, result.stderr)
             cases += 1
+
+        for target in ('i8', 'u8', 'i16', 'u16', 'i32', 'u32', 'i64', 'u64', 'isize', 'usize', 'f32', 'f64'):
+            check(target, 'false', '0', 'bool')
+            check(target, 'true', '1', 'bool')
+        for source_type in ('i8', 'u8', 'i16', 'u16', 'i32', 'u32', 'i64', 'u64', 'isize', 'usize'):
+            check('bool', '0', 'false', source_type)
+            check('bool', '1', 'true', source_type)
+        for source_type in ('f32', 'f64'):
+            for expression, expected in (('0.0', 'false'), ('-0.0', 'false'), ('-0.5', 'true'), ('zero/zero', 'true'), ('1.0/zero', 'true')):
+                check('bool', expression, expected, source_type)
 
         for target in ('i8', 'u8', 'i16', 'u16', 'i32', 'u32', 'i64', 'u64', 'isize', 'usize'):
             for floating in ('f32', 'f64'):
