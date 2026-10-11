@@ -1,0 +1,9 @@
+use "../src/lib.dev" as math
+
+fn main() {
+    if math.add(19, 23) != 42 {
+        return 1
+    }
+    return 0
+}
+return main()

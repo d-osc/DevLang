@@ -10,8 +10,13 @@ on:
       - 'skills/devlang/**'
       - 'cli/README.md'
       - 'scripts/build_module_docs.py'
+      - 'scripts/build_package_store.py'
+      - 'templates/devlang-package/**'
+      - 'cli/src/**'
       - 'syntax/src/*intrinsics.rs'
       - '.github/workflows/pages.yml'
+  schedule:
+    - cron: '17 */6 * * *'
   workflow_dispatch:
 
 permissions:
@@ -31,6 +36,12 @@ jobs:
           python-version: '3.12'
       - name: Install website dependencies
         run: python -m pip install --target website/.build-deps -r website/requirements.txt
+      - name: Build manifest inspector
+        run: cargo build --release -p dev-cli --locked
+      - name: Discover and validate GitHub packages
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/build_package_store.py --d target/release/d
       - name: Build documentation with validated example snapshots
         run: python website/build.py --skip-validation
       - name: Check per-module signatures and API contracts

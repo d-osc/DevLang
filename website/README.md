@@ -48,3 +48,7 @@ root and include imports/C dependencies; the native stdlib example also includes
 its buildable source. Every example page lists the exact validation mode.
 
 Per-module API pages are registered by content/module-docs.json. Rebuild/check them with python scripts/build_module_docs.py [--check] [--d target/release/d.exe] from the repository root. Each module links to its independently validated example.
+
+## Package Store
+
+The `#/packages` route reads static `packages.json`. Generate it with `python scripts/build_package_store.py --d PATH_TO_D`, then build normally. GitHub Pages generates a fresh catalog on deploy and every six hours using the workflow token; browser clients receive no token. See [the repository contract](../docs/package-store.md). Template downloads are bundled from `templates/devlang-package`. Empty catalogs intentionally show a contribution guide, not fictional packages.

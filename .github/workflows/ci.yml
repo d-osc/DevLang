@@ -44,6 +44,10 @@ jobs:
               output.write('DEVLANG_TEST_D=' + str(executable.resolve()) + '\n')
       - name: Package examples and dependency regressions
         run: python scripts/verify_package_examples.py --d "${{ env.DEVLANG_TEST_D }}"
+      - name: Package Store validation and template
+        run: python scripts/smoke_package_store.py --d "${{ env.DEVLANG_TEST_D }}"
+      - name: Package Store UI regressions
+        run: node scripts/smoke_package_store_ui.cjs
       - name: Workspace and version resolution
         run: python scripts/smoke_workspaces.py --bin-dir target/release
       - name: Formatter and language server integration

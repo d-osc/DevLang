@@ -24,6 +24,7 @@ const HELP: &str = "Dev Lang
   d pkg add NAME --peer --version REQ     Require a consumer-provided version
   d pkg add NAME --registry URL           Resolve a static registry package
   d pkg search --registry URL [QUERY]     List registry package versions
+  d pkg inspect --json                   Validate manifest without installing
   d pkg publish --registry DIRECTORY     Publish into a local static registry
   d pkg add|install|update|remove|list|workspace  Manage path/Git/workspace dependencies
   d don check|fmt|fmt-source|to-json|from-json FILE   Validate or convert data (output to stdout)

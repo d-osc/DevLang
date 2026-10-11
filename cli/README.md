@@ -77,3 +77,7 @@ Static registries use `index.don` plus checksum-verified archives. Create one wi
 `d pkg add NAME --registry INDEX_URL --version REQUIREMENT [--dev]`. The manifest
 stores the selected exact version and archive checksum; repeat `pkg add` to select
 a newer registry release. See [the registry example](../examples/registry/README.md).
+
+### GitHub Package Store
+
+`d pkg inspect --json` validates the current manifest without installing or running dependencies. See [repository conventions and store discovery](../docs/package-store.md). The store indexes public `devlang-package` repositories with root `package.don` manifests and matching SemVer Git tags.

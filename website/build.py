@@ -23,6 +23,7 @@ GROUPS = {
     'ระบบและ interoperability': ['module-api-intro', 'tasks', 'sync', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'don-editor', 'fs-http', 'node-core', 'limitations', 'ai'],
 }
 REFERENCES = {
+    'package-store': ('GitHub Package Store', 'docs/package-store.md'),
     'packages-reference': ('Workspaces and dependency versions', 'docs/packages.md'),
     'sync-reference': ('Shared channels, mutexes and cancellation', 'docs/sync.md'),
     'control-libs-reference': ('Errors, timers and child processes', 'docs/control-libs.md'),
@@ -73,7 +74,7 @@ def main():
             target = materials / path
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(REPO / path, target)
-        for path in ('examples', 'skills/devlang', 'stdlib'):
+        for path in ('examples', 'skills/devlang', 'stdlib', 'templates/devlang-package'):
             ignored = ['.dev', '.dev-cache', 'dev.lock', 'package-lock.don', '__pycache__', '*.exe', '*.dll', '*.so', '*.a', '*.o']
             if path == 'stdlib':
                 ignored.append('lib')
@@ -83,8 +84,12 @@ def main():
         REPO = materials
     dist = HERE / 'dist'
     dist.mkdir(exist_ok=True)
-    for name in ('index.html', 'style.css', 'app.js', 'logo.svg'):
+    for name in ('index.html', 'style.css', 'app.js', 'packages.js', 'logo.svg'):
         shutil.copy2(HERE / 'src' / name, dist / name)
+    catalog = json.loads((HERE / 'content/packages.json').read_text(encoding='utf-8'))
+    if catalog.get('schema_version') != 1 or not isinstance(catalog.get('packages'), list):
+        raise ValueError('Invalid package store catalog')
+    shutil.copy2(HERE / 'content/packages.json', dist / 'packages.json')
     guide = (HERE / 'content/guide.md').read_text(encoding='utf-8')
     chunks = re.split(r'^# \[([^\]]+)\] (.+)\n', guide, flags=re.M)
     raw = []
@@ -210,6 +215,7 @@ def main():
         captured_file.write_text(json.dumps(captured, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     downloads = dist / 'downloads'
     downloads.mkdir(exist_ok=True)
+    bundle(REPO / 'templates/devlang-package', downloads / 'devlang-package-template.zip', 'devlang-package')
     bundle(REPO / 'skills/devlang', downloads / 'devlang-skill.zip', 'devlang')
     bundle(REPO / 'examples', downloads / 'devlang-examples.zip', 'examples')
     bundle(REPO / 'docs/modules', downloads / 'devlang-module-api.zip', 'modules')

@@ -771,6 +771,15 @@ pub fn command(args: &[String]) -> Result<i32, String> {
     let project = root(&std::env::current_dir().map_err(|e| e.to_string())?)
         .ok_or("no package.don or dev.toml; use d new NAME")?;
     match args.first().map(String::as_str) {
+        Some("inspect") if args.len() == 1 || args.len() == 2 && args[1] == "--json" => {
+            let m = manifest(&project)?;
+            for (name, dep) in root_dependencies(&m, false)? {
+                if !identifier(&name) { return Err(format!("invalid dependency namespace {name}")); }
+                validate_dependency(&dep)?;
+            }
+            if let Some(version) = &m.version { semver::Version::parse(version.strip_prefix('v').unwrap_or(version)).map_err(|e| format!("invalid package version: {e}"))?; }
+            println!("{}", serde_json::to_string_pretty(&m).map_err(|e| e.to_string())?);
+        }
         Some("publish") => publish_package(&project, args)?,
         Some("install") | Some("update") => {
             let mut locked=false; let mut all=false; let mut production=false; let mut global=false;

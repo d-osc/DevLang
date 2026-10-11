@@ -1,0 +1,27 @@
+name: Package Store repository
+description: Report a DevLang package repository or an indexing problem.
+title: "[Package Store] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The Store discovers public, active repositories with topic `devlang-package`. Put `package.don` at level 0 and use matching SemVer tags. Submitting this form does not guarantee inclusion or a safety review.
+  - type: input
+    id: repository
+    attributes:
+      label: GitHub repository URL
+      placeholder: https://github.com/owner/repository
+    validations:
+      required: true
+  - type: input
+    id: tag
+    attributes:
+      label: Release tag
+      placeholder: v1.0.0
+  - type: textarea
+    id: details
+    attributes:
+      label: Package description or indexing problem
+    validations:
+      required: true

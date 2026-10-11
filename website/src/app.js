@@ -81,9 +81,11 @@ function render() {
   const [path, query] = route.split('?'), parts = path.split('/').filter(Boolean);
   document.title = 'DevLang — เขียนให้น้อย ทำให้ได้มาก';
   const page = parts[0];
-  $('#content').innerHTML = page === 'docs' ? docs(parts[1] || 'intro') : page === 'examples' ? (parts[1] ? example(parts[1]) : examples(new URLSearchParams(query).get('category') || 'ทั้งหมด')) : page === 'ai' ? ai() : page === 'downloads' ? downloads() : !page ? home() : notFound();
+  if (page === 'packages') document.title = 'Package Store — DevLang';
+  $('#content').innerHTML = page === 'packages' ? packagesPage(parts.slice(1)) : page === 'docs' ? docs(parts[1] || 'intro') : page === 'examples' ? (parts[1] ? example(parts[1]) : examples(new URLSearchParams(query).get('category') || 'ทั้งหมด')) : page === 'ai' ? ai() : page === 'downloads' ? downloads() : !page ? home() : notFound();
   $$('[data-nav]').forEach(link => link.classList.toggle('active', link.dataset.nav === page));
   prepareCode();
+  if (page === 'packages') loadPackages();
   window.scrollTo(0, 0);
   const section = new URLSearchParams(query).get('section');
   if (section && /^[\w-]+$/.test(section)) requestAnimationFrame(() => document.getElementById(section)?.scrollIntoView());
