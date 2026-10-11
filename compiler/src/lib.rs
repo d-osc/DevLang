@@ -166,6 +166,19 @@ mod tests {
         }
     }
     #[test]
+    fn callback_casts_have_editor_safety_and_type_checks() {
+        for source in [
+            "let cb=1 as callback(i64) i64",
+            "fn address(cb callback(i64) i64) usize { return cb as usize }",
+            "unsafe { let cb=1.5 as callback(i64) i64 }",
+            "unsafe { let cb=true as callback(i64) i64 }",
+        ] {
+            assert!(!errors(source).is_empty(), "accepted: {source}");
+        }
+        let source = "unsafe { let cb=0 as callback(i64) i64; let p=cb as *void; let restored=p as callback(i64) i64; print(restored as bool) }";
+        assert!(errors(source).is_empty(), "{:?}", errors(source));
+    }
+    #[test]
     fn valid_code_has_no_diagnostics() {
         for source in [
             "fn add(a i64, b i64) i64 { return a + b }\nprint(add(1, 2))",

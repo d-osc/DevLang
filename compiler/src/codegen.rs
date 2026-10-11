@@ -1518,6 +1518,24 @@ impl Emitter<'_> {
                 if !v.ty.scalar() || !ty.scalar() {
                     return self.fail(expr.span, "cast requires scalar types");
                 }
+                if matches!(v.ty, Type::Callback(..)) || matches!(ty, Type::Callback(..)) {
+                    if self.unsafe_depth == 0 {
+                        return self.fail(expr.span, "callback casts require an unsafe block");
+                    }
+                    let valid = if matches!(ty, Type::Callback(..)) {
+                        v.ty.integer() || matches!(v.ty, Type::Ptr(_) | Type::Callback(..))
+                    } else {
+                        ty.integer() || matches!(ty, Type::Ptr(_) | Type::Bool)
+                    };
+                    if !valid {
+                        return self.fail(expr.span, "callback casts require a pointer, integer or callback; callbacks may also cast to bool");
+                    }
+                    return Ok(Value {
+                        code: format!("(({})({}))", c_type(ty), v.code),
+                        ty: ty.clone(),
+                        lvalue: false,
+                    });
+                }
                 if matches!(v.ty, Type::Ptr(_)) && self.unsafe_depth == 0 {
                     return self.fail(expr.span, "pointer casts require an unsafe block");
                 }

@@ -170,6 +170,16 @@ pub(crate) fn convert(v: Value, t: &Type, explicit: bool) -> Result<Value, Strin
         {
             return Err("payload enums cannot be cast to integers".into());
         }
+        if matches!(v.ty(), Type::Callback(..)) || matches!(t, Type::Callback(..)) {
+            let valid = if matches!(t, Type::Callback(..)) {
+                v.ty().integer() || matches!(v.ty(), Type::Ptr(_) | Type::Callback(..))
+            } else {
+                t.integer() || matches!(t, Type::Ptr(_) | Type::Bool)
+            };
+            if !valid {
+                return Err("callback casts require a pointer, integer or callback; callbacks may also cast to bool".into());
+            }
+        }
         match (&v, t) {
             (Value::Bool(n), t) if t.integer() => {
                 return Ok(Value::Int(i128::from(*n), t.clone()))
@@ -184,12 +194,12 @@ pub(crate) fn convert(v: Value, t: &Type, explicit: bool) -> Result<Value, Strin
             {
                 return Ok(Value::Int(wrap(*n as i128, t), t.clone()))
             }
-            (Value::Int(n, _), Type::Ptr(_)) => return Ok(Value::Ptr(*n as usize, t.clone())),
+            (Value::Int(n, _), Type::Ptr(_) | Type::Callback(..)) => return Ok(Value::Ptr(*n as usize, t.clone())),
             (Value::Ptr(p, _), Type::Bool) => return Ok(Value::Bool(*p != 0)),
             (Value::Ptr(p, _), t) if t.integer() => {
                 return Ok(Value::Int(wrap(*p as i128, t), t.clone()))
             }
-            (Value::Ptr(p, _), Type::Ptr(_)) => return Ok(Value::Ptr(*p, t.clone())),
+            (Value::Ptr(p, _), Type::Ptr(_) | Type::Callback(..)) => return Ok(Value::Ptr(*p, t.clone())),
             (Value::Int(n, _), t) if t.integer() => return Ok(Value::Int(wrap(*n, t), t.clone())),
             (Value::Int(n, _), Type::Float(bits)) => {
                 return Ok(Value::Float(

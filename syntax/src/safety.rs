@@ -45,7 +45,7 @@ fn expression(
             expression(ms, aliases, id, a, permitted)?;
         }
         ExprKind::Cast(a, t) => {
-            if matches!(t, Type::Ptr(_)) {
+            if matches!(t, Type::Ptr(_) | Type::Callback(..)) {
                 require()?;
             }
             expression(ms, aliases, id, a, permitted)?;

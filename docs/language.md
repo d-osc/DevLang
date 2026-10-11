@@ -376,3 +376,26 @@ mutable pointer remain rejected, including inside `unsafe`.
 The source runtime owns its string values and does not implement string address
 casts, even inside `unsafe`; use the supported FFI string interface instead.
 These additional native safety checks are available in current source after v0.5.0.
+
+### Callback address casts
+
+C callback casts require a lexical `unsafe` block in both source and native
+execution. A callback may be converted to another callback signature, a raw
+pointer, an integer address or `bool`. Only callbacks, raw pointers and integer
+addresses may be converted to a callback; floating-point, boolean and string
+sources are rejected. Null callbacks convert to `false`.
+
+```dev
+fn add(n i64) i64 { return n + 1 }
+unsafe {
+    let cb = callback(add)
+    let address = cb as usize
+    let restored = address as callback(i64) i64
+    print(restored(41))
+}
+```
+
+The caller must keep the callback owner alive and preserve its actual C signature.
+A cast does not validate an address or make an incompatible signature callable.
+These callback cast checks and runtime conversions are available in current source
+after v0.5.0.
