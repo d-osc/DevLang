@@ -1,2 +1,11 @@
 * text=auto
 *.sh text eol=lf
+
+# DevLang sources use LF on every platform.
+# GitHub ignores an unregistered linguist-language name. DevLang must first be
+# accepted into github-linguist/linguist; this override does not register it.
+*.dev text eol=lf linguist-language=DevLang linguist-detectable=true -linguist-documentation
+*.don text eol=lf
+
+# Generated website copies must not duplicate the source language statistics.
+website/content/materials/** linguist-generated=true
