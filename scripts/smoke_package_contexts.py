@@ -55,10 +55,17 @@ with tempfile.TemporaryDirectory(prefix='dev peer contexts ') as tmp:
     assert 'wrapper -> plugin' in run('pkg', 'tree')
     assert 'plugin' in run('pkg', 'why', 'plugin')
     saved = (app/'package-lock.don').read_bytes()
-    altered = json.loads(json.dumps(lock)); first = next(iter(altered['packages']))
+    altered = json.loads(json.dumps(lock))
+    first = next(id for id, item in altered['packages'].items() if item['source_key'] == plugins[0]['source_key'])
     altered['packages'][first]['source_root'] = '../absent'
     (app/'package-lock.don').write_text(json.dumps(altered), encoding='utf-8')
-    run('run', error='specified' if os.name == 'nt' else 'No such file')
+    run('run', error='inconsistent source context packages')
+    altered = json.loads(json.dumps(lock)); altered['packages'][first]['root'] = '.dev/contexts/invalid'
+    (app/'package-lock.don').write_text(json.dumps(altered), encoding='utf-8')
+    run('run', error='invalid package context path')
+    altered = json.loads(json.dumps(lock)); altered['edges']['root']['left'] = altered['edges']['root']['right']
+    (app/'package-lock.don').write_text(json.dumps(altered), encoding='utf-8')
+    run('run', error='dependency graph changed')
     (app/'package-lock.don').write_bytes(saved)
     copied = app/plugins[0]['root']/'src/lib.dev'; original = copied.read_bytes()
     copied.write_bytes(original+b'\n'); run('run', error='context content changed'); copied.write_bytes(original)
