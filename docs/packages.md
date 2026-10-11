@@ -1,5 +1,7 @@
 # Workspaces and version requirements
 
+For CLI 0.3.0 scripts, optional dependencies, overrides, platform policy, backtracking, peers, frozen installs, reports, offline cache and security checks, see [Package tools](package-features.md).
+
 For a complete runnable `package.don` example covering manifest fields, workspace and path dependencies, Git templates, DON references and lock commands, see [the full package example](../examples/package-don/README.md).
 
 Use the current source-built `d`, `devrun` and `devc`. These additions extend the existing path/Git package manager; Store search and GitHub release publication are available alongside the static archive registry.

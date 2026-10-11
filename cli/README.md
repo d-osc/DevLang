@@ -1,5 +1,7 @@
 # d command
 
+CLI 0.3.0 adds `d task`, `d pkg ci/tree/why/dedupe/cache/audit/verify/verify-tag`, extended version ranges, optional dependencies, overrides, host platform policy, bounded version backtracking and opt-in peer installation. See [Package tools](../docs/package-features.md) for examples and limits.
+
 The latest source build also includes project dependencies, formatting, a stdio
 language server and native debugger integration. See [Developer tools](../docs/tooling.md)
 for `package.don`/`package-lock.don`, `d new`, `d pkg`, `d fmt`, `d lsp` and `d debug`.

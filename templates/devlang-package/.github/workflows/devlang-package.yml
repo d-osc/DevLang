@@ -34,6 +34,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -47,4 +50,20 @@ jobs:
       - name: Publish tagged immutable package assets
         env:
           GH_TOKEN: ${{ github.token }}
-        run: .devlang-toolchain/target/release/d pkg publish --github "${{ github.repository }}"
+        run: .devlang-toolchain/target/release/d pkg publish --github "${{ github.repository }}" --receipt .dev/publication.json
+      - name: Read paths of the exact uploaded assets
+        id: publication
+        shell: python
+        run: |
+          import json, os
+          from pathlib import Path
+          receipt = json.loads(Path('.dev/publication.json').read_text())
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('asset=' + receipt['asset'] + '\n')
+              output.write('checksums=' + receipt['checksums'] + '\n')
+      - name: Attest the uploaded package bytes
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            ${{ steps.publication.outputs.asset }}
+            ${{ steps.publication.outputs.checksums }}

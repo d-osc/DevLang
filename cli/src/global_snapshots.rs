@@ -36,11 +36,12 @@ fn copy_package_source(source: &Path, target: &Path, count: &mut usize, total: &
     Ok(())
 }
 fn snapshot_dependencies(dependencies: &BTreeMap<String, Dependency>, package: &Path, stage: &Path, lock: &Lock, context: &str) -> Result<BTreeMap<String, Dependency>, String> {
-    dependencies.iter().map(|(name, dep)| {
+    dependencies.iter().map(|(name, _dep)| {
         let id = if lock.version == 2 { lock.edges.get(context).and_then(|e|e.get(name)).ok_or("snapshot is missing graph edge")? } else { name };
         if !lock.packages.contains_key(id) { return Err(format!("snapshot dependency {name} missing from lock")); }
         let path = pathdiff::diff_paths(stage.join("deps").join(id), package).ok_or("cannot make snapshot relative path")?;
-        Ok((name.clone(), Dependency { path: Some(path.to_string_lossy().replace('\\', "/")), git: None, rev: None, branch: None, url: None, sha256: None, version: dep.version.clone(), workspace: false, ..Dependency::default() }))
+        let selected=&lock.packages.get(id).ok_or("snapshot is missing selected source")?.source;
+        Ok((name.clone(), Dependency { path: Some(path.to_string_lossy().replace('\\', "/")), git: None, rev: None, branch: None, url: None, sha256: None, version: selected.range.clone().or(selected.version.clone()), workspace: false, ..Dependency::default() }))
     }).collect()
 }
 fn cached_global_runtime(home: &Path) -> Result<PathBuf, String> {
@@ -85,6 +86,9 @@ fn make_global_snapshot(home: &Path, project: &Path, lock: &Lock) -> Result<(Pat
         let context = if is_root { "root" } else { target.file_name().and_then(|n|n.to_str()).ok_or("invalid snapshot context")? };
         m.dependencies = snapshot_dependencies(&m.dependencies, &target, &stage, lock, context)?;
         m.dev_dependencies = if is_root && !lock.production { snapshot_dependencies(&m.dev_dependencies, &target, &stage, lock, context)? } else { BTreeMap::new() };
+        m.optional_dependencies.retain(|name,_|if lock.version==2{lock.edges.get(context).is_some_and(|e|e.contains_key(name))}else{lock.packages.contains_key(name)});
+        m.optional_dependencies=snapshot_dependencies(&m.optional_dependencies,&target,&stage,lock,context)?;
+        m.overrides.clear();
         m.workspace = None;
         write(&target.join("package.don"), &m)?;
     }

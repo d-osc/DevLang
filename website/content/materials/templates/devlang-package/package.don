@@ -1,5 +1,5 @@
 version: '1.0.0'
-devlang: '^0.2.0'
+devlang: '^0.3.0'
 package: {
   name: 'math'
   modules: 'src'

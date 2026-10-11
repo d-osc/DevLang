@@ -2,6 +2,10 @@ fn archive_bytes(spec: &str) -> Result<Vec<u8>, String> {
     download_bytes(spec, 64 * 1024 * 1024)
 }
 fn download_bytes(spec: &str, max: u64) -> Result<Vec<u8>, String> {
+    if spec.starts_with("http://") || spec.starts_with("https://") { return cached_download(spec,max); }
+    download_bytes_online(spec,max)
+}
+fn download_bytes_online(spec: &str, max: u64) -> Result<Vec<u8>, String> {
     use std::io::Read;
     let url = url::Url::parse(spec).map_err(|e| e.to_string())?;
     if !url.username().is_empty() || url.password().is_some() || url.fragment().is_some() {

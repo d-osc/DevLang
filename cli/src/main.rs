@@ -17,6 +17,14 @@ const HELP: &str = "Dev Lang
   d emit|--emit FILE.dev [options]          Emit C source
   d new NAME                              Create a project with package.don
   d exec NAME [-- arguments]              Run a local or installed package bin
+  d task [NAME] [-- arguments]            List or run explicit package scripts
+  d pkg ci [--production]                 Verify/install the frozen lock
+  d pkg install [--offline] [--auto-peers] Cache-only or opt-in peer installation
+  d pkg tree|why NAME|dedupe               Explain dependencies or try sharing versions
+  d pkg cache list|clean                  Manage the shared download cache
+  d pkg audit [--database URL]            Check OSV commits or explicit advisory feeds
+  d pkg verify FILE --github OWNER/REPO   Verify a GitHub artifact attestation
+  d pkg verify-tag TAG --key FINGERPRINT  Verify a signed Git tag against a pinned key
   d pkg bin                              List available bin commands
   d pkg install -g|--global               Install bins on the user PATH
   d pkg uninstall -g|--global [NAME]      Remove global bins by project/name
@@ -153,7 +161,7 @@ fn run() -> Result<i32, String> {
             packages::select_project(&env::current_dir().map_err(|e| e.to_string())?, &name)?;
         env::set_current_dir(selected).map_err(|e| e.to_string())?;
     }
-    if matches!(selector, "new" | "pkg" | "fmt" | "lsp" | "debug" | "don" | "exec") {
+    if matches!(selector, "new" | "pkg" | "fmt" | "lsp" | "debug" | "don" | "exec" | "task") {
         let values = args
             .iter()
             .skip(1)
@@ -167,6 +175,7 @@ fn run() -> Result<i32, String> {
             "new" if values.len() == 1 => packages::new(std::path::Path::new(&values[0])),
             "new" => Err("usage: d new NAME".into()),
             "pkg" => packages::command(&values),
+            "task" => packages::task(&values),
             "exec" => packages::exec_bin(&values),
             "don" => don::command(&values),
             "fmt" => format::command(&values),

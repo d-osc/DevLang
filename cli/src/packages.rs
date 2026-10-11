@@ -35,10 +35,14 @@ pub struct Dependency {
     pub registry: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub range: Option<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub optional: bool,
 }
 fn is_false(value: &bool) -> bool {
     !*value
 }
+include!("version_ranges.rs");
+include!("package_tools.rs");
 include!("workspace.rs");
 include!("package_archives.rs");
 include!("package_bins.rs");
@@ -48,6 +52,11 @@ include!("registry.rs");
 include!("global_snapshots.rs");
 include!("store.rs");
 include!("package_graph.rs");
+include!("resolution_search.rs");
+include!("peer_scopes.rs");
+include!("package_policy.rs");
+include!("registry_resolution.rs");
+include!("package_security.rs");
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Package {
@@ -126,6 +135,16 @@ pub struct Manifest {
     pub bin: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub workspace: Option<Workspace>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub scripts: BTreeMap<String, PackageScript>,
+    #[serde(default, rename = "optionalDependencies", skip_serializing_if = "BTreeMap::is_empty")]
+    pub optional_dependencies: BTreeMap<String, Dependency>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub overrides: BTreeMap<String, Dependency>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub os: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub cpu: Vec<String>,
 }
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -141,11 +160,15 @@ struct Lock {
     packages: BTreeMap<String, Locked>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     edges: BTreeMap<String, BTreeMap<String, String>>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    omitted: BTreeMap<String, Dependency>,
 }
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 struct Locked {
     source: Dependency,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    resolved_source: Option<Dependency>,
     root: String,
     commit: Option<String>,
     sha256: String,
@@ -159,7 +182,15 @@ fn locked_root(project: &Path, name: &str, item: &Locked) -> Result<PathBuf, Str
     if !identifier(name) {
         return Err("invalid locked namespace".into());
     }
-    if item.source.git.is_some() {
+    let actual=item.resolved_source.as_ref().unwrap_or(&item.source);
+    if let Some(selected)=&item.resolved_source {
+        validate_dependency(selected)?;
+        if item.source.registry.is_none() || selected.registry!=item.source.registry || selected.range!=item.source.range || selected.optional!=item.source.optional || selected.url.is_none() || selected.git.is_some() {return Err("invalid resolved registry source".into());}
+        let version=item.resolved_version.as_deref().ok_or("resolved registry source needs a version")?;
+        let version=semver::Version::parse(version).map_err(|e|e.to_string())?;
+        if !requirement(&item.source)?.ok_or("registry source needs a range")?.matches(&version) || !VersionRange::parse(selected.version.as_deref().ok_or("registry source needs exact version")?)?.matches(&version){return Err("resolved registry version does not satisfy declaration".into());}
+    }
+    if actual.git.is_some() {
         let commit = item
             .commit
             .as_deref()
@@ -167,13 +198,13 @@ fn locked_root(project: &Path, name: &str, item: &Locked) -> Result<PathBuf, Str
         if ![40, 64].contains(&commit.len()) || !commit.bytes().all(|c| c.is_ascii_hexdigit()) {
             return Err("invalid locked Git commit".into());
         }
-        let expected = format!(".dev/packages/{name}-{commit}{}", item.source.subdir.as_ref().map(|p| format!("/{p}")).unwrap_or_default());
+        let expected = format!(".dev/packages/{name}-{commit}{}", actual.subdir.as_ref().map(|p| format!("/{p}")).unwrap_or_default());
         if item.root != expected {
             return Err("Git lock path must match its package and commit".into());
         }
     }
-    if item.source.url.is_some() {
-        let digest = item.source.sha256.as_deref().ok_or("archive lock needs sha256")?;
+    if actual.url.is_some() {
+        let digest = actual.sha256.as_deref().ok_or("archive lock needs sha256")?;
         if digest.len() != 64 || !digest.bytes().all(|c| c.is_ascii_hexdigit())
             || item.root != format!(".dev/packages/{name}-archive-{}", digest.to_lowercase()) {
             return Err("invalid archive lock path".into());
@@ -241,6 +272,9 @@ pub fn manifest(root: &Path) -> Result<Manifest, String> {
         return Err("invalid package name".into());
     }
     if let Some(requirement) = &m.devlang { peer_requirement(requirement)?; }
+    for dependencies in [&m.dependencies,&m.dev_dependencies,&m.optional_dependencies,&m.overrides] {for (name,dep) in dependencies {if !identifier(name){return Err("invalid dependency namespace".into());}validate_dependency(dep)?;}}
+    root_dependencies(&m,false)?;
+    for (name,script) in &m.scripts {if name.is_empty() || name.len()>128 || name.chars().any(char::is_control){return Err("invalid script name".into());}match script {PackageScript::Shell(text) if text.trim().is_empty()=>return Err("script command is empty".into()),PackageScript::Arguments(args) if args.first().is_none_or(|s|s.is_empty())=>return Err("script argument list is empty".into()),_=>{}}}
     relative(&m.package.entry)?;
     relative(&m.package.modules)?;
     for (name, requirement) in &m.peer_dependencies {
@@ -262,6 +296,7 @@ fn manifest_path(root: &Path) -> PathBuf {
     })
 }
 fn git(dir: Option<&Path>, args: &[&str]) -> Result<String, String> {
+    if offline_mode() && args.iter().any(|a| matches!(*a, "clone" | "fetch" | "ls-remote" | "pull")) { return Err("offline: Git source is not cached; install online first".into()); }
     let mut command = Command::new("git");
     command.env("GIT_TERMINAL_PROMPT", "0");
     if let Some(dir) = dir {
@@ -330,7 +365,7 @@ fn tree_hash_mode(root: &Path, include_lock: bool) -> Result<String, String> {
 fn resolve(project: &Path, parent: &Path, name: &str, dep: &Dependency, previous: Option<&Locked>, refresh: bool, locked: bool) -> Result<Locked, String> {
     resolve_named(project, parent, name, name, dep, previous, refresh, locked)
 }
-fn resolve_named(
+fn resolve_selected(
     project: &Path,
     parent: &Path,
     name: &str,
@@ -340,6 +375,7 @@ fn resolve_named(
     refresh: bool,
     locked: bool,
 ) -> Result<Locked, String> {
+    RESOLUTION_SEARCH.with(|s| s.borrow_mut().key=cache_name.to_owned());
     if !identifier(name) {
         return Err(format!("invalid dependency namespace {name}"));
     }
@@ -505,6 +541,7 @@ fn resolve_named(
         .as_ref()
         .map(|req| package_version(&m, req))
         .transpose()?;
+    if dep.registry.is_some(){package_version(&m,&VersionRange::parse(dep.version.as_deref().ok_or("registry source needs an exact version")?)?)?;}
     if selected_version
         .as_ref()
         .zip(resolved_version.as_ref())
@@ -541,6 +578,7 @@ fn resolve_named(
     };
     Ok(Locked {
         source: dep.clone(),
+        resolved_source: None,
         root: stored,
         commit,
         sha256,
@@ -558,6 +596,7 @@ fn root_dependencies(m: &Manifest, production: bool) -> Result<BTreeMap<String, 
         return Err("dependency namespace cannot appear in both dependencies and devDependencies".into());
     }
     let mut dependencies = m.dependencies.clone();
+    for (name,dep) in &m.optional_dependencies { if dependencies.contains_key(name) || m.dev_dependencies.contains_key(name) { return Err("optional dependency aliases must be distinct".into()); } let mut dep=dep.clone();dep.optional=true;dependencies.insert(name.clone(),dep); }
     if !production { dependencies.extend(m.dev_dependencies.clone()); }
     Ok(dependencies)
 }
@@ -579,12 +618,14 @@ fn legacy_install_mode(project: &Path, locked: bool, refresh: bool, production: 
         production,
         packages: BTreeMap::new(),
         edges: BTreeMap::new(),
+        omitted: BTreeMap::new(),
     };
     let root = manifest(project)?;
     check_compatibility(&root)?;
     let mut pending = vec![(project.to_owned(), root_dependencies(&root, production)?)];
     while let Some((parent, dependencies)) = pending.pop() {
-        for (name, dep) in dependencies {
+        for (name, dep) in effective_dependencies(project,&parent,dependencies)? {
+            if let Some(omitted)=result.omitted.get(&name){if omitted!=&dep{return Err(format!("conflicting dependency namespace {name}"));}continue;}
             if let Some(old) = result.packages.get_mut(&name) {
                 if old.source != dep {
                     if !compatible_source(&old.source, &dep, old.resolved_version.as_deref())? {
@@ -614,6 +655,7 @@ fn legacy_install_mode(project: &Path, locked: bool, refresh: bool, production: 
                 }
                 continue;
             }
+            if locked && previous.omitted.get(&name)==Some(&dep) && dep.optional {result.omitted.insert(name,dep);continue;}
             if locked && previous.packages.get(&name).is_none_or(|p| p.source != dep) {
                 return Err(format!("dependency {name} differs from package-lock.don"));
             }
@@ -625,7 +667,8 @@ fn legacy_install_mode(project: &Path, locked: bool, refresh: bool, production: 
                 previous.packages.get(&name),
                 refresh,
                 locked,
-            )?;
+            );
+            let resolved=match resolved {Ok(item)=>item, Err(error) if dep.optional && !locked=>{println!("optional {name} omitted: {error}");result.omitted.insert(name,dep);continue;},Err(error)=>return Err(error)};
             if locked
                 && previous.packages.get(&name).map(|p| {
                     let mut p = p.clone();
@@ -636,7 +679,7 @@ fn legacy_install_mode(project: &Path, locked: bool, refresh: bool, production: 
                 return Err(format!("dependency {name} content changed from package-lock.don"));
             }
             let dep_root = project.join(&resolved.root);
-            pending.push((dep_root.clone(), manifest(&dep_root)?.dependencies));
+            pending.push((dep_root.clone(), child_dependencies(&manifest(&dep_root)?)?));
             println!(
                 "installed {name} {}",
                 resolved.commit.as_deref().unwrap_or("local")
@@ -665,7 +708,7 @@ fn legacy_install_mode(project: &Path, locked: bool, refresh: bool, production: 
 fn legacy_mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
     let m = manifest(project)?;
     check_compatibility(&m)?;
-    if m.dependencies.is_empty() && m.dev_dependencies.is_empty() && m.peer_dependencies.is_empty() && !lock_path(project).exists() {
+    if m.dependencies.is_empty() && m.dev_dependencies.is_empty() && m.optional_dependencies.is_empty() && m.peer_dependencies.is_empty() && !lock_path(project).exists() {
         return Ok(Vec::new());
     }
     let lock: Lock =
@@ -675,10 +718,12 @@ fn legacy_mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
     }
     let mut pending = vec![(project.to_owned(), root_dependencies(&m, lock.production)?)];
     let mut visited = BTreeSet::new();
+    let mut omitted = BTreeMap::new();
     let mut dirs = Vec::new();
     let mut declarations = BTreeMap::<String, BTreeSet<Dependency>>::new();
     while let Some((parent, dependencies)) = pending.pop() {
-        for (name, dep) in dependencies {
+        for (name, dep) in effective_dependencies(project,&parent,dependencies)? {
+            if dep.optional && lock.omitted.get(&name)==Some(&dep){omitted.insert(name,dep);continue;}
             let item = lock
                 .packages
                 .get(&name)
@@ -739,10 +784,10 @@ fn legacy_mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
                 return Err("locked module directory changed".into());
             }
             dirs.push((name, at.join(relative(&item.modules)?)));
-            pending.push((at, child.dependencies));
+            pending.push((at, child_dependencies(&child)?));
         }
     }
-    if visited.len() != lock.packages.len() {
+    if visited.len() != lock.packages.len() || omitted != lock.omitted || omitted.keys().any(|name|lock.packages.contains_key(name)) {
         return Err("package-lock.don contains stale dependencies; run d pkg install".into());
     }
     for (name, item) in &lock.packages {
@@ -779,6 +824,10 @@ pub fn new(path: &Path) -> Result<i32, String> {
         &Manifest {
             version: Some("0.1.0".into()),
             devlang: None,
+            scripts: BTreeMap::new(),
+            optional_dependencies: BTreeMap::new(),
+            overrides: BTreeMap::new(),
+            os: Vec::new(), cpu: Vec::new(),
             package: Package {
                 name: name.into(),
                 entry: entry(),
@@ -806,6 +855,17 @@ pub fn new(path: &Path) -> Result<i32, String> {
     Ok(0)
 }
 pub fn command(args: &[String]) -> Result<i32, String> {
+    let offline = args.iter().any(|a| a == "--offline");
+    if offline { std::env::set_var("DEVLANG_OFFLINE", "1"); }
+    let args: Vec<String> = args.iter().filter(|a| a.as_str() != "--offline").cloned().collect();
+    let auto=args.iter().any(|a|a=="--auto-peers");
+    if auto {std::env::set_var("DEVLANG_AUTO_PEERS","1");}
+    let args:Vec<String>=args.into_iter().filter(|a|a!="--auto-peers").collect();
+    command_inner(&args)
+}
+fn command_inner(args: &[String]) -> Result<i32, String> {
+    if args.first().is_some_and(|a| a == "cache") { return cache_command(args); }
+    if args.first().is_some_and(|a|a=="verify"){return verify_package(args);}
     if args.first().is_some_and(|a| a == "search") { return package_search(args); }
     if args.first().is_some_and(|a| a == "info") { return store_info(args); }
     if args.len() == 2 && args[0] == "list" && matches!(args[1].as_str(), "-g" | "--global") { return list_global_packages(); }
@@ -827,6 +887,8 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             println!("{}", serde_json::to_string_pretty(&m).map_err(|e| e.to_string())?);
         }
         Some("publish") if args.get(1).is_some_and(|a| a == "--github") => publish_github(&project, args)?,
+        Some("audit") => return audit_packages(&project,args),
+        Some("verify-tag") => return verify_signed_tag(&project,args),
         Some("publish") => publish_package(&project, args)?,
         Some("outdated") => package_outdated(&project, args)?,
         Some("upgrade") => package_upgrade(&project, args)?,
@@ -920,6 +982,9 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             change_manifest(&project,&m)?;
         }
         Some("list") if args.len() == 1 => { for (name, dir) in mappings(&project)? { println!("{name} {}", dir.display()); } }
+        Some("dedupe") if args.len()==1 => {std::env::set_var("DEVLANG_DEDUPE","1"); let lock:Lock=read(&lock_path(&project))?;install_mode(&project,false,false,lock.production)?;},
+        Some("tree") | Some("why") => return dependency_report(&project, args),
+        Some("ci") if args.len() == 1 || args.len() == 2 && args[1] == "--production" => { install_mode(&project,true,false,args.len()==2)?; },
         Some("bin") if args.len() == 1 => {
             mappings(&project)?;
             let lock: Lock = if lock_path(&project).exists() { read(&lock_path(&project))? } else { Lock::default() };

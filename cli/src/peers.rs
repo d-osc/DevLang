@@ -1,6 +1,6 @@
-fn peer_requirement(requirement: &str) -> Result<semver::VersionReq, String> {
+fn peer_requirement(requirement: &str) -> Result<VersionRange, String> {
     if requirement.len() > 256 { return Err("peer requirement exceeds 256 bytes".into()); }
-    semver::VersionReq::parse(requirement).map_err(|e| format!("invalid peer requirement: {e}"))
+    VersionRange::parse(requirement).map_err(|e| format!("invalid peer requirement: {e}"))
 }
 fn verify_peers(project: &Path, lock: &Lock) -> Result<(), String> {
     if lock.version == 2 { return graph_verify_peers(project, lock); }

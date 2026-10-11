@@ -10,7 +10,7 @@ import tempfile
 from threading import Thread
 from urllib.error import HTTPError
 from urllib.parse import urlparse
-from build_package_store import Api, collect, inspect, version_key, quality, package_documents
+from build_package_store import Api, collect, inspect, version_key, quality, package_documents, discover
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--d', required=True)
@@ -105,6 +105,28 @@ try:
     response_overrides['/repos/owner/math/contents/README.md']=(200,{'encoding':'base64','size':65537})
     check(not package_documents(api,'owner/math','head'),'document size limit')
     del response_overrides['/repos/owner/math/contents/README.md'];files.pop()
+    # A virtual workspace root indexes explicit members and their namespace tags/docs.
+    saved_files=deepcopy(files);saved_snapshots=deepcopy(snapshots)
+    snapshots['head']={'package':{'name':'workspace'},'workspace':{'members':['packages/math']}}
+    files[:]=[{'path':p,'type':'blob','mode':'100644'} for p in ('package.don','packages/math/package.don','packages/math/src/lib.dev','packages/math/README.md')]
+    child=json.dumps(manifest).encode();readme=b'# Math release API'
+    response_overrides['/repos/owner/math/contents/packages/math/package.don']=(200,{'type':'file','encoding':'base64','size':len(child),'content':base64.b64encode(child).decode()})
+    response_overrides['/repos/owner/math/contents/packages/math/README.md']=(200,{'type':'file','encoding':'base64','size':len(readme),'content':base64.b64encode(readme).decode()})
+    response_overrides['/repos/owner/math/tags']=(200,[{'name':'math/v1.0.0','commit':{'sha':'stable'}}])
+    mono=collect(api,d)['packages'][0]
+    check(mono['id']=='owner/math/math' and mono['subdir']=='packages/math' and mono['latest']['tag']=='math/v1.0.0',mono)
+    check(mono['versions'][0]['documents'][0]['markdown']=='# Math release API','release-specific child documents')
+    snapshots.clear();snapshots.update(saved_snapshots);files[:]=saved_files
+    for path in ('packages/math/package.don','packages/math/README.md'):del response_overrides['/repos/owner/math/contents/'+path]
+    del response_overrides['/repos/owner/math/tags']
+    class Sharded:
+        def __init__(self):self.queries=[]
+        def get(self,path,**query):
+            self.queries.append(query['q'])
+            if 'created:' not in query['q']:return {'total_count':1500,'items':[]}
+            return {'total_count':1,'items':[{'full_name':'owner/part'+str(len(self.queries))}]}
+    shards=Sharded();names,total,partial=discover(shards,(),2000)
+    check(total==1500 and len(names)==2 and not partial and all('created:' in q for q in shards.queries[1:]),'disjoint search shards exceed a single 1000-result search')
     for args, expected in [(('pkg','inspect','--json'),None),(('examples/main.dev',),'42'),(('tests/main.dev',),''),(('run','tests/main.dev','--engine','ast'),'')]:
         run = subprocess.run([str(d),'-C',str(repo/'templates/devlang-package'),*args],capture_output=True,text=True,encoding='utf-8',timeout=30)
         check(run.returncode==0 and (expected is None or run.stdout.strip()==expected),(args,run.stdout,run.stderr))

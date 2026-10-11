@@ -72,18 +72,18 @@ pub fn select_project(from: &Path, name: &str) -> Result<PathBuf, String> {
         .remove(name)
         .ok_or_else(|| format!("workspace member {name} not found"))
 }
-fn requirement(dep: &Dependency) -> Result<Option<semver::VersionReq>, String> {
-    dep.version
-        .as_deref()
+fn requirement(dep: &Dependency) -> Result<Option<VersionRange>, String> {
+    dep.range.as_ref().or(dep.version.as_ref())
+        .map(String::as_str)
         .map(|text| {
             if text.len() > 256 {
                 return Err("dependency version requirement exceeds 256 bytes".into());
             }
-            semver::VersionReq::parse(text).map_err(|e| format!("invalid SemVer requirement: {e}"))
+            VersionRange::parse(text).map_err(|e| format!("invalid SemVer requirement: {e}"))
         })
         .transpose()
 }
-fn package_version(m: &Manifest, req: &semver::VersionReq) -> Result<semver::Version, String> {
+fn package_version(m: &Manifest, req: &VersionRange) -> Result<semver::Version, String> {
     let text = m
         .version
         .as_deref()
@@ -95,7 +95,7 @@ fn package_version(m: &Manifest, req: &semver::VersionReq) -> Result<semver::Ver
     }
     Ok(version)
 }
-fn semver_tag(repo: &Path, req: &semver::VersionReq) -> Result<(String, semver::Version), String> {
+fn semver_tag(repo: &Path, req: &VersionRange) -> Result<(String, semver::Version), String> {
     let tags = git(Some(repo), &["tag", "--list"])?;
     if tags.len() > 1024 * 1024 {
         return Err("Git tag listing exceeds 1 MiB".into());
@@ -109,13 +109,10 @@ fn semver_tag(repo: &Path, req: &semver::VersionReq) -> Result<(String, semver::
         }
     }
     matches.sort_by(|(a, av), (b, bv)| av.cmp_precedence(bv).then_with(|| a.cmp(b)));
-    let selected = matches
-        .pop()
-        .ok_or_else(|| format!("no Git SemVer tag satisfies {req}"))?;
-    if matches
-        .last()
-        .is_some_and(|(_, v)| v.cmp_precedence(&selected.1).is_eq())
-    {
+    if matches.is_empty(){return Err(format!("no Git SemVer tag satisfies {req}"));}
+    let selected_version=choose_version(matches.iter().map(|(_,v)|v.clone()).collect())?;
+    let selected=matches.iter().find(|(_,v)|*v==selected_version).cloned().ok_or("no matching Git tag")?;
+    if matches.iter().filter(|(_,v)|v.cmp_precedence(&selected.1).is_eq()).count()>1 {
         return Err("ambiguous Git tags with equal SemVer precedence".into());
     }
     Ok(selected)

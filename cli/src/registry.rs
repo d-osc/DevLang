@@ -122,7 +122,7 @@ fn publish_package(project: &Path, args: &[String]) -> Result<(), String> {
             .unwrap_or(m.version.as_deref().unwrap()),
     )
     .map_err(|e| e.to_string())?;
-    for dep in m.dependencies.values() {
+    for dep in m.dependencies.values().chain(m.optional_dependencies.values()) {
         validate_dependency(dep)?;
         if let Some(remote) = &dep.git {
             if !remote.starts_with("https://") || remote.contains('@') {
@@ -201,6 +201,7 @@ fn publish_package(project: &Path, args: &[String]) -> Result<(), String> {
         copy_package_source(project, &staging.join("source"), &mut 0, &mut 0)?;
         m.version = Some(version.to_string());
         m.dev_dependencies.clear();
+        m.overrides.clear();
         m.workspace = None;
         write(&staging.join("source/package.don"), &m)?;
         if !staging

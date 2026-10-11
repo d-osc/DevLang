@@ -23,6 +23,7 @@ GROUPS = {
     'ระบบและ interoperability': ['module-api-intro', 'tasks', 'sync', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'don-editor', 'fs-http', 'node-core', 'limitations', 'ai'],
 }
 REFERENCES = {
+    'package-features': ('Scripts, resolution, offline and package security', 'docs/package-features.md'),
     'package-store': ('GitHub Package Store', 'docs/package-store.md'),
     'packages-reference': ('Workspaces and dependency versions', 'docs/packages.md'),
     'sync-reference': ('Shared channels, mutexes and cancellation', 'docs/sync.md'),
@@ -95,25 +96,26 @@ def main():
     reader = MarkdownIt('commonmark', {'html': False}).enable('table').disable('image')
     from urllib.parse import urljoin, urlparse, quote
     for package in catalog['packages']:
-        details_path = package.get('details', '')
-        if not re.fullmatch(r'package-details/[a-f0-9]{64}\.json', details_path):
-            raise ValueError('Invalid package details path')
-        details = json.loads((HERE / 'content' / details_path).read_text(encoding='utf-8'))
-        rendered_documents = []
-        for document in details['documents']:
-            tokens = reader.parse(document['markdown'])
-            source_url = package['repository'] + '/blob/' + details['commit'] + '/' + quote(document['path'], safe='/')
-            for token in tokens:
-                for child in token.children or []:
-                    if child.type == 'link_open':
-                        href = urljoin(source_url, child.attrGet('href') or '')
-                        if urlparse(href).scheme not in ('https', 'http'): href = '#'
-                        child.attrSet('href', href)
-                        child.attrSet('rel', 'noopener noreferrer')
-                        child.attrSet('target', '_blank')
-            rendered_documents.append({'path': document['path'], 'source': source_url, 'html': reader.renderer.render(tokens, reader.options, {})})
-        details['documents'] = rendered_documents
-        (dist / details_path).write_text(json.dumps(details, ensure_ascii=False), encoding='utf-8')
+        paths = {package.get('details','')} | {v['details'] for v in package.get('versions',[]) if v.get('details')}
+        for details_path in paths:
+            if not re.fullmatch(r'package-details/[a-f0-9]{64}\.json', details_path):
+                raise ValueError('Invalid package details path')
+            details = json.loads((HERE / 'content' / details_path).read_text(encoding='utf-8'))
+            rendered_documents = []
+            for document in details['documents']:
+                tokens = reader.parse(document['markdown'])
+                source_url = package['repository'] + '/blob/' + details['commit'] + '/' + quote(document['path'], safe='/')
+                for token in tokens:
+                    for child in token.children or []:
+                        if child.type == 'link_open':
+                            href = urljoin(source_url, child.attrGet('href') or '')
+                            if urlparse(href).scheme not in ('https', 'http'): href = '#'
+                            child.attrSet('href', href)
+                            child.attrSet('rel', 'noopener noreferrer')
+                            child.attrSet('target', '_blank')
+                rendered_documents.append({'path': document['path'], 'source': source_url, 'html': reader.renderer.render(tokens, reader.options, {})})
+            details['documents'] = rendered_documents
+            (dist / details_path).write_text(json.dumps(details, ensure_ascii=False), encoding='utf-8')
 
     guide = (HERE / 'content/guide.md').read_text(encoding='utf-8')
     chunks = re.split(r'^# \[([^\]]+)\] (.+)\n', guide, flags=re.M)

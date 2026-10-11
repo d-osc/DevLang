@@ -48,6 +48,8 @@ jobs:
         run: python scripts/smoke_package_store.py --d "${{ env.DEVLANG_TEST_D }}"
       - name: Store install, upgrade and isolated graph integration
         run: python scripts/smoke_store_integration.py --d "${{ env.DEVLANG_TEST_D }}"
+      - name: Package resolver, scripts, policies and offline cache
+        run: python scripts/smoke_package_features.py --d "${{ env.DEVLANG_TEST_D }}"
       - name: Package Store UI regressions
         run: node scripts/smoke_package_store_ui.cjs
       - name: Workspace and version resolution

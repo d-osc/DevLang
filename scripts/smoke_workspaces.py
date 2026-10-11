@@ -82,7 +82,7 @@ def main():
         assert (app/'package.don').read_bytes() == original
         command('pkg', 'add', 'base', '--workspace', '--path', base, cwd=app, error='exactly one')
         command('pkg', 'add', 'base', '--workspace', '--rev', 'v1', cwd=app, error='Git-only')
-        command('pkg', 'add', 'base', '--workspace', '--version', '1 || 2', cwd=app, error='SemVer')
+        command('pkg', 'add', 'base', '--workspace', '--version', '1 || 2', cwd=app)
         # Changing workspace membership invalidates workspace references.
         metadata = json.loads((workspace/'package.don').read_text())
         for members, error in [(['../elsewhere'], "without '..'"), (['apps/app', 'apps/app'], 'overlap'), (['libs/math', 'libs'], 'overlap'), ([], '1..128')]:

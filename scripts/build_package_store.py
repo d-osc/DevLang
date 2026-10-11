@@ -1,7 +1,7 @@
 """Discover public DevLang GitHub packages and validate root manifests/tag versions."""
 import argparse
 import base64
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date, timedelta
 import json
 import hashlib
 import os
@@ -66,7 +66,7 @@ class Api:
             temporary.replace(cache_path)
         return result
 
-def inspect(api, full_name, ref, d, subdir=None):
+def inspect(api, full_name, ref, d, subdir=None, workspace_root=False):
     entries = api.get('/repos/' + full_name + '/git/trees/' + quote(ref, safe=''), recursive='1')
     if entries.get('truncated'): raise ValueError('source tree is truncated; cannot validate package')
     files = {x['path']: x for x in entries.get('tree', [])}
@@ -90,6 +90,7 @@ def inspect(api, full_name, ref, d, subdir=None):
         if compatibility.returncode: raise ValueError(compatibility.stderr.strip())
         manifest['_compatibility'] = json.loads(compatibility.stdout)
     version = manifest.get('version', '').removeprefix('v')
+    if workspace_root and manifest.get('workspace'): return manifest, version
     if not VERSION.fullmatch(version): raise ValueError('package needs a SemVer version')
     modules = manifest['package'].get('modules', 'src').rstrip('/')
     if '\\' in modules: raise ValueError('module directory must use forward slashes')
@@ -116,9 +117,10 @@ def quality(api, name, commit):
         if error.code not in (403, 404, 422): raise
         return {'state': 'unavailable', 'checks': 0, 'commit': commit}
 
-def package_documents(api, name, commit):
+def package_documents(api, name, commit, subdir=None):
     tree = api.get('/repos/' + name + '/git/trees/' + commit, recursive='1')
-    candidates = [x for x in tree.get('tree', []) if x.get('type') == 'blob' and x.get('mode') in ('100644', '100755') and (x['path'].lower() in ('readme.md', 'changelog.md', 'api.md') or x['path'].startswith('docs/') and x['path'].endswith('.md'))]
+    prefix = subdir.rstrip('/') + '/' if subdir else ''
+    candidates = [dict(x, display=x['path'][len(prefix):]) for x in tree.get('tree', []) if x['path'].startswith(prefix) if x.get('type') == 'blob' and x.get('mode') in ('100644', '100755') and (x['path'][len(prefix):].lower() in ('readme.md', 'changelog.md', 'api.md') or x['path'][len(prefix):].startswith('docs/') and x['path'].endswith('.md'))]
     candidates.sort(key=lambda x: (x['path'].lower() not in ('readme.md','changelog.md','api.md'), x['path']))
     documents = []
     for item in candidates[:10]:
@@ -136,85 +138,133 @@ def version_key(version):
     prerelease = tuple((0, int(x)) if x.isdigit() else (1, x) for x in (pre or '').split('.'))
     return int(major), int(minor), int(patch), pre is None, prerelease
 
-def collect(api, d, explicit=(), limit=100):
-    names = list(explicit)
-    total = 0
-    incomplete = False
-    for page in range(1, (limit + 99) // 100 + 1):
-        response = api.get('/search/repositories', q='topic:devlang-package fork:false archived:false is:public', sort='updated', per_page=min(100, limit), page=page)
-        total = response.get('total_count', 0)
-        incomplete = incomplete or response.get('incomplete_results', False)
-        items = response.get('items', [])
-        names.extend(x['full_name'] for x in items)
-        if len(items) < min(100, limit) or page * 100 >= total: break
-    packages, rejected, deferred = [], [], []
-    names = list(dict.fromkeys(names))[:limit]
-    for position, name in enumerate(names):
+def discover(api, explicit, limit):
+    names=list(explicit); total=0; incomplete=False
+    query='topic:devlang-package fork:false archived:false is:public'
+    ranges=[(None,None)]
+    while ranges and len(dict.fromkeys(names)) < limit:
+        low,high=ranges.pop()
+        q=query if low is None else query+f' created:{low.isoformat()}..{high.isoformat()}'
+        response=api.get('/search/repositories',q=q,sort='updated',per_page=min(100,limit),page=1)
+        count=response.get('total_count',0)
+        if low is None: total=count
+        incomplete=incomplete or response.get('incomplete_results',False)
+        if count>1000 and limit>1000:
+            if low is None: low,high=date(2008,1,1),datetime.now(timezone.utc).date()
+            if low<high:
+                mid=low+(high-low)//2;ranges.extend([(low,mid),(mid+timedelta(days=1),high)]);continue
+            incomplete=True # More than 1,000 repos created on one day: explicitly report partial coverage.
+        items=response.get('items',[]);names.extend(x['full_name'] for x in items)
+        for page in range(2,min(10,(count+99)//100)+1):
+            if len(items)<min(100,limit) or len(dict.fromkeys(names))>=limit: break
+            response=api.get('/search/repositories',q=q,sort='updated',per_page=min(100,limit),page=page)
+            incomplete=incomplete or response.get('incomplete_results',False)
+            items=response.get('items',[]);names.extend(x['full_name'] for x in items)
+    return list({name.lower():name for name in names}.values())[:limit],total,incomplete or bool(ranges)
+
+def collect(api, d, explicit=(), limit=100, max_tags=400, max_version_docs=10):
+    names,total,incomplete=discover(api,explicit,limit)
+    packages,rejected,deferred=[],[],[]
+    for position,name in enumerate(names):
         if not REPOSITORY.fullmatch(name): raise ValueError('invalid repository identity')
         try:
-            metadata = api.get('/repos/' + name)
+            metadata=api.get('/repos/'+name)
             if metadata.get('private') or metadata.get('fork') or metadata.get('archived'): raise ValueError('repository must be public, active and not a fork')
-            if 'devlang-package' not in metadata.get('topics', []): raise ValueError('repository needs the devlang-package topic')
-            full_name = metadata['full_name']
+            if 'devlang-package' not in metadata.get('topics',[]): raise ValueError('repository needs the devlang-package topic')
+            full_name=metadata['full_name']
             if not REPOSITORY.fullmatch(full_name): raise ValueError('invalid repository identity')
-            branch = api.get('/repos/' + full_name + '/branches/' + quote(metadata['default_branch'], safe=''))
-            commit = branch['commit']['sha']
-            manifest, current_version = inspect(api, full_name, commit, d)
-
-            tags = []
-            for tag_page in range(1, 5):
-                batch = api.get('/repos/' + full_name + '/tags', per_page=100, page=tag_page)
-                tags.extend(batch)
-                if len(batch) < 100: break
-            versions, ignored_tags = [], []
-            for tag in tags:
-                version = tag['name'].removeprefix('v')
-                if not VERSION.fullmatch(version): continue
-                try:
-                    tagged, checked = inspect(api, full_name, tag['commit']['sha'], d)
-                    if checked != version or tagged['package']['name'] != manifest['package']['name']: raise ValueError('tag and package version/name differ')
-                    versions.append({'version': checked, 'tag': tag['name'], 'commit': tag['commit']['sha']})
-                except (ValueError, HTTPError) as error:
-                    if isinstance(error, HTTPError) and error.code not in (404, 422): raise
-                    ignored_tags.append({'tag': tag['name'], 'reason': str(error)[:300]})
-            versions.sort(key=lambda x: version_key(x['version']), reverse=True)
-            stable = [v for v in versions if '-' not in v['version'].split('+')[0]]
-            latest = (stable or versions or [None])[0]
-            license = metadata.get('license') or {}
-            packages.append({'id': full_name, 'name': manifest['package']['name'], 'owner': full_name.split('/')[0], 'repository': 'https://github.com/' + full_name,
-                'description': metadata.get('description') or '', 'topics': metadata.get('topics', []), 'stars': metadata.get('stargazers_count', 0),
-                'license': license.get('spdx_id') or '', 'updated_at': metadata.get('pushed_at'), 'checked_commit': commit, 'source_version': current_version,
-                'modules': manifest['package']['modules'], 'bin': manifest.get('bin', {}), 'dependencies': list(manifest.get('dependencies', {})), 'peers': manifest.get('peerDependencies', {}),
-                'versions': versions, 'latest': latest, 'tag_limited': len(tags) >= 400, 'ignored_tags': ignored_tags,
-                'devlang': manifest.get('devlang'), 'compatibility': manifest['_compatibility'], 'quality': quality(api, full_name, commit),
-                'documents': package_documents(api, full_name, commit)})
+            branch=api.get('/repos/'+full_name+'/branches/'+quote(metadata['default_branch'],safe=''))
+            commit=branch['commit']['sha']
+            root,current=inspect(api,full_name,commit,d,workspace_root=True)
+            descriptors=[]
+            try: descriptors.append((None,*inspect(api,full_name,commit,d)))
+            except ValueError:
+                if not root.get('workspace'): raise
+            members=root.get('workspace',{}).get('members',[])
+            if len(members)>128: raise ValueError('workspace exceeds 128 members')
+            paths=[];namespaces=set()
+            for member in members:
+                if not isinstance(member,str) or member.startswith('/') or '\\' in member or any(x in ('','.','..') for x in member.split('/')): raise ValueError('unsafe workspace member')
+                if any(member==p or member.startswith(p+'/') or p.startswith(member+'/') for p in paths): raise ValueError('overlapping workspace members')
+                paths.append(member)
+                child,version=inspect(api,full_name,commit,d,member)
+                if child.get('workspace') or child['package']['name'] in namespaces or child['package']['name']==root['package']['name']: raise ValueError('workspace names must be unique and non-nested')
+                namespaces.add(child['package']['name']);descriptors.append((member,child,version))
+            tags=[]
+            for page in range(1,(max_tags+99)//100+1):
+                batch=api.get('/repos/'+full_name+'/tags',per_page=100,page=page);tags.extend(batch[:max_tags-len(tags)])
+                if len(batch)<100: break
+            ci=quality(api,full_name,commit)
+            for subdir,manifest,current_version in descriptors:
+                if len(packages)>=20000: raise BudgetExceeded('Store package budget reached (20,000)')
+                namespace=manifest['package']['name'];identity=full_name+('/'+namespace if subdir else '')
+                versions,ignored=[],[]
+                for tag in tags:
+                    label=tag['name']
+                    if subdir:
+                        prefix=namespace+'/'
+                        if not label.startswith(prefix): continue
+                        label=label[len(prefix):]
+                    version=label.removeprefix('v')
+                    if not VERSION.fullmatch(version): continue
+                    try:
+                        tagged,checked=inspect(api,full_name,tag['commit']['sha'],d,subdir)
+                        if checked!=version or tagged['package']['name']!=namespace: raise ValueError('tag and package version/name differ')
+                        versions.append({'version':checked,'tag':tag['name'],'commit':tag['commit']['sha']})
+                    except (ValueError,HTTPError) as error:
+                        if isinstance(error,HTTPError) and error.code not in (404,422): raise
+                        ignored.append({'tag':tag['name'],'reason':str(error)[:300]})
+                versions.sort(key=lambda x:version_key(x['version']),reverse=True)
+                stable=[v for v in versions if '-' not in v['version'].split('+')[0]]
+                latest=(stable or versions or [None])[0]
+                documents=package_documents(api,full_name,commit,subdir)
+                for v in versions[:max_version_docs]:
+                    try: v['documents']=package_documents(api,full_name,v['commit'],subdir)
+                    except BudgetExceeded: v['documents_deferred']=True
+                license=metadata.get('license') or {}
+                package={'id':identity,'name':namespace,'owner':full_name.split('/')[0],'repository':'https://github.com/'+full_name,'subdir':subdir,
+                    'description':metadata.get('description') or '', 'topics':metadata.get('topics',[]),'stars':metadata.get('stargazers_count',0),
+                    'license':license.get('spdx_id') or '', 'updated_at':metadata.get('pushed_at'),'checked_commit':commit,'source_version':current_version,
+                    'modules':manifest['package']['modules'],'bin':manifest.get('bin',{}),'dependencies':list(manifest.get('dependencies',{})),'peers':manifest.get('peerDependencies',{}),
+                    'versions':versions,'latest':latest,'tag_limited':len(tags)>=max_tags,'ignored_tags':ignored,
+                    'devlang':manifest.get('devlang'),'compatibility':manifest['_compatibility'],'quality':ci,'documents':documents}
+                packages.append(package)
         except BudgetExceeded as error:
-            deferred.extend({'repository': pending, 'reason': str(error)} for pending in names[position:])
-            break
-        except (ValueError, HTTPError) as error:
-            if isinstance(error, HTTPError) and error.code not in (404, 422): raise
-            rejected.append({'repository': name, 'reason': str(error)[:300]})
-    return {'schema_version': 1, 'generated_at': datetime.now(timezone.utc).isoformat(), 'discovery_total': total, 'limited': incomplete or total > limit or bool(deferred),
-            'packages': packages, 'rejected': rejected, 'deferred': deferred, 'requests': api.calls, 'cache_hits': api.cache_hits, 'policy': {'topic': 'devlang-package', 'manifest': 'package.don', 'manifest_level': 0, 'max_tags_per_repo': 400}}
+            deferred.extend({'repository':pending,'reason':str(error)} for pending in names[position:]);break
+        except (ValueError,HTTPError) as error:
+            if isinstance(error,HTTPError) and error.code not in (404,422): raise
+            rejected.append({'repository':name,'reason':str(error)[:300]})
+    return {'schema_version':1,'generated_at':datetime.now(timezone.utc).isoformat(),'discovery_total':total,'limited':incomplete or total>limit or bool(deferred),
+        'packages':packages,'rejected':rejected,'deferred':deferred,'requests':api.calls,'cache_hits':api.cache_hits,
+        'policy':{'topic':'devlang-package','manifest':'package.don','manifest_level':0,'max_tags_per_repo':max_tags,'max_version_documents':max_version_docs,'search_sharding':'created-date','max_repos':limit}}
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--d', required=True, type=Path)
     parser.add_argument('--output', default='website/content/packages.json', type=Path)
     parser.add_argument('--repo', action='append', default=[])
-    parser.add_argument('--max-repos', type=int, default=1000)
+    parser.add_argument('--max-repos', type=int, default=10000)
+    parser.add_argument('--max-tags',type=int,default=400)
+    parser.add_argument('--max-version-docs',type=int,default=10)
     parser.add_argument('--cache-dir', type=Path)
     parser.add_argument('--max-requests', type=int, default=900)
     parser.add_argument('--api-base', default='https://api.github.com')
     args = parser.parse_args()
     if not 1 <= args.max_requests <= 5000: parser.error('--max-requests must be 1..5000')
-    if not 1 <= args.max_repos <= 1000: parser.error('--max-repos must be 1..1000')
-    catalog = collect(Api(args.api_base, args.cache_dir, args.max_requests), args.d.resolve(), args.repo, args.max_repos)
+    if not 1 <= args.max_repos <= 10000: parser.error('--max-repos must be 1..10000')
+    if not 1 <= args.max_tags <= 10000: parser.error('--max-tags must be 1..10000')
+    if not 0 <= args.max_version_docs <= 400: parser.error('--max-version-docs must be 0..400')
+    catalog = collect(Api(args.api_base, args.cache_dir, args.max_requests), args.d.resolve(), args.repo, args.max_repos,args.max_tags,args.max_version_docs)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.output.with_suffix('.json.tmp')
     details = args.output.parent / 'package-details'
     details.mkdir(exist_ok=True)
     for package in catalog['packages']:
+        for version in package['versions']:
+            if 'documents' not in version: continue
+            docs=version.pop('documents');version_file=hashlib.sha256((package['id']+'@'+version['commit']).encode()).hexdigest()+'.json'
+            version['details']='package-details/'+version_file
+            (details/version_file).write_text(json.dumps({'id':package['id'],'commit':version['commit'],'documents':docs},ensure_ascii=False),encoding='utf-8')
         documents = package.pop('documents', [])
         filename = hashlib.sha256(package['id'].encode()).hexdigest() + '.json'
         package['details'] = 'package-details/' + filename

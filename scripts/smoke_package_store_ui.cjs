@@ -2,7 +2,7 @@
 // Exercise rendering/filtering with hostile metadata; fixtures never enter the deployed catalog.
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const nodes={};
-const node=id => nodes[id] ||= {innerHTML:'',textContent:'',value:''};
+const node=id => nodes[id] ||= {innerHTML:'',textContent:'',value:'',dataset:{}};
 const escapeHTML=value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sandbox={document:{getElementById:node,addEventListener(){}},location:{hash:'#/packages'},escapeHTML,encodeURIComponent,decodeURIComponent,Date,prepareCode(){},codeBlock:code=>'<pre>'+escapeHTML(code)+'</pre>'};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync('website/src/packages.js','utf8'),sandbox);
@@ -35,3 +35,17 @@ vm.runInContext("packageCatalog.rejected=[{repository:'owner/bad',reason:'<scrip
 assert.ok(node('package-status-results').innerHTML.includes('&lt;script&gt;bad'));
 assert.ok(!node('package-status-results').innerHTML.includes('<script>'));
 console.log('Package Store UI: pagination and escaped indexing diagnostics passed');
+
+(async()=>{
+ sandbox.location.hash='#/packages/owner/math';sandbox.fixture=fixture;
+ vm.runInContext("fixture.latest=fixture.versions[0];fixture.details='package-details/'+ 'a'.repeat(64)+'.json';fixture.versions[0].details='package-details/'+ 'b'.repeat(64)+'.json';packageCatalog.packages=[fixture]",sandbox);
+ sandbox.fetch=async path=>({ok:true,json:async()=>({id:'owner/math',commit:'a'.repeat(40),documents:[{path:'README.md',source:'https://github.com/owner/math',html:'<p>'+path+'</p>'}]})});
+ await vm.runInContext("loadPackageDocuments('owner/math','v1.0.0')",sandbox);
+ assert.ok(node('package-documents').innerHTML.includes('b'.repeat(64)) && node('package-documents').innerHTML.includes('selected'));
+ vm.runInContext('delete fixture.versions[0].details',sandbox);
+ await vm.runInContext("loadPackageDocuments('owner/math','v1.0.0')",sandbox);
+ assert.ok(node('package-documents').innerHTML.includes('package-doc-version') && node('package-documents').innerHTML.includes('อ่านจาก GitHub'));
+ vm.runInContext("fixture.id='owner/mono/math';fixture.subdir='packages/math';packageCatalog.packages=[fixture]",sandbox);
+ assert.ok(vm.runInContext("packageDetail('owner/mono/math')",sandbox).includes('/packages/math/package.don'));
+ console.log('Package Store UI: release document selection, fallback navigation and member manifest links passed');
+})().catch(error=>{console.error(error);process.exitCode=1;});
