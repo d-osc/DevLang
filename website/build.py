@@ -86,7 +86,7 @@ def main():
         REPO = materials
     dist = HERE / 'dist'
     dist.mkdir(exist_ok=True)
-    for name in ('index.html', 'style.css', 'app.js', 'packages.js', 'logo.svg'):
+    for name in ('index.html', 'style.css', 'app.js', 'packages.js', 'language.js', 'logo.svg'):
         shutil.copy2(HERE / 'src' / name, dist / name)
     catalog = json.loads((HERE / 'content/packages.json').read_text(encoding='utf-8'))
     if catalog.get('schema_version') != 1 or not isinstance(catalog.get('packages'), list):

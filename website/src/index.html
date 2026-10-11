@@ -8,8 +8,9 @@
   <title>DevLang — เขียนให้น้อย ทำให้ได้มาก</title>
   <link rel="icon" href="logo.svg?v=2" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
+  <script src="language.js?v=1" defer></script>
   <script src="packages.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=languages-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#content">ข้ามไปเนื้อหา</a>
@@ -18,6 +19,8 @@
     <nav aria-label="เมนูหลัก"><a href="#/docs/intro" data-nav="docs">คู่มือ</a><a href="#/examples" data-nav="examples">ตัวอย่าง</a><a href="#/packages" data-nav="packages">Package Store</a><a href="#/ai" data-nav="ai">AI skill</a></nav>
     <div class="header-actions"><button id="search-open" class="search-button" aria-label="ค้นหาคู่มือ"><span>ค้นหาคู่มือ</span><kbd>Ctrl K</kbd><span class="search-icon" aria-hidden="true">⌕</span></button><button id="theme-toggle" class="icon-button" aria-label="สลับธีมมืด/สว่าง">◐</button><a class="button small primary" href="#/downloads">ดาวน์โหลด <span aria-hidden="true">↗</span></a></div>
   </header>
+  <div id="language-service" class="notranslate" translate="no"></div>
+  <div id="language-status" class="notranslate" translate="no" role="status" hidden></div>
   <main id="content" tabindex="-1"><div class="loading">กำลังเปิดคู่มือ DevLang…</div></main>
   <footer><a class="brand" href="#/">DevLang.</a><p>ภาษาเล็ก · ไอเดียใหญ่ · เรียนรู้จากโค้ดจริง</p><div><a href="https://github.com/d-osc/DevLang" target="_blank" rel="noreferrer">GitHub ↗</a><a href="llms.txt">llms.txt</a><a href="#/docs/limitations">ข้อจำกัด</a></div></footer>
   <dialog id="search-dialog"><div class="search-top"><span aria-hidden="true">⌕</span><input id="search-input" placeholder="ค้นหา syntax, Vec, unsafe, main…" aria-label="ค้นหาในคู่มือ" autocomplete="off"><button id="search-close" class="icon-button" aria-label="ปิดการค้นหา">×</button></div><div id="search-results" role="region" aria-label="ผลการค้นหา"></div><div class="search-hint">ค้นหาจากเนื้อหาทั้งคู่มือ · Esc เพื่อปิด</div></dialog>
