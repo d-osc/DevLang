@@ -52,6 +52,8 @@ jobs:
         run: python scripts/build_package_store.py --d target/release/d --cache-dir out/package-store-api
       - name: Build documentation with validated example snapshots
         run: python website/build.py --skip-validation
+      - name: Validate crawlable pages and sitemap
+        run: python scripts/check_website_seo.py
       - name: Check per-module signatures and API contracts
         run: python scripts/build_module_docs.py --check
       - uses: actions/configure-pages@v6

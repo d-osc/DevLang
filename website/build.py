@@ -86,7 +86,7 @@ def main():
         REPO = materials
     dist = HERE / 'dist'
     dist.mkdir(exist_ok=True)
-    for name in ('index.html', 'style.css', 'app.js', 'packages.js', 'language.js', 'logo.svg'):
+    for name in ('index.html', 'style.css', 'app.js', 'packages.js', 'language.js', 'seo.js', 'logo.svg'):
         shutil.copy2(HERE / 'src' / name, dist / name)
     catalog = json.loads((HERE / 'content/packages.json').read_text(encoding='utf-8'))
     if catalog.get('schema_version') != 1 or not isinstance(catalog.get('packages'), list):
@@ -270,6 +270,8 @@ def main():
     (dist / 'llms.txt').write_text(llms + '\n', encoding='utf-8')
     content = dict(version='v0.5.0', documents=documents, examples=examples, groups=list(GROUPS) + ['Module API', 'Reference · EN'])
     (dist / 'content.json').write_text(json.dumps(content, ensure_ascii=False), encoding='utf-8')
+    from seo import build_seo
+    build_seo(dist, content, catalog)
     print(f'Built {len(documents)} articles and {len(examples)} executable examples -> {dist}')
 
 

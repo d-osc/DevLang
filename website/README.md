@@ -2,6 +2,22 @@
 
 Static Thai learning guide, complete reference documentation, executable examples and a downloadable AI skill. No browser interpreter is advertised or included.
 
+## Google Search and Search Console
+
+The build produces real `/DevLang/docs/<id>/` and `/DevLang/examples/<id>/`
+HTML pages, including content visible without JavaScript, self-referencing
+canonical URLs, descriptions, Open Graph metadata and WebPage structured data.
+Legacy `#/...` bookmarks remain supported. The generated `sitemap.xml` lists
+canonical URLs without fragments or translation parameters. Run
+`python scripts/check_website_seo.py` after building to validate all pages.
+
+The Search Console URL-prefix property is `https://d-osc.github.io/DevLang/`.
+Submit `https://d-osc.github.io/DevLang/sitemap.xml`. Keep the
+`google-site-verification` meta tag in `src/index.html` so ownership remains
+verifiable. Indexing and ranking are determined by Google, not deployment.
+Automatic browser translation does not create separate indexable language
+editions; do not advertise translated `hreflang` pages until those files exist.
+
 Build from the repository root:
 
 ```sh

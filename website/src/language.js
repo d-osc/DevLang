@@ -82,7 +82,8 @@
       }
     });
   }
-  const docId = location.hash.match(/^#\/docs\/([^?]+)/)?.[1];
+  const route = location.hash.startsWith('#/') ? location.hash.slice(1) : document.body.dataset.route || '/';
+  const docId = route.match(/^\/docs\/([^?]+)/)?.[1];
   const source = language === 'en' ? 'th' : data.documents.find(doc => doc.id === docId)?.language === 'EN' ? 'en' : 'th';
   // Reload on navigation so the translator never becomes application state, and
   // each reference article uses its actual source language.

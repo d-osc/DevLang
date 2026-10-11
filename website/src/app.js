@@ -77,7 +77,7 @@ function downloads() {
 }
 function notFound() { return '<div class="container"><div class="page-heading"><h1>ไม่พบหน้านี้</h1><p>เลือกหัวข้อจากคู่มือ หรือกลับไปหน้าแรก</p><a class="button primary" href="#/">กลับหน้าแรก →</a></div></div>'; }
 function render() {
-  const route = location.hash.slice(1) || '/';
+  const route = location.hash.startsWith('#/') ? location.hash.slice(1) : (document.body.dataset.route || '/') + location.search;
   const [path, query] = route.split('?'), parts = path.split('/').filter(Boolean);
   document.title = 'DevLang — เขียนให้น้อย ทำให้ได้มาก';
   const page = parts[0];
