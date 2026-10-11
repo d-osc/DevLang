@@ -8,6 +8,9 @@
   try { stored = localStorage.getItem('devlang-language'); } catch (_) {}
   const requested = url.searchParams.get('lang');
   const language = supported.has(requested) ? requested : supported.has(stored) ? stored : 'th';
+  if (supported.has(requested)) {
+    try { localStorage.setItem('devlang-language', language); } catch (_) {}
+  }
   document.documentElement.lang = language;
 
   const switcher = document.createElement('div');
