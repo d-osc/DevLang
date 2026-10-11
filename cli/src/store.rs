@@ -71,7 +71,7 @@ fn package_outdated(project:&Path,args:&[String])->Result<(),String> {
         let versions=available_versions(&name,&dep)?;
         if versions.is_empty() {continue;}
         let req=peer_requirement(dep.range.as_deref().or(dep.version.as_deref()).unwrap_or("*"))?;
-        let current=if lock.version==2 {lock.edges.get("root").and_then(|e|e.get(&name)).and_then(|id|lock.packages.get(id))}else{lock.packages.get(&name)};
+        let current=if lock.version>=2 {lock.edges.get("root").and_then(|e|e.get(&name)).and_then(|id|lock.packages.get(id))}else{lock.packages.get(&name)};
         let current=current.and_then(|p|p.resolved_version.clone()).or_else(||dep.rev.as_ref().map(|v|v.trim_start_matches('v').into())).unwrap_or_else(||"unknown".into());
         let wanted=versions.iter().filter(|v|req.matches(v)).max().map(ToString::to_string).unwrap_or_else(||"none".into());
         let latest=versions.iter().filter(|v|v.pre.is_empty()).max().or_else(||versions.iter().max()).unwrap();

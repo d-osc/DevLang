@@ -1,6 +1,6 @@
 # d command
 
-CLI 0.3.0 adds `d task`, `d pkg ci/tree/why/dedupe/cache/audit/verify/verify-tag`, extended version ranges, optional dependencies, overrides, host platform policy, bounded version backtracking and opt-in peer installation. See [Package tools](../docs/package-features.md) for examples and limits.
+CLI 0.4.0 adds contextual peer instances (version-3 locks) and a configurable resolver budget, alongside `d task`, `d pkg ci/tree/why/dedupe/cache/audit/verify/verify-tag`, extended version ranges, optional dependencies, overrides, host platform policy, bounded version backtracking and opt-in peer installation. See [Package tools](../docs/package-features.md) for examples and limits.
 
 The latest source build also includes project dependencies, formatting, a stdio
 language server and native debugger integration. See [Developer tools](../docs/tooling.md)

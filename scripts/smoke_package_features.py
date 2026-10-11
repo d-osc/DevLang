@@ -55,7 +55,9 @@ with tempfile.TemporaryDirectory(prefix='devlang package features ') as temporar
  source=root/'search';write(source);git(source,'init','-b','main');git(source,'config','user.name','Fixture');git(source,'config','user.email','fixture@example.invalid')
  sha1=commit(source,'v1.0.0');change(source,version='1.1.0',peerDependencies={'base':'^2'});sha2=commit(source,'v1.1.0')
  solver=root/'solver';write(solver,dependencies={'search':{'git':source.as_uri(),'version':'1.0.0 - 1.9.9 || ^2'},'base':{'path':'../base'}})
- run('pkg','install',cwd=solver);assert lock(solver)['packages']['search']['resolved_version']=='1.0.0'
+ run('pkg','install',cwd=solver,extra={'DEVLANG_RESOLUTION_ATTEMPTS':'0'},error='integer from')
+ run('pkg','install',cwd=solver,extra={'DEVLANG_RESOLUTION_ATTEMPTS':'1'},error='1-attempt budget')
+ run('pkg','install',cwd=solver,extra={'DEVLANG_RESOLUTION_ATTEMPTS':'16'});assert lock(solver)['packages']['search']['resolved_version']=='1.0.0'
  run('pkg','ci',cwd=solver);run('pkg','install','--offline','--locked',cwd=solver)
  # A peer uses its nearest ancestor's provider in an isolated graph.
  plugin=root/'plugin';write(plugin,peerDependencies={'base':'^1'})

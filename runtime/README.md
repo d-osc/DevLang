@@ -1,5 +1,10 @@
 # Dev source runtime
 
+Runtime 0.2.1 accepts `--module-map modules.json`, a JSON array of
+`NAME=DIR` strings, alongside repeatable `--module-dir NAME=DIR` options.
+The CLI generates a verified mapping file for package graphs and global commands
+to avoid Windows command-line length limits. Duplicate namespaces are rejected.
+
 `std/dns` and `std/cli` provide OS host resolution and schema-based argument
 parsing. See [API contracts](../docs/system-libs.md).
 

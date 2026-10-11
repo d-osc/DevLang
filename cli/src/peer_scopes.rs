@@ -12,13 +12,28 @@ fn graph_scopes(
         inherited.extend(own.clone());
         if let Some(previous) = scopes.get(&context) {
             if previous != &inherited {
-                if let Some(item) = lock.packages.get(&context) {
-                    let m = manifest(&locked_root(project, &context, item)?)?;
-                    if m.peer_dependencies
-                        .keys()
-                        .any(|name| previous.get(name) != inherited.get(name))
-                    {
-                        return Err(format!("package {} has incompatible ancestor peer scopes; use distinct dependency declarations",m.package.name));
+                // Include descendant peers: a wrapper without peers may still carry
+                // a plugin whose provider depends on the wrapper's ancestry.
+                let mut nodes = vec![context.clone()];
+                let mut seen = BTreeSet::new();
+                while let Some(node) = nodes.pop() {
+                    if !seen.insert(node.clone()) {
+                        continue;
+                    }
+                    if let Some(item) = lock.packages.get(&node) {
+                        let m = manifest(&locked_root(project, &node, item)?)?;
+                        if m.peer_dependencies
+                            .keys()
+                            .any(|name| previous.get(name) != inherited.get(name))
+                        {
+                            return Err(format!(
+                                "package {} has incompatible ancestor peer scopes",
+                                m.package.name
+                            ));
+                        }
+                    }
+                    if let Some(edges) = lock.edges.get(&node) {
+                        nodes.extend(edges.values().cloned());
                     }
                 }
                 continue;

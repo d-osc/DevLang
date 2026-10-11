@@ -16,6 +16,7 @@ devrun -e|--eval 'print(40 + 2)' [--timings] [-- arguments]
   --timings        Print source-load and execution timings to stderr
   --ffi-lib PATH   Load a native shared library (.dll/.so), repeatable
   --engine MODE    auto (default numeric plans) or ast (reference interpreter)
+  --module-map FILE      Read JSON array of NAME=DIR mappings
   --module-dir NAME=DIR  Map an imported namespace (repeatable)
 Interprets Dev directly; source-only C dependencies are prepared automatically.";
 
@@ -43,6 +44,12 @@ fn run() -> Result<i32, String> {
                 break;
             }
             "--timings" => timings = true,
+            "--module-map" => {
+                let path = std::path::PathBuf::from(raw.next().ok_or("--module-map needs a file")?);
+                for (name, path) in dev_syntax::modules::mapping_file(&path)? {
+                    if module_dirs.insert(name, path).is_some() { return Err("duplicate module namespace".into()); }
+                }
+            }
             "--module-dir" => {
                 let (name, path) = dev_syntax::modules::mapping(
                     &raw.next().ok_or("--module-dir needs NAME=DIR")?,

@@ -1488,13 +1488,13 @@ CLI ใช้ `d pkg add math --url URL --sha256 HASH` ไฟล์ archive ต�
 constraints ที่ใช้ version เดียวกันได้จะแชร์ package ส่วน source/version ที่ชนกันจะแยกด้วย lock version 2 ยังไม่มี general backtracking แต่รองรับ Store และ publishing แล้ว ถ้า add/remove ติดตั้งไม่สำเร็จจะคืน manifest เดิม การติดตั้ง `--workspace` ไม่เป็น transaction ทั้งกลุ่ม
 
 
-## Package Store และ CLI รุ่น 0.3.0
+## Package Store และ CLI รุ่น 0.4.0
 
 ค้นหา `d pkg search math`, ดูเวอร์ชัน `d pkg info @owner/repo`, ติดตั้ง `d pkg add @owner/repo --as math --version '^1'` ตัวตน owner/repo แยกจาก alias ที่ใช้ import ใช้ `d pkg outdated` ดู CURRENT/WANTED/LATEST และ `d pkg upgrade math` เพื่ออัปเกรดตามช่วงเดิม ใช้ --latest เมื่อต้องการข้าม major และ --dry-run เพื่อดูก่อนแก้ manifest
 
 Store รองรับ workspace.members ที่ประกาศใน package.don ระดับ root แล้ว สมาชิกมีตัวตน @owner/repo/namespace และใช้ tag namespace/v1.0.0 หน้า Store มี README/API/changelog แยกตาม release, ผล GitHub CI, pagination และหน้าสถานะ repo พร้อมเหตุผลการไม่ผ่าน ดู [Package Store](#/docs/package-store) สำหรับขีดจำกัดและวิธีใช้ทั้งหมด Template มี workflow ทดสอบสอง runtime engines, ออก release และสร้าง artifact attestation
 
-CLI เพิ่ม d task สำหรับ scripts, d pkg ci/tree/why/dedupe/cache/audit/verify/verify-tag และรองรับ optionalDependencies, overrides, os/cpu, ช่วงเวอร์ชัน ^1 || ^2, >= 1 <2 และ 1.0.0 - 2.0.0 การติดตั้งค้นหาเวอร์ชันย้อนหลังได้สูงสุด 128 ครั้ง และติดตั้ง peer ที่ขาดเมื่อเลือก --auto-peers เท่านั้น ใช้ --offline เพื่ออ่าน cache โดยไม่ติดต่อ network รายละเอียด ตัวอย่างและขีดจำกัดอยู่ที่ [Package tools](#/docs/package-features)
+CLI เพิ่ม d task สำหรับ scripts, d pkg ci/tree/why/dedupe/cache/audit/verify/verify-tag และรองรับ optionalDependencies, overrides, os/cpu, ช่วงเวอร์ชัน ^1 || ^2, >= 1 <2 และ 1.0.0 - 2.0.0 การติดตั้งค้นหาเวอร์ชันย้อนหลังได้ 128 ครั้งโดยค่าเริ่มต้น ปรับได้ผ่าน DEVLANG_RESOLUTION_ATTEMPTS (1–65536) และแยก peer context อัตโนมัติใน lockfile รุ่น 3 และติดตั้ง peer ที่ขาดเมื่อเลือก --auto-peers เท่านั้น ใช้ --offline เพื่ออ่าน cache โดยไม่ติดต่อ network รายละเอียด ตัวอย่างและขีดจำกัดอยู่ที่ [Package tools](#/docs/package-features)
 
 
 # [module-api-intro] คู่มือแต่ละ Module

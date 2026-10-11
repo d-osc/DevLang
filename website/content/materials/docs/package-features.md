@@ -1,6 +1,6 @@
-# Package tools (CLI 0.3.0)
+# Package tools (CLI 0.4.0)
 
-These commands require a current source build of `d`. Runtime and compiler remain separate executables; their versions are independent of the CLI version.
+These commands require a current source build of `d`. Runtime and compiler remain separate executables; their versions are independent of the CLI version. This update uses CLI 0.4.0, runtime 0.2.1 and compiler 0.4.1; build them together. Module mappings are passed via a JSON file (`--module-map FILE`) to avoid Windows command-line length limits. `--module-dir NAME=DIR` remains supported.
 
 ## Explicit scripts
 
@@ -44,9 +44,11 @@ OS/CPU lists allow the current target when empty, when listed positively, or whe
 
 Ranges support `^1.2`, `~1.2`, `=1.2.3`, `*`, `>=1.2, <2`, `>= 1.2 <2`, `1.2.0 - 2.3.0` and alternatives such as `^1 || ^2`. A partial hyphen upper bound expands to its next minor/major boundary. Prereleases require an explicit matching prerelease comparator. SemVer crate matching applies after normalization; this is not a promise of every npm edge-case rule.
 
-Online installation searches Git tags, Store versions and static registry releases from newest to oldest, backtracking on version/peer constraints. Search stops after 128 attempts and propagates transport, malformed-source and integrity errors. Locks retain the declared range and selected version, commit or actual registry URL/checksum. Locked and offline installs preserve the selection and do not search alternatives.
+Online installation searches Git tags, Store versions and static registry releases from newest to oldest, backtracking on version/peer constraints. Search defaults to 128 attempts; set `DEVLANG_RESOLUTION_ATTEMPTS` to an integer from 1 to 65536 to change the budget. Choices from abandoned branches are discarded. Transport, malformed-source and integrity errors propagate immediately. Locks retain the declared range and selected version, commit or actual registry URL/checksum. Locked and offline installs preserve the selection and do not search alternatives.
 
-Version-2 graphs resolve peers from the nearest ancestor providers, with a package's own dependencies taking precedence. Version-1 locks use their flat namespace. A shared graph node with conflicting ancestor peer contexts is rejected; declare distinct dependencies rather than silently choosing a provider.
+Version-2 graphs resolve peers from the nearest ancestor providers, with a package's own dependencies taking precedence. Version-1 locks use their flat namespace. When a shared package (including a wrapper with descendant peers) needs different ancestor providers, installation upgrades to a version-3 lock. Each dependency path gets a physical copy under `.dev/contexts`, and runtime, native builds, locked installs and global launchers use that context. Source hashes and original declarations remain validated. Copies cost additional disk space; graphs are bounded to 4096 instances. Ancestor cycles reuse the existing instance and must have compatible peer contexts. Version-1 and version-2 locks remain supported.
+
+Context instances share the selected source version for an identical normalized dependency declaration. They isolate peer providers, but do not independently select different package versions per peer context. If one selected plugin version cannot accept both providers, declare distinct compatible plugin version ranges in the two consumers.
 
 ```sh
 d pkg install --auto-peers

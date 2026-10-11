@@ -94,7 +94,7 @@ On Windows, pass `target/release/d.exe`. An optional `GITHUB_TOKEN` or `GH_TOKEN
 
 ## CLI search, scoped identity and upgrades
 
-Use CLI 0.3.0 and the runtime built from current source. Component versions are independent of the compiler/language release. See [Package tools](package-features.md) for scripts, peer installation, resolution, offline and security checks.
+Use CLI 0.4.0 and the runtime built from current source. Component versions are independent of the compiler/language release. See [Package tools](package-features.md) for scripts, peer installation, resolution, offline and security checks.
 
 ```sh
 d pkg search math
@@ -116,7 +116,7 @@ The package page reads README.md, API.md, CHANGELOG.md and Markdown in docs/ fro
 
 The [repo status page](https://d-osc.github.io/DevLang/#/packages/status) shows passed, rejected and deferred repos, invalid-tag reasons, snapshot time and cache/request counts. A missing repo may lack the topic, be excluded, await GitHub indexing or exceed the search cap. It does not imply rejection if absent.
 
-CI badges report GitHub checks at the default-branch snapshot: passed, failed, pending, skipped, unknown, unavailable or partial. They do not imply release-tag testing or certify safety. Optional top-level `devlang: '^0.3.0'` is a d CLI SemVer requirement. `d pkg compatibility --json` reports compatibility; install/run enforce it. Manifest inspection remains available for incompatible packages.
+CI badges report GitHub checks at the default-branch snapshot: passed, failed, pending, skipped, unknown, unavailable or partial. They do not imply release-tag testing or certify safety. Optional top-level `devlang: '^0.4.0'` is a d CLI SemVer requirement. `d pkg compatibility --json` reports compatibility; install/run enforce it. Manifest inspection remains available for incompatible packages.
 
 ## Cached crawling and bounds
 

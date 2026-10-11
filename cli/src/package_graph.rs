@@ -7,15 +7,16 @@ fn graph_identity(project:&Path,parent:&Path,name:&str,dep:&Dependency)->Result<
     Ok(format!("{name}__{:x}",Sha256::digest(bytes)))
 }
 fn install_attempt(project:&Path,locked:bool,refresh:bool,production:bool)->Result<(),String>{
-    if std::env::var_os("DEVLANG_DEDUPE").is_none() && lock_path(project).exists() && read::<Lock>(&lock_path(project))?.version==2 {return graph_install(project,locked,refresh,production);}
+    if std::env::var_os("DEVLANG_DEDUPE").is_none() && lock_path(project).exists() && read::<Lock>(&lock_path(project))?.version>=2 {return graph_install(project,locked,refresh,production);}
     match legacy_install_mode(project,locked,refresh,production){
         Err(e) if !locked && (e.starts_with("conflicting dependency namespace") || e.starts_with("conflicting local dependency") || e.starts_with("conflicting workspace dependency")) => graph_install(project,false,refresh,production),
         result=>result,
     }
 }
 fn graph_install(project:&Path,locked:bool,refresh:bool,production:bool)->Result<(),String>{
-    let previous:Lock=if lock_path(project).exists(){read(&lock_path(project))?}else{Lock::default()};
-    if locked && (previous.version!=2 || previous.production!=production){return Err("--locked needs a matching version-2 lock".into());}
+    let previous_lock:Lock=if lock_path(project).exists(){read(&lock_path(project))?}else{Lock::default()};
+    if locked && (!matches!(previous_lock.version,2|3) || previous_lock.production!=production){return Err("--locked needs a matching graph lock".into());}
+    let previous=if previous_lock.version==3 { source_lock(project,&previous_lock)? } else { previous_lock.clone() };
     let root=manifest(project)?;check_compatibility(&root)?;
     let mut result=Lock{version:2,production,packages:BTreeMap::new(),edges:BTreeMap::new(),omitted:BTreeMap::new()};
     let mut pending=vec![("root".to_owned(),project.to_owned(),root_dependencies(&root,production)?)];
@@ -43,8 +44,9 @@ fn graph_install(project:&Path,locked:bool,refresh:bool,production:bool)->Result
         }
         result.edges.insert(context,edges);
     }
+    if previous_lock.version==3 || graph_scopes(project,&result).is_err_and(|e|e.contains("incompatible ancestor peer scopes")) { result=context_lock(project,&result,true)?; }
     graph_verify_peers(project,&result)?;
-    if locked && previous!=result {return Err("dependency graph differs from package-lock.don".into());}
+    if locked && previous_lock!=result {return Err("dependency graph differs from package-lock.don".into());}
     let bins=package_bins(project,&result)?;install_bins(project,&bins)?;
     if !locked{write(&project.join("package-lock.don"),&result)?;}
     println!("resolved {} packages with isolated namespaces",result.packages.len());
@@ -68,10 +70,13 @@ fn scoped_mapping(alias:&str,at:&Path)->String {
     format!("{alias}@{bytes}")
 }
 pub fn mappings(project:&Path)->Result<Vec<(String,PathBuf)>,String>{
-    if !lock_path(project).exists() || read::<Lock>(&lock_path(project))?.version!=2{return legacy_mappings(project);}
+    if !lock_path(project).exists(){return legacy_mappings(project);}
     let lock:Lock=read(&lock_path(project))?;
+    match lock.version { 1=>legacy_mappings(project), 2=>graph_mappings(project,&lock,true), 3=>context_mappings(project,&lock), _=>Err("unsupported package lock version".into()) }
+}
+fn graph_mappings(project:&Path,lock:&Lock,verify_peers:bool)->Result<Vec<(String,PathBuf)>,String>{
     let m=manifest(project)?;check_compatibility(&m)?;
-    let scopes=graph_scopes(project,&lock)?;
+    let scopes=if verify_peers {graph_scopes(project,lock)?} else {lock.edges.clone()};
     let mut pending=vec![("root".to_owned(),project.to_owned(),root_dependencies(&m,lock.production)?)];
     let mut visited=BTreeSet::new();let mut contexts=BTreeSet::new();let mut dirs=BTreeMap::new();let mut omitted=BTreeMap::new();
     let mut declarations=BTreeMap::<String,BTreeSet<Dependency>>::new();
@@ -106,6 +111,6 @@ pub fn mappings(project:&Path)->Result<Vec<(String,PathBuf)>,String>{
         let expected:BTreeSet<_>=std::iter::once(item.source.clone()).chain(item.additional_sources.iter().cloned()).collect();
         if declarations.get(id)!=Some(&expected){return Err("lock contains stale source requirements".into());}
     }
-    graph_verify_peers(project,&lock)?;
+    if verify_peers {graph_verify_peers(project,lock)?;}
     Ok(dirs.into_iter().collect())
 }

@@ -7,7 +7,7 @@ fn bin_name(name: &str) -> bool {
 fn package_bins(project: &Path, lock: &Lock) -> Result<BTreeMap<String, PathBuf>, String> {
     let mut roots = vec![project.to_owned()];
     for (name, item) in &lock.packages {
-        if lock.version != 2 || lock.edges.get("root").is_some_and(|edges| edges.values().any(|id| id == name)) { roots.push(locked_root(project, name, item)?); }
+        if lock.version < 2 || lock.edges.get("root").is_some_and(|edges| edges.values().any(|id| id == name)) { roots.push(locked_root(project, name, item)?); }
     }
     let mut bins = BTreeMap::new();
     let mut case_names = BTreeSet::new();
@@ -79,7 +79,7 @@ fn owned_bin(path: &Path) -> Result<bool, String> {
 pub fn exec_bin(args: &[String]) -> Result<i32, String> {
     let name = args.first().ok_or("usage: d exec NAME [-- arguments]")?;
     let project = root(&std::env::current_dir().map_err(|e| e.to_string())?).ok_or("no package project; use -C DIR")?;
-    let dirs = mappings(&project)?;
+    let map = mapping_file(&project)?;
     let lock: Lock = if lock_path(&project).exists() { read(&lock_path(&project))? } else { Lock::default() };
     let bins = package_bins(&project, &lock)?;
     let entry = bins.get(name).ok_or_else(|| format!("unknown bin '{name}'; run d pkg bin"))?;
@@ -87,7 +87,7 @@ pub fn exec_bin(args: &[String]) -> Result<i32, String> {
     let runner = executable.parent().unwrap().join(if cfg!(windows) { "devrun.exe" } else { "devrun" });
     let mut command = Command::new(runner);
     command.current_dir(&project).arg(entry);
-    for (name, directory) in dirs { command.arg("--module-dir").arg(format!("{name}={}", directory.display())); }
+    if let Some(path) = map { command.arg("--module-map").arg(path); }
     let arguments = args.get(1..).unwrap_or_default();
     let arguments = if arguments.first().is_some_and(|s| s == "--") { &arguments[1..] } else { arguments };
     let status = command.arg("--").args(arguments).status().map_err(|e| e.to_string())?;

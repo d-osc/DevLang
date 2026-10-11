@@ -21,6 +21,9 @@ devc run main.dev --module-dir mylib=/path/to/modules --link /path/to/library.a
 
 `--module-dir NAME=DIR` maps `use "NAME/module"` to `DIR/module.dev` and can be
 repeated for independent namespaces. Relative file imports continue to work.
+Compiler 0.4.1 also accepts `--module-map modules.json`, a JSON array such as
+`["mylib=/path/to/modules"]`. This avoids command-line length limits for large
+package graphs. Duplicate namespaces and invalid mapping names are rejected.
 `check` needs only module declarations; `emit` outputs Dev-generated C only.
 Neither operation reads runtime C sources, headers or libraries. Linking the
 emitted C requires the same explicitly selected external libraries.

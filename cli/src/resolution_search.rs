@@ -4,6 +4,7 @@ struct ResolutionSearch {
     active: bool,
     key: String,
     choices: Vec<(String, Vec<semver::Version>, usize)>,
+    visited: BTreeSet<String>,
 }
 thread_local! { static RESOLUTION_SEARCH: std::cell::RefCell<ResolutionSearch> = std::cell::RefCell::new(ResolutionSearch::default()); }
 fn choose_version(mut versions: Vec<semver::Version>) -> Result<semver::Version, String> {
@@ -18,6 +19,7 @@ fn choose_version(mut versions: Vec<semver::Version>) -> Result<semver::Version,
                 .ok_or("no matching version".into());
         }
         let key = state.key.clone();
+        state.visited.insert(key.clone());
         if let Some((_, old, index)) = state.choices.iter().find(|(k, _, _)| k == &key) {
             let selected = old.get(*index).ok_or("invalid resolver choice")?;
             if versions.contains(selected) {
@@ -39,6 +41,15 @@ fn install_mode(
     if locked || offline_mode() {
         return install_attempt(project, locked, refresh, production);
     }
+    let budget = match std::env::var("DEVLANG_RESOLUTION_ATTEMPTS") {
+        Ok(value) => value
+            .parse::<usize>()
+            .ok()
+            .filter(|n| (1..=65536).contains(n))
+            .ok_or("DEVLANG_RESOLUTION_ATTEMPTS must be an integer from 1 to 65536")?,
+        Err(std::env::VarError::NotPresent) => 128,
+        Err(_) => return Err("DEVLANG_RESOLUTION_ATTEMPTS must be valid text".into()),
+    };
     RESOLUTION_SEARCH.with(|s| {
         *s.borrow_mut() = ResolutionSearch {
             active: true,
@@ -47,7 +58,8 @@ fn install_mode(
     });
     let original = std::fs::read(manifest_path(project)).map_err(|e| e.to_string())?;
     let result = (|| {
-        for attempt in 0..128 {
+        for attempt in 0..budget {
+            RESOLUTION_SEARCH.with(|s| s.borrow_mut().visited.clear());
             match install_attempt(project, false, refresh || attempt > 0, production) {
                 Ok(()) => return Ok(()),
                 Err(error) => {
@@ -78,6 +90,10 @@ fn install_mode(
                     }
                     let more = RESOLUTION_SEARCH.with(|s| {
                         let mut s = s.borrow_mut();
+                        // Choices from a discarded dependency branch cannot constrain
+                        // its replacement or consume the next branch's search budget.
+                        let visited = s.visited.clone();
+                        s.choices.retain(|(key, _, _)| visited.contains(key));
                         while let Some((_, versions, index)) = s.choices.last_mut() {
                             if *index + 1 < versions.len() {
                                 *index += 1;
@@ -93,7 +109,7 @@ fn install_mode(
                 }
             }
         }
-        Err("dependency resolution exhausted its 128-attempt budget".into())
+        Err(format!("dependency resolution exhausted its {budget}-attempt budget; adjust DEVLANG_RESOLUTION_ATTEMPTS"))
     })();
     RESOLUTION_SEARCH.with(|s| *s.borrow_mut() = ResolutionSearch::default());
     if result.is_err() {

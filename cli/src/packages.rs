@@ -52,6 +52,7 @@ include!("registry.rs");
 include!("global_snapshots.rs");
 include!("store.rs");
 include!("package_graph.rs");
+include!("package_contexts.rs");
 include!("resolution_search.rs");
 include!("peer_scopes.rs");
 include!("package_policy.rs");
@@ -151,7 +152,7 @@ pub struct Manifest {
 pub struct Workspace {
     pub members: Vec<String>,
 }
-#[derive(Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 struct Lock {
     version: u32,
@@ -166,6 +167,10 @@ struct Lock {
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 struct Locked {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source_key: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source_root: Option<String>,
     source: Dependency,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     resolved_source: Option<Dependency>,
@@ -181,6 +186,17 @@ struct Locked {
 fn locked_root(project: &Path, name: &str, item: &Locked) -> Result<PathBuf, String> {
     if !identifier(name) {
         return Err("invalid locked namespace".into());
+    }
+    if item.source_key.is_some() || item.source_root.is_some() {
+        let key = item.source_key.as_deref().ok_or("context needs source key")?;
+        let mut original = item.clone();
+        original.root = original.source_root.take().ok_or("context needs source root")?;
+        original.source_key = None;
+        locked_root(project, key, &original)?;
+        if item.root != format!(".dev/contexts/{name}") {
+            return Err("invalid package context path".into());
+        }
+        return Ok(project.join(&item.root));
     }
     let actual=item.resolved_source.as_ref().unwrap_or(&item.source);
     if let Some(selected)=&item.resolved_source {
@@ -577,6 +593,8 @@ fn resolve_selected(
         tree_hash(&path)?
     };
     Ok(Locked {
+        source_key: None,
+        source_root: None,
         source: dep.clone(),
         resolved_source: None,
         root: stored,

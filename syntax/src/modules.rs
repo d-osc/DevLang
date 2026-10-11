@@ -65,3 +65,11 @@ pub fn mapping(value: &str) -> Result<(String, PathBuf), String> {
     }
     Ok((name.into(), path.into()))
 }
+
+pub fn mapping_file(path: &Path) -> Result<Vec<(String, PathBuf)>, String> {
+    let bytes = std::fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    if bytes.len() > 64 * 1024 * 1024 { return Err("module mapping file exceeds 64 MiB".into()); }
+    let values: Vec<String> = serde_json::from_slice(&bytes).map_err(|e| format!("invalid module mapping file: {e}"))?;
+    if values.len() > 65536 { return Err("module mapping file exceeds 65536 entries".into()); }
+    values.iter().map(|value| mapping(value)).collect()
+}

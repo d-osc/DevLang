@@ -66,6 +66,7 @@ Compiler options (after FILE.dev):
   --fast           Use TinyCC for fast builds
   --jobs N         Set compilation concurrency
   --cc PATH        Select a C compiler
+  --module-map FILE      Read JSON array of NAME=DIR mappings
   --module-dir NAME=DIR  Map an imported module namespace
   --link PATH      Link a C source/object/library (repeatable)
   --lib            Build a static library
@@ -138,7 +139,7 @@ fn run() -> Result<i32, String> {
             }
             "--timings" => timings = true,
             "-e" | "--eval" | "-o" | "--output" | "--cc" | "--ar" | "--link" | "--cflag"
-            | "--ldflag" | "--module-dir" | "--jobs" | "--cache-dir" | "--ffi-lib" | "--engine" => {
+            | "--ldflag" | "--module-map" | "--module-dir" | "--jobs" | "--cache-dir" | "--ffi-lib" | "--engine" => {
                 args.push(raw[at].clone());
                 at += 1;
                 args.push(raw.get(at).ok_or("option needs a value")?.clone());
@@ -242,9 +243,9 @@ fn run() -> Result<i32, String> {
                 if let Some(project) = packages::root(entry.parent().unwrap()) {
                     let boundary = args.iter().position(|a| a == "--").unwrap_or(args.len());
                     let mut maps = Vec::<OsString>::new();
-                    for (name, path) in packages::mappings(&project)? {
-                        maps.push("--module-dir".into());
-                        maps.push(format!("{name}={}", path.display()).into());
+                    if let Some(path) = packages::mapping_file(&project)? {
+                        maps.push("--module-map".into());
+                        maps.push(path.into_os_string());
                     }
                     args.splice(boundary..boundary, maps);
                 }

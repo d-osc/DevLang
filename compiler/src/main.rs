@@ -21,6 +21,7 @@ Options:
   --debug          Use -O0 with DWARF symbols (default; Windows MSVC Clang needs LLD)
   --release        Optimize native code with -O3 (default: fast -O0 build)
   --native         Tune for this CPU (-march=native; binary may not run elsewhere)
+  --module-map FILE      Read JSON array of NAME=DIR mappings
   --module-dir NAME=DIR  Map a module namespace to a directory (repeatable)
   --fast           Use TinyCC for fast development builds (requires tcc)
   --cc PATH        C compiler, also configurable through DEV_CC
@@ -125,6 +126,12 @@ fn cli() -> Result<i32, String> {
             "--release" => options.release = true,
             "--debug" => options.release = false,
             "--native" => options.native = true,
+            "--module-map" => {
+                let path = std::path::PathBuf::from(args.next().ok_or("--module-map needs a file")?);
+                for (name, path) in dev_syntax::modules::mapping_file(&path)? {
+                    if module_dirs.insert(name, path).is_some() { return Err("duplicate module namespace".into()); }
+                }
+            }
             "--module-dir" => {
                 let value = args.next().ok_or("--module-dir needs NAME=DIR")?;
                 let (name, path) = dev_syntax::modules::mapping(&value)?;
