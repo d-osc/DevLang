@@ -1487,6 +1487,14 @@ CLI ใช้ `d pkg add math --url URL --sha256 HASH` ไฟล์ archive ต�
 
 constraints ที่ใช้ version เดียวกันได้จะแชร์ package ส่วน source/version ที่ชนกันจะแยกด้วย lock version 2 ยังไม่มี general backtracking แต่รองรับ Store และ publishing แล้ว ถ้า add/remove ติดตั้งไม่สำเร็จจะคืน manifest เดิม การติดตั้ง `--workspace` ไม่เป็น transaction ทั้งกลุ่ม
 
+
+## Package Store และ CLI รุ่น 0.2.0
+
+ค้นหา `d pkg search math`, ดูเวอร์ชัน `d pkg info @owner/repo`, ติดตั้ง `d pkg add @owner/repo --as math --version '^1'` ตัวตน owner/repo แยกจาก alias ที่ใช้ import ใช้ `d pkg outdated` ดู CURRENT/WANTED/LATEST และ `d pkg upgrade math` เพื่ออัปเกรดตามช่วงเดิม ใช้ --latest เมื่อต้องการข้าม major และ --dry-run เพื่อดูก่อนแก้ manifest
+
+Git รองรับ --subdir packages/math แล้ว ส่วน Store ยังค้นพบ package.don ที่ root เท่านั้น หน้า Store มี README/API/changelog, ผล GitHub CI, pagination และหน้าสถานะ repo พร้อมเหตุผลการไม่ผ่าน ดู [Package Store](#/docs/package-store) สำหรับขีดจำกัดและวิธีใช้ทั้งหมด Template มี workflow ทดสอบสอง runtime engines และออก release เมื่อ push tag ที่ตรง version
+
+
 # [module-api-intro] คู่มือแต่ละ Module
 
 เปิด [Module API](#/docs/module-api) เพื่อดูหน้าของ builtin ครบ 42 runtime modules และ native C stdlib 4 bindings แต่ละหน้ามี import, signatures และ types, ตัวอย่างพร้อมคำสั่ง, errors, resource ownership และข้อจำกัดของโหมด
@@ -1526,10 +1534,3 @@ LSP ตรวจ syntax, duplicate keys, escapes, missing references และ r
 ## File icon และสี code
 
 แยกสี keys, strings, numbers, comments และ `@root.path` ออกจากกันโดยไม่เปลี่ยนธีม editor เมื่อใช้ Material Icon Theme จะเพิ่ม icon `.don` ให้อัตโนมัติ โดยเก็บ association ที่ผู้ใช้ตั้งเองไว้ สำหรับธีมอื่นใช้ language icon ตามที่ธีมรองรับ หรือเลือก DevLang File Icons
-
-
-## Package Store และ CLI รุ่น 0.2.0
-
-ค้นหา `d pkg search math`, ดูเวอร์ชัน `d pkg info @owner/repo`, ติดตั้ง `d pkg add @owner/repo --as math --version '^1'` ตัวตน owner/repo แยกจาก alias ที่ใช้ import ใช้ `d pkg outdated` ดู CURRENT/WANTED/LATEST และ `d pkg upgrade math` เพื่ออัปเกรดตามช่วงเดิม ใช้ --latest เมื่อต้องการข้าม major และ --dry-run เพื่อดูก่อนแก้ manifest
-
-Git รองรับ --subdir packages/math แล้ว ส่วน Store ยังค้นพบ package.don ที่ root เท่านั้น หน้า Store มี README/API/changelog, ผล GitHub CI, pagination และหน้าสถานะ repo พร้อมเหตุผลการไม่ผ่าน ดู [Package Store](#/docs/package-store) สำหรับขีดจำกัดและวิธีใช้ทั้งหมด Template มี workflow ทดสอบสอง runtime engines และออก release เมื่อ push tag ที่ตรง version
