@@ -82,6 +82,21 @@ with tempfile.TemporaryDirectory(prefix='devlang package features ') as temporar
  run('pkg','add','search','--registry',(registry/'index.don').as_uri(),'--version','^1',cwd=regapp)
  locked=lock(regapp)['packages']['search'];assert locked['resolved_version']=='1.0.0' and locked['resolved_source']['version']=='=1.0.0',locked
  run('pkg','ci',cwd=regapp);run('run',cwd=regapp)
+ # The same registry declaration resolves independently under two peer providers.
+ registry_wrapper=root/'registry_wrapper';registry_source=json.loads(run('don','to-json',regapp/'package.don'))['dependencies']['search'];write(registry_wrapper,dependencies={'search':registry_source})
+ (registry_wrapper/'src/lib.dev').write_text('use "search/lib" as search\nfn value() i64 { return search.value() }\n',encoding='utf-8')
+ for name,provider in [('registry_left','base'),('registry_right','replacement')]:
+  at=root/name;write(at,dependencies={'base':{'path':'../'+provider},'wrapper':{'path':'../registry_wrapper'}})
+  (at/'src/lib.dev').write_text('use "wrapper/lib" as wrapper\nfn value() i64 { return wrapper.value() }\n',encoding='utf-8')
+ registry_context=root/'registry_context';write(registry_context,dependencies={'left':{'path':'../registry_left'},'right':{'path':'../registry_right'}})
+ (registry_context/'src/main.dev').write_text('use "left/lib" as left\nuse "right/lib" as right\nfn main() { print(left.value()); print(right.value()) }\nmain()\n',encoding='utf-8')
+ run('pkg','install',cwd=registry_context)
+ context_lock=lock(registry_context);assert context_lock['version']==4
+ selections=[item for item in context_lock['resolutions']['packages'].values() if item['source'].get('registry')]
+ assert {item['resolved_version'] for item in selections}=={'1.0.0','1.1.0'},selections
+ assert all(item.get('resolved_source',item['source'])['sha256'] and item.get('resolved_source',item['source'])['url'] for item in selections)
+ assert run('run',cwd=registry_context)=='42\n42'
+ run('pkg','ci',cwd=registry_context);run('pkg','install','--locked','--offline',cwd=registry_context)
  receipt=root/'receipt.json';run('pkg','publish','--github','owner/search','--dry-run','--receipt',receipt,cwd=source)
  publication=json.loads(receipt.read_text(encoding='utf-8'));assert publication['uploaded'] is False and hashlib.sha256(Path(publication['asset']).read_bytes()).hexdigest()==publication['sha256']
  # Explicit local security feed reports both findings and absent coverage honestly.

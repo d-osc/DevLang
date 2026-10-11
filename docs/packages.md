@@ -1,6 +1,6 @@
 # Workspaces and version requirements
 
-For CLI 0.4.0 scripts, optional dependencies, overrides, platform policy, backtracking, peers, frozen installs, reports, offline cache and security checks, see [Package tools](package-features.md).
+For CLI 0.5.0 scripts, optional dependencies, overrides, platform policy, backtracking, peers, frozen installs, reports, offline cache and security checks, see [Package tools](package-features.md).
 
 For a complete runnable `package.don` example covering manifest fields, workspace and path dependencies, Git templates, DON references and lock commands, see [the full package example](../examples/package-don/README.md).
 

@@ -5,6 +5,7 @@ struct ResolutionSearch {
     key: String,
     choices: Vec<(String, Vec<semver::Version>, usize)>,
     visited: BTreeSet<String>,
+    contextual: bool,
 }
 thread_local! { static RESOLUTION_SEARCH: std::cell::RefCell<ResolutionSearch> = std::cell::RefCell::new(ResolutionSearch::default()); }
 fn choose_version(mut versions: Vec<semver::Version>) -> Result<semver::Version, String> {

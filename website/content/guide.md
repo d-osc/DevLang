@@ -1494,7 +1494,7 @@ constraints ที่ใช้ version เดียวกันได้จะ�
 
 Store รองรับ workspace.members ที่ประกาศใน package.don ระดับ root แล้ว สมาชิกมีตัวตน @owner/repo/namespace และใช้ tag namespace/v1.0.0 หน้า Store มี README/API/changelog แยกตาม release, ผล GitHub CI, pagination และหน้าสถานะ repo พร้อมเหตุผลการไม่ผ่าน ดู [Package Store](#/docs/package-store) สำหรับขีดจำกัดและวิธีใช้ทั้งหมด Template มี workflow ทดสอบสอง runtime engines, ออก release และสร้าง artifact attestation
 
-CLI เพิ่ม d task สำหรับ scripts, d pkg ci/tree/why/dedupe/cache/audit/verify/verify-tag และรองรับ optionalDependencies, overrides, os/cpu, ช่วงเวอร์ชัน ^1 || ^2, >= 1 <2 และ 1.0.0 - 2.0.0 การติดตั้งค้นหาเวอร์ชันย้อนหลังได้ 128 ครั้งโดยค่าเริ่มต้น ปรับได้ผ่าน DEVLANG_RESOLUTION_ATTEMPTS (1–65536) และแยก peer context อัตโนมัติใน lockfile รุ่น 3 และติดตั้ง peer ที่ขาดเมื่อเลือก --auto-peers เท่านั้น ใช้ --offline เพื่ออ่าน cache โดยไม่ติดต่อ network รายละเอียด ตัวอย่างและขีดจำกัดอยู่ที่ [Package tools](#/docs/package-features)
+CLI เพิ่ม d task สำหรับ scripts, d pkg ci/tree/why/dedupe/cache/audit/verify/verify-tag และรองรับ optionalDependencies, overrides, os/cpu, ช่วงเวอร์ชัน ^1 || ^2, >= 1 <2 และ 1.0.0 - 2.0.0 การติดตั้งค้นหาเวอร์ชันย้อนหลังได้ 128 ครั้งโดยค่าเริ่มต้น ปรับได้ผ่าน DEVLANG_RESOLUTION_ATTEMPTS (1–65536) และเลือกเวอร์ชันแยกตาม peer context แม้ declaration เหมือนกัน ใน lockfile รุ่น 4 และใช้ physical instance ร่วมกันเมื่อ source และ scope ที่มองเห็นตรงกัน และติดตั้ง peer ที่ขาดเมื่อเลือก --auto-peers เท่านั้น ใช้ --offline เพื่ออ่าน cache โดยไม่ติดต่อ network รายละเอียด ตัวอย่างและขีดจำกัดอยู่ที่ [Package tools](#/docs/package-features)
 
 
 # [module-api-intro] คู่มือแต่ละ Module

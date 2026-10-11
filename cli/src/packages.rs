@@ -53,6 +53,7 @@ include!("global_snapshots.rs");
 include!("store.rs");
 include!("package_graph.rs");
 include!("package_contexts.rs");
+include!("context_versions.rs");
 include!("resolution_search.rs");
 include!("peer_scopes.rs");
 include!("package_policy.rs");
@@ -160,6 +161,16 @@ struct Lock {
     production: bool,
     packages: BTreeMap<String, Locked>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    edges: BTreeMap<String, BTreeMap<String, String>>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    omitted: BTreeMap<String, Dependency>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    resolutions: Option<Resolutions>,
+}
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+struct Resolutions {
+    packages: BTreeMap<String, Locked>,
     edges: BTreeMap<String, BTreeMap<String, String>>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     omitted: BTreeMap<String, Dependency>,
@@ -632,6 +643,7 @@ fn legacy_install_mode(project: &Path, locked: bool, refresh: bool, production: 
         return Err("lock installation mode differs; run pkg install with the requested --production mode first".into());
     }
     let mut result = Lock {
+        resolutions: None,
         version: 1,
         production,
         packages: BTreeMap::new(),

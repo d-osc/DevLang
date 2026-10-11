@@ -6,7 +6,16 @@ fn graph_identity(project:&Path,parent:&Path,name:&str,dep:&Dependency)->Result<
     let bytes=serde_json::to_vec(&normalized).map_err(|e|e.to_string())?;
     Ok(format!("{name}__{:x}",Sha256::digest(bytes)))
 }
+fn resolution_identity(context:&str,key:&str)->String {
+    format!("resolution__{:x}",Sha256::digest(serde_json::to_vec(&(context,key)).unwrap()))
+}
+fn edge_identity(project:&Path,parent:&Path,context:&str,name:&str,dep:&Dependency,version:u32,ancestors:&BTreeMap<String,String>)->Result<(String,String),String>{
+    let normalized=graph_identity(project,parent,name,dep)?;
+    let id=if version==4 {ancestors.get(&normalized).cloned().unwrap_or_else(||resolution_identity(context,&normalized))} else {normalized.clone()};
+    Ok((normalized,id))
+}
 fn install_attempt(project:&Path,locked:bool,refresh:bool,production:bool)->Result<(),String>{
+    if RESOLUTION_SEARCH.with(|s|s.borrow().contextual) {return graph_install_mode(project,locked,refresh,production,true);}
     if std::env::var_os("DEVLANG_DEDUPE").is_none() && lock_path(project).exists() && read::<Lock>(&lock_path(project))?.version>=2 {return graph_install(project,locked,refresh,production);}
     match legacy_install_mode(project,locked,refresh,production){
         Err(e) if !locked && (e.starts_with("conflicting dependency namespace") || e.starts_with("conflicting local dependency") || e.starts_with("conflicting workspace dependency")) => graph_install(project,false,refresh,production),
@@ -14,17 +23,21 @@ fn install_attempt(project:&Path,locked:bool,refresh:bool,production:bool)->Resu
     }
 }
 fn graph_install(project:&Path,locked:bool,refresh:bool,production:bool)->Result<(),String>{
+    let version=if lock_path(project).exists(){read::<Lock>(&lock_path(project))?.version}else{0};
+    graph_install_mode(project,locked,refresh,production,version==4 || version==3 && !locked && !offline_mode())
+}
+fn graph_install_mode(project:&Path,locked:bool,refresh:bool,production:bool,contextual:bool)->Result<(),String>{
     let previous_lock:Lock=if lock_path(project).exists(){read(&lock_path(project))?}else{Lock::default()};
-    if locked && (!matches!(previous_lock.version,2|3) || previous_lock.production!=production){return Err("--locked needs a matching graph lock".into());}
-    let previous=if previous_lock.version==3 { source_lock(project,&previous_lock)? } else { previous_lock.clone() };
+    if locked && (!matches!(previous_lock.version,2|3|4) || previous_lock.production!=production){return Err("--locked needs a matching graph lock".into());}
+    let previous=if previous_lock.version>=3 { source_lock(project,&previous_lock)? } else { previous_lock.clone() };
     let root=manifest(project)?;check_compatibility(&root)?;
-    let mut result=Lock{version:2,production,packages:BTreeMap::new(),edges:BTreeMap::new(),omitted:BTreeMap::new()};
-    let mut pending=vec![("root".to_owned(),project.to_owned(),root_dependencies(&root,production)?)];
-    while let Some((context,parent,deps))=pending.pop(){
+    let mut result=Lock{version:if contextual{4}else{2},production,packages:BTreeMap::new(),edges:BTreeMap::new(),omitted:BTreeMap::new(),resolutions:None};
+    let mut pending=vec![("root".to_owned(),project.to_owned(),root_dependencies(&root,production)?,BTreeMap::<String,String>::new())];
+    while let Some((context,parent,deps,ancestors))=pending.pop(){
         let mut edges=BTreeMap::new();
         for (name,dep) in effective_dependencies(project,&parent,deps)? {
             if !identifier(&name){return Err("invalid dependency namespace".into());}
-            let id=graph_identity(project,&parent,&name,&dep)?;
+            let (normalized,id)=edge_identity(project,&parent,&context,&name,&dep,result.version,&ancestors)?;
             if locked && previous.omitted.get(&id)==Some(&dep) && dep.optional {result.omitted.insert(id,dep);continue;}
             if let Some(item)=result.packages.get_mut(&id) {
                 edges.insert(name.clone(),id.clone());
@@ -39,12 +52,23 @@ fn graph_install(project:&Path,locked:bool,refresh:bool,production:bool)->Result
             if locked && old.map(|old| {let mut old=old.clone();old.additional_sources.clear();old})!=Some(item.clone()){return Err("dependency content changed from package-lock.don".into());}
             let at=locked_root(project,&id,&item)?;
             let child=manifest(&at)?;check_compatibility(&child)?;
-            pending.push((id.clone(),at,child_dependencies(&child)?));
+            let mut ancestry=ancestors.clone();ancestry.insert(normalized,id.clone());
+            pending.push((id.clone(),at,child_dependencies(&child)?,ancestry));
             result.packages.insert(id,item);
         }
         result.edges.insert(context,edges);
     }
-    if previous_lock.version==3 || graph_scopes(project,&result).is_err_and(|e|e.contains("incompatible ancestor peer scopes")) { result=context_lock(project,&result,true)?; }
+    if contextual {
+        graph_verify_peers(project,&result)?;
+        result=shared_context_lock(project,&result,true)?;
+    } else {
+        let conflict=graph_scopes(project,&result).is_err_and(|e|e.contains("incompatible ancestor peer scopes"));
+        if conflict && !locked && !offline_mode() {
+            RESOLUTION_SEARCH.with(|s|{let mut state=s.borrow_mut();state.contextual=true;state.choices.clear();state.visited.clear();});
+            return graph_install_mode(project,false,refresh,production,true);
+        }
+        if previous_lock.version==3 || conflict {result=context_lock(project,&result,true)?;}
+    }
     graph_verify_peers(project,&result)?;
     if locked && previous_lock!=result {return Err("dependency graph differs from package-lock.don".into());}
     let bins=package_bins(project,&result)?;install_bins(project,&bins)?;
@@ -72,20 +96,20 @@ fn scoped_mapping(alias:&str,at:&Path)->String {
 pub fn mappings(project:&Path)->Result<Vec<(String,PathBuf)>,String>{
     if !lock_path(project).exists(){return legacy_mappings(project);}
     let lock:Lock=read(&lock_path(project))?;
-    match lock.version { 1=>legacy_mappings(project), 2=>graph_mappings(project,&lock,true), 3=>context_mappings(project,&lock), _=>Err("unsupported package lock version".into()) }
+    match lock.version { 1=>legacy_mappings(project), 2=>graph_mappings(project,&lock,true), 3|4=>context_mappings(project,&lock), _=>Err("unsupported package lock version".into()) }
 }
 fn graph_mappings(project:&Path,lock:&Lock,verify_peers:bool)->Result<Vec<(String,PathBuf)>,String>{
     let m=manifest(project)?;check_compatibility(&m)?;
     let scopes=if verify_peers {graph_scopes(project,lock)?} else {lock.edges.clone()};
-    let mut pending=vec![("root".to_owned(),project.to_owned(),root_dependencies(&m,lock.production)?)];
+    let mut pending=vec![("root".to_owned(),project.to_owned(),root_dependencies(&m,lock.production)?,BTreeMap::<String,String>::new())];
     let mut visited=BTreeSet::new();let mut contexts=BTreeSet::new();let mut dirs=BTreeMap::new();let mut omitted=BTreeMap::new();
     let mut declarations=BTreeMap::<String,BTreeSet<Dependency>>::new();
-    while let Some((context,parent,deps))=pending.pop(){
+    while let Some((context,parent,deps,ancestors))=pending.pop(){
         if !contexts.insert(context.clone()){continue;}
         let deps=effective_dependencies(project,&parent,deps)?;
-        for (name,dep) in &deps {let id=graph_identity(project,&parent,name,dep)?;if dep.optional && lock.omitted.get(&id)==Some(dep){omitted.insert(id,dep.clone());}}
+        for (name,dep) in &deps {let (_,id)=edge_identity(project,&parent,&context,name,dep,lock.version,&ancestors)?;if dep.optional && lock.omitted.get(&id)==Some(dep){omitted.insert(id,dep.clone());}}
         let edges=lock.edges.get(&context).ok_or("lock is missing package dependency edges")?;
-        let expected: BTreeMap<_,_>=deps.iter().filter_map(|(name,dep)|{let id=match graph_identity(project,&parent,name,dep){Ok(id)=>id,Err(e)=>return Some(Err(e))}; if dep.optional && lock.omitted.get(&id)==Some(dep){None}else{Some(Ok((name.clone(),id)))}}).collect::<Result<_,String>>()?;
+        let expected: BTreeMap<_,_>=deps.iter().filter_map(|(name,dep)|{let id=match edge_identity(project,&parent,&context,name,dep,lock.version,&ancestors){Ok((_,id))=>id,Err(e)=>return Some(Err(e))}; if dep.optional && lock.omitted.get(&id)==Some(dep){None}else{Some(Ok((name.clone(),id)))}}).collect::<Result<_,String>>()?;
         if *edges!=expected{return Err("dependency graph changed; run d pkg install".into());}
         // Root providers can satisfy peers, while explicit child dependencies take precedence.
         for (name,id) in scopes.get(&context).ok_or("missing package scope")? {let item=lock.packages.get(id).ok_or("missing graph node")?;dirs.insert(scoped_mapping(name,&parent),locked_root(project,id,item)?.join(relative(&item.modules)?));}
@@ -102,9 +126,11 @@ fn graph_mappings(project:&Path,lock:&Lock,verify_peers:bool)->Result<Vec<(Strin
             let child=manifest(&at)?;check_compatibility(&child)?;
             if child.package.modules!=item.modules{return Err("locked module directory changed".into());}
             if let Some(req)=requirement(dep)?{if item.resolved_version.as_deref()!=Some(package_version(&child,&req)?.to_string().as_str()){return Err("locked package version changed".into());}}
-            pending.push((id.clone(),at,child_dependencies(&child)?));
+            let (normalized,_)=edge_identity(project,&parent,&context,name,dep,lock.version,&ancestors)?;
+            let mut ancestry=ancestors.clone();ancestry.insert(normalized,id.clone());
+            pending.push((id.clone(),at,child_dependencies(&child)?,ancestry));
         }
-        if !edges.contains_key(&m.package.name){dirs.insert(scoped_mapping(&m.package.name,&parent),project.join(relative(&m.package.modules)?));}
+        if !scopes.get(&context).ok_or("missing package scope")?.contains_key(&m.package.name){dirs.insert(scoped_mapping(&m.package.name,&parent),project.join(relative(&m.package.modules)?));}
     }
     if visited.len()!=lock.packages.len() || contexts.len()!=lock.edges.len() || omitted!=lock.omitted || omitted.keys().any(|id|lock.packages.contains_key(id)){return Err("lock contains stale graph nodes, edges or omissions".into());}
     for (id,item) in &lock.packages {

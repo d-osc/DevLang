@@ -45,6 +45,7 @@ pub fn mapping_file(project: &Path) -> Result<Option<PathBuf>, String> {
 // An ancestor edge reuses that ancestor instance, so dependency cycles terminate.
 fn context_lock(project: &Path, base: &Lock, materialize: bool) -> Result<Lock, String> {
     let mut result = Lock {
+        resolutions: None,
         version: 3,
         production: base.production,
         packages: BTreeMap::new(),
@@ -117,7 +118,45 @@ fn context_lock(project: &Path, base: &Lock, materialize: bool) -> Result<Lock, 
 }
 
 fn source_lock(project: &Path, lock: &Lock) -> Result<Lock, String> {
+    if lock.version == 4 {
+        let resolutions = lock
+            .resolutions
+            .as_ref()
+            .ok_or("lock is missing contextual resolutions")?;
+        if resolutions
+            .packages
+            .values()
+            .any(|p| p.source_key.is_some() || p.source_root.is_some())
+        {
+            return Err("nested source context metadata".into());
+        }
+        for (id, item) in &lock.packages {
+            locked_root(project, id, item)?;
+            let key = item.source_key.as_ref().ok_or("context needs source key")?;
+            let mut original = item.clone();
+            original.source_key = None;
+            original.root = original
+                .source_root
+                .take()
+                .ok_or("context needs source root")?;
+            if resolutions.packages.get(key) != Some(&original) {
+                return Err("inconsistent source context packages".into());
+            }
+        }
+        return Ok(Lock {
+            version: 4,
+            production: lock.production,
+            packages: resolutions.packages.clone(),
+            edges: resolutions.edges.clone(),
+            omitted: resolutions.omitted.clone(),
+            resolutions: None,
+        });
+    }
+    if lock.resolutions.is_some() {
+        return Err("unexpected contextual resolutions".into());
+    }
     let mut base = Lock {
+        resolutions: None,
         version: 2,
         production: lock.production,
         packages: BTreeMap::new(),
@@ -176,7 +215,12 @@ fn source_lock(project: &Path, lock: &Lock) -> Result<Lock, String> {
 fn context_mappings(project: &Path, lock: &Lock) -> Result<Vec<(String, PathBuf)>, String> {
     let base = source_lock(project, lock)?;
     graph_mappings(project, &base, false)?;
-    if context_lock(project, &base, false)? != *lock {
+    if (if lock.version == 4 {
+        shared_context_lock(project, &base, false)?
+    } else {
+        context_lock(project, &base, false)?
+    }) != *lock
+    {
         return Err("dependency context graph changed; run d pkg install".into());
     }
     let scopes = graph_scopes(project, lock)?;
@@ -193,6 +237,7 @@ fn context_mappings(project: &Path, lock: &Lock) -> Result<Vec<(String, PathBuf)
             }
             at
         };
+        let has_root = scope.contains_key(&root.package.name);
         for (alias, id) in scope {
             let item = lock.packages.get(&id).ok_or("missing context provider")?;
             dirs.insert(
@@ -200,7 +245,7 @@ fn context_mappings(project: &Path, lock: &Lock) -> Result<Vec<(String, PathBuf)
                 locked_root(project, &id, item)?.join(relative(&item.modules)?),
             );
         }
-        if !lock.edges[&context].contains_key(&root.package.name) {
+        if !has_root {
             dirs.insert(
                 scoped_mapping(&root.package.name, &parent),
                 project.join(relative(&root.package.modules)?),
