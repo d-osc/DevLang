@@ -34,6 +34,8 @@ jobs:
         run: cargo test --workspace --locked
       - name: Numeric cast parity and safety
         run: python scripts/smoke_numeric_casts.py --bin-dir target/release
+      - name: Safety and aggregate FFI parity
+        run: python scripts/smoke_safety.py --bin-dir target/release
       - name: Build native standard library
         run: python stdlib/build.py
       - name: Resolve executable paths

@@ -31,6 +31,12 @@ def main():
             ('unsafe { let p=null as *i64; print(*p) }','null pointer dereference'),
         ]:
             check(code,error=message)
+        check('fn exists(p *i64) bool { unsafe { return p as bool } }; unsafe { print(exists(0 as *i64)); print(exists(1 as *i64)); print(exists(-1 as *i64)) }','false\ntrue\ntrue\n')
+        check('unsafe { let p=null as *i64; print(p as bool) }','false\n')
+        check('fn exists(p *i64) bool { return p as bool }; unsafe { print(exists(0 as *i64)) }',error='unsafe block')
+        check('let p=null; print(p as bool)',error='unsafe block')
+        check('if 1 { print(99) }',error='bool')
+        check('fn bad() { while 1 { break } }; bad()',error='bool')
         check('let n i64=-9223372036854775808; print(n/-1); print(n%-1)','-9223372036854775808\n0\n')
         check('let n i64=-1; print(n<<1)','-2\n')
         (root/'native.c').write_text('#include <stdint.h>\n#include <stdlib.h>\ntypedef struct { int32_t x; double y; } Point;\nPoint native_point(Point p) { p.x+=1; p.y+=0.5; return p; }\nvoid *native_alloc(void) { return calloc(4,sizeof(int64_t)); }\nvoid native_free(void *p) { free(p); }',encoding='utf-8')

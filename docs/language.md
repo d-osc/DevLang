@@ -352,3 +352,15 @@ main()
 
 This runtime parity fix is available in current source; published v0.5.0 binaries
 predate it.
+
+Raw pointers also support an explicit `as bool` inside `unsafe`: a null pointer
+becomes `false`, and any non-null address becomes `true`. This only checks the
+address; it does not prove that the pointer is alive, readable or safe to dereference.
+
+```dev
+fn has_address(p *i64) bool {
+    unsafe { return p as bool }
+}
+```
+
+This pointer cast parity fix is available in current source, after v0.5.0.

@@ -185,6 +185,7 @@ pub(crate) fn convert(v: Value, t: &Type, explicit: bool) -> Result<Value, Strin
                 return Ok(Value::Int(wrap(*n as i128, t), t.clone()))
             }
             (Value::Int(n, _), Type::Ptr(_)) => return Ok(Value::Ptr(*n as usize, t.clone())),
+            (Value::Ptr(p, _), Type::Bool) => return Ok(Value::Bool(*p != 0)),
             (Value::Ptr(p, _), t) if t.integer() => {
                 return Ok(Value::Int(wrap(*p as i128, t), t.clone()))
             }
