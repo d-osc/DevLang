@@ -325,6 +325,10 @@ fn manifest_path(root: &Path) -> PathBuf {
 fn git(dir: Option<&Path>, args: &[&str]) -> Result<String, String> {
     if offline_mode() && args.iter().any(|a| matches!(*a, "clone" | "fetch" | "ls-remote" | "pull")) { return Err("offline: Git source is not cached; install online first".into()); }
     let mut command = Command::new("git");
+    // Context IDs and pinned commits can exceed Windows' legacy MAX_PATH.
+    // Scope this setting to our Git invocation, preserving the user's config.
+    #[cfg(windows)]
+    command.args(["-c", "core.longpaths=true"]);
     command.env("GIT_TERMINAL_PROMPT", "0");
     if let Some(dir) = dir {
         command.current_dir(dir);
