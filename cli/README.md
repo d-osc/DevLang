@@ -81,3 +81,9 @@ a newer registry release. See [the registry example](../examples/registry/README
 ### GitHub Package Store
 
 `d pkg inspect --json` validates the current manifest without installing or running dependencies. See [repository conventions and store discovery](../docs/package-store.md). The store indexes public `devlang-package` repositories with root `package.don` manifests and matching SemVer Git tags.
+
+### Store and isolated dependency graphs (CLI/runtime 0.2.0)
+
+Search with d pkg search QUERY, inspect with d pkg info @owner/repo, and add with d pkg add @owner/repo --as math --version '^1'. Use --store URL for a custom catalog. pkg outdated reports current/wanted/latest; pkg upgrade preserves ranges and --latest explicitly opts into new stable majors. Both support direct development dependencies. Git sources support --subdir packages/math. pkg publish --github OWNER/REPO [--dry-run] prepares/upload tagged immutable assets using gh; see the Store guide for authentication and clean/tag requirements.
+
+Transitive namespace collisions now use version-2 graph locks with package-local module scopes across auto/AST/native/LSP/global bins. Compatible graphs keep version-1 locks. Optional devlang constrains CLI SemVer; pkg compatibility --json reports it. Build all three components from current source to use scoped module mappings.

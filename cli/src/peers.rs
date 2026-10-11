@@ -3,6 +3,7 @@ fn peer_requirement(requirement: &str) -> Result<semver::VersionReq, String> {
     semver::VersionReq::parse(requirement).map_err(|e| format!("invalid peer requirement: {e}"))
 }
 fn verify_peers(project: &Path, lock: &Lock) -> Result<(), String> {
+    if lock.version == 2 { return graph_verify_peers(project, lock); }
     let root = manifest(project)?;
     let mut providers = BTreeMap::new();
     providers.insert(root.package.name.clone(), root.version.clone());

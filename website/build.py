@@ -90,6 +90,31 @@ def main():
     if catalog.get('schema_version') != 1 or not isinstance(catalog.get('packages'), list):
         raise ValueError('Invalid package store catalog')
     shutil.copy2(HERE / 'content/packages.json', dist / 'packages.json')
+    package_details = dist / 'package-details'
+    package_details.mkdir(exist_ok=True)
+    reader = MarkdownIt('commonmark', {'html': False}).enable('table').disable('image')
+    from urllib.parse import urljoin, urlparse, quote
+    for package in catalog['packages']:
+        details_path = package.get('details', '')
+        if not re.fullmatch(r'package-details/[a-f0-9]{64}\.json', details_path):
+            raise ValueError('Invalid package details path')
+        details = json.loads((HERE / 'content' / details_path).read_text(encoding='utf-8'))
+        rendered_documents = []
+        for document in details['documents']:
+            tokens = reader.parse(document['markdown'])
+            source_url = package['repository'] + '/blob/' + details['commit'] + '/' + quote(document['path'], safe='/')
+            for token in tokens:
+                for child in token.children or []:
+                    if child.type == 'link_open':
+                        href = urljoin(source_url, child.attrGet('href') or '')
+                        if urlparse(href).scheme not in ('https', 'http'): href = '#'
+                        child.attrSet('href', href)
+                        child.attrSet('rel', 'noopener noreferrer')
+                        child.attrSet('target', '_blank')
+            rendered_documents.append({'path': document['path'], 'source': source_url, 'html': reader.renderer.render(tokens, reader.options, {})})
+        details['documents'] = rendered_documents
+        (dist / details_path).write_text(json.dumps(details, ensure_ascii=False), encoding='utf-8')
+
     guide = (HERE / 'content/guide.md').read_text(encoding='utf-8')
     chunks = re.split(r'^# \[([^\]]+)\] (.+)\n', guide, flags=re.M)
     raw = []

@@ -23,6 +23,12 @@ const HELP: &str = "Dev Lang
   d pkg list --global                    List installed global packages
   d pkg add NAME --peer --version REQ     Require a consumer-provided version
   d pkg add NAME --registry URL           Resolve a static registry package
+  d pkg search [QUERY] [--store URL]      Search the GitHub Package Store
+  d pkg info NAME [--store URL]           Show Store package versions
+  d pkg add @OWNER/REPO [--as NAME]       Install a scoped Store package
+  d pkg outdated                         Show current, wanted and latest versions
+  d pkg upgrade [NAME] [--latest]         Upgrade tracked Git/registry dependencies
+  d pkg publish --github OWNER/REPO       Upload a tagged package release with gh
   d pkg search --registry URL [QUERY]     List registry package versions
   d pkg inspect --json                   Validate manifest without installing
   d pkg publish --registry DIRECTORY     Publish into a local static registry

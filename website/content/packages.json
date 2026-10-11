@@ -1,14 +1,17 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-11T11:54:06.383844+00:00",
+  "generated_at": "2026-10-11T12:44:39.876710+00:00",
   "discovery_total": 0,
   "limited": false,
   "packages": [],
   "rejected": [],
+  "deferred": [],
+  "requests": 1,
+  "cache_hits": 0,
   "policy": {
     "topic": "devlang-package",
     "manifest": "package.don",
     "manifest_level": 0,
-    "max_tags_per_repo": 30
+    "max_tags_per_repo": 400
   }
 }

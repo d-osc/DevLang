@@ -52,3 +52,5 @@ Per-module API pages are registered by content/module-docs.json. Rebuild/check t
 ## Package Store
 
 The `#/packages` route reads static `packages.json`. Generate it with `python scripts/build_package_store.py --d PATH_TO_D`, then build normally. GitHub Pages generates a fresh catalog on deploy and every six hours using the workflow token; browser clients receive no token. See [the repository contract](../docs/package-store.md). Template downloads are bundled from `templates/devlang-package`. Empty catalogs intentionally show a contribution guide, not fictional packages.
+
+The Store now includes paged search, scoped CLI integration, rendered README/API/changelog and indexing diagnostics at #/packages/status. Crawler API snapshots are restored with actions/cache; use --cache-dir out/package-store-api locally. Run scripts/smoke_store_integration.py for Git, upgrade, multi-version native/runtime and global snapshot checks, and smoke_package_store.py / smoke_package_store_ui.cjs for crawler/UI regressions.

@@ -49,11 +49,7 @@ d pkg remove math
 ```
 
 Dependencies need their own `package.don` or legacy `dev.toml`. Path and Git dependencies can have
-transitive dependencies. Names form one flat namespace; conflicting versions or
-local sources for the same name are rejected. `std` is reserved. There is no
-public registry or package publishing yet. Workspace members and SemVer Git-tag
-requirements are supported; see [Workspaces and dependency versions](packages.md)
-for commands, lock behavior and the flat resolver limitations.
+transitive dependencies. Compatible aliases share packages; incompatible transitive aliases use version-2 locks with isolated scopes. std is reserved. GitHub Store search, static registries, release publishing, workspace members and SemVer Git tags are supported. See [packages](packages.md) and [Package Store](package-store.md) for current commands and remaining solver boundaries.
 Git URLs accept HTTPS and file URLs; Git must be installed for Git dependencies.
 Credential-bearing HTTPS URLs are rejected; use Git's existing credential setup.
 Git dependencies are checked out in `.dev/packages/NAME-COMMIT`, without running

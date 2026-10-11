@@ -23,7 +23,7 @@ fn copy_package_source(source: &Path, target: &Path, count: &mut usize, total: &
         let kind = item.file_type().map_err(|e| e.to_string())?;
         if kind.is_symlink() { return Err("global source snapshot does not support symlinks".into()); }
         if kind.is_dir() {
-            if ![".git", ".dev", ".dev-cache", "target", "dist", "out", "node_modules", "__pycache__"].contains(&name.to_string_lossy().as_ref()) {
+            if ![".git", ".devlang-toolchain", ".dev", ".dev-cache", "target", "dist", "out", "node_modules", "__pycache__"].contains(&name.to_string_lossy().as_ref()) {
                 copy_package_source(&item.path(), &target.join(name), count, total)?;
             }
         } else if kind.is_file() && name != "dev.lock" && name != "package-lock.don" {
@@ -35,11 +35,12 @@ fn copy_package_source(source: &Path, target: &Path, count: &mut usize, total: &
     }
     Ok(())
 }
-fn snapshot_dependencies(dependencies: &BTreeMap<String, Dependency>, package: &Path, stage: &Path, lock: &Lock) -> Result<BTreeMap<String, Dependency>, String> {
+fn snapshot_dependencies(dependencies: &BTreeMap<String, Dependency>, package: &Path, stage: &Path, lock: &Lock, context: &str) -> Result<BTreeMap<String, Dependency>, String> {
     dependencies.iter().map(|(name, dep)| {
-        if !lock.packages.contains_key(name) { return Err(format!("snapshot dependency {name} missing from lock")); }
-        let path = pathdiff::diff_paths(stage.join("deps").join(name), package).ok_or("cannot make snapshot relative path")?;
-        Ok((name.clone(), Dependency { path: Some(path.to_string_lossy().replace('\\', "/")), git: None, rev: None, branch: None, url: None, sha256: None, version: dep.version.clone(), workspace: false }))
+        let id = if lock.version == 2 { lock.edges.get(context).and_then(|e|e.get(name)).ok_or("snapshot is missing graph edge")? } else { name };
+        if !lock.packages.contains_key(id) { return Err(format!("snapshot dependency {name} missing from lock")); }
+        let path = pathdiff::diff_paths(stage.join("deps").join(id), package).ok_or("cannot make snapshot relative path")?;
+        Ok((name.clone(), Dependency { path: Some(path.to_string_lossy().replace('\\', "/")), git: None, rev: None, branch: None, url: None, sha256: None, version: dep.version.clone(), workspace: false, ..Dependency::default() }))
     }).collect()
 }
 fn cached_global_runtime(home: &Path) -> Result<PathBuf, String> {
@@ -81,8 +82,9 @@ fn make_global_snapshot(home: &Path, project: &Path, lock: &Lock) -> Result<(Pat
     for (source, target, is_root) in roots {
         copy_package_source(&source, &target, &mut count, &mut total)?;
         let mut m = manifest(&source)?;
-        m.dependencies = snapshot_dependencies(&m.dependencies, &target, &stage, lock)?;
-        m.dev_dependencies = if is_root && !lock.production { snapshot_dependencies(&m.dev_dependencies, &target, &stage, lock)? } else { BTreeMap::new() };
+        let context = if is_root { "root" } else { target.file_name().and_then(|n|n.to_str()).ok_or("invalid snapshot context")? };
+        m.dependencies = snapshot_dependencies(&m.dependencies, &target, &stage, lock, context)?;
+        m.dev_dependencies = if is_root && !lock.production { snapshot_dependencies(&m.dev_dependencies, &target, &stage, lock, context)? } else { BTreeMap::new() };
         m.workspace = None;
         write(&target.join("package.don"), &m)?;
     }

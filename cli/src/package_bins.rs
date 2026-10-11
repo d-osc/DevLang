@@ -6,7 +6,9 @@ fn bin_name(name: &str) -> bool {
 }
 fn package_bins(project: &Path, lock: &Lock) -> Result<BTreeMap<String, PathBuf>, String> {
     let mut roots = vec![project.to_owned()];
-    for (name, item) in &lock.packages { roots.push(locked_root(project, name, item)?); }
+    for (name, item) in &lock.packages {
+        if lock.version != 2 || lock.edges.get("root").is_some_and(|edges| edges.values().any(|id| id == name)) { roots.push(locked_root(project, name, item)?); }
+    }
     let mut bins = BTreeMap::new();
     let mut case_names = BTreeSet::new();
     for root in roots {

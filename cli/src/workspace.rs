@@ -146,6 +146,11 @@ fn validate_dependency(dep: &Dependency) -> Result<(), String> {
             return Err("invalid Git branch name".into());
         }
     }
+    if let Some(subdir) = &dep.subdir { if dep.git.is_none() || subdir.contains('\\') { return Err("subdir requires a Git source and forward slashes".into()); } relative(subdir)?; }
+    if let Some(package) = &dep.package { scoped_identity(package)?; if dep.git.is_none() { return Err("scoped package identity requires Git".into()); } }
+    if dep.store.is_some() && dep.package.is_none() { return Err("store source needs scoped package identity".into()); }
+    if dep.registry.is_some() && dep.url.is_none() { return Err("registry metadata requires an archive source".into()); }
+    if let Some(range) = &dep.range { peer_requirement(range)?; if dep.registry.is_none() { return Err("range metadata requires registry".into()); } }
     requirement(dep)?;
     Ok(())
 }
@@ -165,7 +170,8 @@ fn compatible_source(
     b: &Dependency,
     version: Option<&str>,
 ) -> Result<bool, String> {
-    if a.path != b.path
+    if a.subdir != b.subdir || a.package != b.package || a.store != b.store || a.registry != b.registry || a.range != b.range
+        || a.path != b.path
         || a.git != b.git
         || a.rev != b.rev
         || a.branch != b.branch

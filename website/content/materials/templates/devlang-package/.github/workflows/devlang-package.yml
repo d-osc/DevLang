@@ -1,0 +1,50 @@
+name: DevLang package checks and release
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@v7
+        with:
+          repository: d-osc/DevLang
+          path: .devlang-toolchain
+      - name: Build current DevLang CLI and runtime
+        run: cargo build --release --locked --manifest-path .devlang-toolchain/Cargo.toml
+      - name: Validate package and run both engines
+        run: |
+          .devlang-toolchain/target/release/d pkg inspect --json
+          .devlang-toolchain/target/release/d tests/main.dev
+          .devlang-toolchain/target/release/d tests/main.dev --engine ast
+      - name: Prepare release archive without uploading
+        if: startsWith(github.ref, 'refs/tags/')
+        run: .devlang-toolchain/target/release/d pkg publish --github "${{ github.repository }}" --dry-run
+  release:
+    if: startsWith(github.ref, 'refs/tags/') && github.event_name == 'push'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@v7
+        with:
+          repository: d-osc/DevLang
+          path: .devlang-toolchain
+      - name: Build publisher
+        run: cargo build --release --locked -p dev-cli --manifest-path .devlang-toolchain/Cargo.toml
+      - name: Publish tagged immutable package assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .devlang-toolchain/target/release/d pkg publish --github "${{ github.repository }}"

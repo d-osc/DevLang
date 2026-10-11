@@ -6,7 +6,7 @@ use std::{
     process::Command,
 };
 
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
 pub struct Dependency {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -25,6 +25,16 @@ pub struct Dependency {
     pub version: Option<String>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub workspace: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub subdir: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub package: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub store: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub registry: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub range: Option<String>,
 }
 fn is_false(value: &bool) -> bool {
     !*value
@@ -36,6 +46,8 @@ include!("global_bins.rs");
 include!("peers.rs");
 include!("registry.rs");
 include!("global_snapshots.rs");
+include!("store.rs");
+include!("package_graph.rs");
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Package {
@@ -101,6 +113,8 @@ fn modules() -> String {
 pub struct Manifest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub devlang: Option<String>,
     pub package: Package,
     #[serde(default)]
     pub dependencies: BTreeMap<String, Dependency>,
@@ -125,6 +139,8 @@ struct Lock {
     #[serde(default, skip_serializing_if = "is_false")]
     production: bool,
     packages: BTreeMap<String, Locked>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    edges: BTreeMap<String, BTreeMap<String, String>>,
 }
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -151,7 +167,8 @@ fn locked_root(project: &Path, name: &str, item: &Locked) -> Result<PathBuf, Str
         if ![40, 64].contains(&commit.len()) || !commit.bytes().all(|c| c.is_ascii_hexdigit()) {
             return Err("invalid locked Git commit".into());
         }
-        if item.root != format!(".dev/packages/{name}-{commit}") {
+        let expected = format!(".dev/packages/{name}-{commit}{}", item.source.subdir.as_ref().map(|p| format!("/{p}")).unwrap_or_default());
+        if item.root != expected {
             return Err("Git lock path must match its package and commit".into());
         }
     }
@@ -223,6 +240,7 @@ pub fn manifest(root: &Path) -> Result<Manifest, String> {
     if !identifier(&m.package.name) {
         return Err("invalid package name".into());
     }
+    if let Some(requirement) = &m.devlang { peer_requirement(requirement)?; }
     relative(&m.package.entry)?;
     relative(&m.package.modules)?;
     for (name, requirement) in &m.peer_dependencies {
@@ -282,7 +300,7 @@ fn tree_hash_mode(root: &Path, include_lock: bool) -> Result<String, String> {
             }
             let path = item.path();
             if ty.is_dir() {
-                if ![".git", ".dev", "target", "dist", "out", "node_modules"]
+                if ![".git", ".devlang-toolchain", ".dev", "target", "dist", "out", "node_modules"]
                     .contains(&item.file_name().to_string_lossy().as_ref())
                 {
                     files(root, &path, result, include_lock)?;
@@ -309,10 +327,14 @@ fn tree_hash_mode(root: &Path, include_lock: bool) -> Result<String, String> {
     }
     Ok(format!("{:x}", hash.finalize()))
 }
-fn resolve(
+fn resolve(project: &Path, parent: &Path, name: &str, dep: &Dependency, previous: Option<&Locked>, refresh: bool, locked: bool) -> Result<Locked, String> {
+    resolve_named(project, parent, name, name, dep, previous, refresh, locked)
+}
+fn resolve_named(
     project: &Path,
     parent: &Path,
     name: &str,
+    cache_name: &str,
     dep: &Dependency,
     previous: Option<&Locked>,
     refresh: bool,
@@ -327,7 +349,7 @@ fn resolve(
     let (path, commit) = if dep.workspace {
         (workspace_dependency(parent, name)?, None)
     } else if dep.url.is_some() {
-        (fetch_archive(project, name, dep, previous)?, None)
+        (fetch_archive(project, cache_name, dep, previous)?, None)
     } else {
         match (&dep.path, &dep.git) {
             (Some(p), None) if dep.rev.is_none() => (
@@ -343,7 +365,7 @@ fn resolve(
                 }
                 if !refresh {
                     if let Some(old) = previous.filter(|p| p.source == *dep) {
-                        let cached = locked_root(project, name, old)?;
+                        let cached = locked_root(project, cache_name, old)?;
                         if cached.is_dir() {
                             if !tree_matches(&cached, &old.sha256)?
                                 || Some(git(Some(&cached), &["rev-parse", "HEAD"])?).as_ref()
@@ -351,6 +373,7 @@ fn resolve(
                             {
                                 return Err("cached dependency changed; remove its checkout before reinstalling".into());
                             }
+                            check_compatibility(&manifest(&cached)?)?;
                             let mut item = old.clone();
                             item.additional_sources.clear();
                             if let Some(req) = &req {
@@ -382,7 +405,7 @@ fn resolve(
                 let cache = project.join(".dev/packages");
                 std::fs::create_dir_all(&cache).map_err(|e| e.to_string())?;
                 let temp = cache.join(format!(
-                    "{name}-fetch-{}-{}",
+                    "{cache_name}-fetch-{}-{}",
                     std::process::id(),
                     std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
@@ -408,8 +431,13 @@ fn resolve(
                     ],
                 )?;
                 let chosen;
+                let mut store_commit = None;
                 let revision = if pinned.is_none() && req.is_some() {
-                    let (tag, version) = semver_tag(&temp, req.as_ref().unwrap())?;
+                    let (tag, version) = if dep.store.is_some() {
+                        let (tag, version, expected) = store_release(dep)?;
+                        store_commit = Some(expected);
+                        (tag, version)
+                    } else { semver_tag(&temp, req.as_ref().unwrap())? };
                     chosen = tag;
                     selected_version = Some(version);
                     chosen.as_str()
@@ -420,6 +448,7 @@ fn resolve(
                     Some(&temp),
                     &["rev-parse", "--verify", &format!("{revision}^{{commit}}")],
                 )?;
+                if store_commit.as_ref().is_some_and(|expected| expected != &commit) { return Err("Store release tag moved from its checked commit".into()); }
                 git(
                     Some(&temp),
                     &[
@@ -432,7 +461,7 @@ fn resolve(
                         &commit,
                     ],
                 )?;
-                let destination = cache.join(format!("{name}-{commit}"));
+                let destination = cache.join(format!("{cache_name}-{commit}"));
                 if destination.exists() {
                     // Keep the existing checkout; verify its content against this fresh copy.
                     if tree_hash(&temp)? != tree_hash(&destination)? {
@@ -445,7 +474,7 @@ fn resolve(
                     std::fs::rename(
                         &temp,
                         cache.join(format!(
-                            "{name}-verified-{}",
+                            "{cache_name}-verified-{}",
                             std::time::SystemTime::now()
                                 .duration_since(std::time::UNIX_EPOCH)
                                 .unwrap()
@@ -464,8 +493,14 @@ fn resolve(
             _ => return Err("dependency needs exactly one of path or git; tag is Git-only".into()),
         }
     };
+    let path = if let Some(subdir) = &dep.subdir {
+        let at = dunce::canonicalize(path.join(relative(subdir)?)).map_err(|e| e.to_string())?;
+        if !at.starts_with(dunce::canonicalize(&path).map_err(|e| e.to_string())?) { return Err("Git subdirectory escapes checkout".into()); }
+        at
+    } else { path };
     let path = dunce::simplified(&path).to_owned();
     let m = manifest(&path)?;
+    check_compatibility(&m)?;
     let resolved_version = req
         .as_ref()
         .map(|req| package_version(&m, req))
@@ -526,7 +561,7 @@ fn root_dependencies(m: &Manifest, production: bool) -> Result<BTreeMap<String, 
     if !production { dependencies.extend(m.dev_dependencies.clone()); }
     Ok(dependencies)
 }
-fn install_mode(project: &Path, locked: bool, refresh: bool, production: bool) -> Result<(), String> {
+fn legacy_install_mode(project: &Path, locked: bool, refresh: bool, production: bool) -> Result<(), String> {
     let old_path = lock_path(project);
     let previous: Lock = if old_path.exists() {
         read(&old_path)?
@@ -543,8 +578,11 @@ fn install_mode(project: &Path, locked: bool, refresh: bool, production: bool) -
         version: 1,
         production,
         packages: BTreeMap::new(),
+        edges: BTreeMap::new(),
     };
-    let mut pending = vec![(project.to_owned(), root_dependencies(&manifest(project)?, production)?)];
+    let root = manifest(project)?;
+    check_compatibility(&root)?;
+    let mut pending = vec![(project.to_owned(), root_dependencies(&root, production)?)];
     while let Some((parent, dependencies)) = pending.pop() {
         for (name, dep) in dependencies {
             if let Some(old) = result.packages.get_mut(&name) {
@@ -624,8 +662,9 @@ fn install_mode(project: &Path, locked: bool, refresh: bool, production: bool) -
         write(&project.join("package-lock.don"), &result)
     }
 }
-pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
+fn legacy_mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
     let m = manifest(project)?;
+    check_compatibility(&m)?;
     if m.dependencies.is_empty() && m.dev_dependencies.is_empty() && m.peer_dependencies.is_empty() && !lock_path(project).exists() {
         return Ok(Vec::new());
     }
@@ -689,6 +728,7 @@ pub fn mappings(project: &Path) -> Result<Vec<(String, PathBuf)>, String> {
                 }
             }
             let child = manifest(&at)?;
+            check_compatibility(&child)?;
             if let Some(req) = requirement(&dep)? {
                 let version = package_version(&child, &req)?.to_string();
                 if item.resolved_version.as_deref() != Some(&version) {
@@ -738,6 +778,7 @@ pub fn new(path: &Path) -> Result<i32, String> {
         &path.join("package.don"),
         &Manifest {
             version: Some("0.1.0".into()),
+            devlang: None,
             package: Package {
                 name: name.into(),
                 entry: entry(),
@@ -765,12 +806,17 @@ pub fn new(path: &Path) -> Result<i32, String> {
     Ok(0)
 }
 pub fn command(args: &[String]) -> Result<i32, String> {
-    if args.first().is_some_and(|a| a == "search") { return registry_search(args); }
+    if args.first().is_some_and(|a| a == "search") { return package_search(args); }
+    if args.first().is_some_and(|a| a == "info") { return store_info(args); }
     if args.len() == 2 && args[0] == "list" && matches!(args[1].as_str(), "-g" | "--global") { return list_global_packages(); }
     if args.len() == 3 && args[0] == "uninstall" && matches!(args[1].as_str(), "-g" | "--global") { return uninstall_global_named(&args[2]); }
     let project = root(&std::env::current_dir().map_err(|e| e.to_string())?)
         .ok_or("no package.don or dev.toml; use d new NAME")?;
     match args.first().map(String::as_str) {
+        Some("compatibility") if args.len() == 1 || args.len() == 2 && args[1] == "--json" => {
+            let m = manifest(&project)?;
+            println!("{}", serde_json::json!({"cli_version":env!("CARGO_PKG_VERSION"),"requirement":m.devlang,"compatible":check_compatibility(&m).is_ok()}));
+        }
         Some("inspect") if args.len() == 1 || args.len() == 2 && args[1] == "--json" => {
             let m = manifest(&project)?;
             for (name, dep) in root_dependencies(&m, false)? {
@@ -780,7 +826,10 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             if let Some(version) = &m.version { semver::Version::parse(version.strip_prefix('v').unwrap_or(version)).map_err(|e| format!("invalid package version: {e}"))?; }
             println!("{}", serde_json::to_string_pretty(&m).map_err(|e| e.to_string())?);
         }
+        Some("publish") if args.get(1).is_some_and(|a| a == "--github") => publish_github(&project, args)?,
         Some("publish") => publish_package(&project, args)?,
+        Some("outdated") => package_outdated(&project, args)?,
+        Some("upgrade") => package_upgrade(&project, args)?,
         Some("install") | Some("update") => {
             let mut locked=false; let mut all=false; let mut production=false; let mut global=false;
             for option in &args[1..] {
@@ -807,10 +856,14 @@ pub fn command(args: &[String]) -> Result<i32, String> {
         }
         Some("add") => {
             let name = args.get(1).ok_or("pkg add NAME --path DIR | --url URL --sha256 HEX | --git URL [--tag TAG | --branch NAME]")?;
-            if !identifier(name) { return Err("invalid dependency name".into()); }
-            let mut dep = Dependency { path: None, git: None, rev: None, branch: None, url: None, sha256: None, version: None, workspace: false };
+            let requested_name = name.clone();
+            let mut name = if requested_name.starts_with('@') { String::new() } else { requested_name.clone() };
+            if !name.is_empty() && !identifier(&name) { return Err("invalid dependency name; use --as IDENTIFIER for scoped packages".into()); }
+            let mut dep = Dependency { path: None, git: None, rev: None, branch: None, url: None, sha256: None, version: None, workspace: false, ..Dependency::default() };
             let mut at = 2;
             let mut registry = None;
+            let mut store = None;
+            let mut alias = None;
             let mut development = false;
             let mut peer = false;
             let mut seen=BTreeSet::new();
@@ -821,9 +874,18 @@ pub fn command(args: &[String]) -> Result<i32, String> {
                 if args[at] == "--dev" { development=true; at+=1; continue; }
                 if args[at] == "--peer" { peer=true; at+=1; continue; }
                 let value = args.get(at + 1).ok_or("dependency option needs value")?.clone();
-                match args[at].as_str() { "--registry" => registry = Some(value), "--path" => { let absolute = dunce::canonicalize(&value).map_err(|e| e.to_string())?; dep.path = Some(pathdiff::diff_paths(&absolute,&project).unwrap_or(absolute).to_string_lossy().replace('\\', "/")); }, "--git" => dep.git = Some(value), "--tag" | "--rev" => dep.rev = Some(value), "--url" => dep.url = Some(value), "--sha256" => dep.sha256 = Some(value), "--branch" => dep.branch = Some(value), "--version" => dep.version=Some(value), _ => return Err("unknown dependency option".into()) }
+                match args[at].as_str() { "--store" => store = Some(value), "--as" => alias = Some(value), "--subdir" => dep.subdir = Some(value), "--identity" => dep.package = Some(value), "--registry" => registry = Some(value), "--path" => { let absolute = dunce::canonicalize(&value).map_err(|e| e.to_string())?; dep.path = Some(pathdiff::diff_paths(&absolute,&project).unwrap_or(absolute).to_string_lossy().replace('\\', "/")); }, "--git" => dep.git = Some(value), "--tag" | "--rev" => dep.rev = Some(value), "--url" => dep.url = Some(value), "--sha256" => dep.sha256 = Some(value), "--branch" => dep.branch = Some(value), "--version" => dep.version=Some(value), _ => return Err("unknown dependency option".into()) }
                 at += 2;
             }
+            if let Some(alias) = alias { if !identifier(&alias) { return Err("invalid --as import alias".into()); } name = alias; }
+            let explicit_source = dep.path.is_some() || dep.git.is_some() || dep.url.is_some() || dep.workspace;
+            if store.is_some() || !explicit_source && !peer && registry.is_none() {
+                if explicit_source || registry.is_some() || dep.rev.is_some() || dep.branch.is_some() || dep.sha256.is_some() || dep.subdir.is_some() { return Err("--store cannot be combined with other sources or selectors; use --version".into()); }
+                let (namespace, selected) = store_dependency(&requested_name, store.as_deref().unwrap_or(DEFAULT_STORE), dep.version.as_deref())?;
+                if name.is_empty() { name = namespace; }
+                dep = selected;
+            }
+            if name.is_empty() { return Err("scoped package needs a Store selection or --as IDENTIFIER".into()); }
             if peer {
                 if registry.is_some() || development || dep.path.is_some() || dep.git.is_some() || dep.url.is_some() || dep.workspace || dep.rev.is_some() || dep.branch.is_some() || dep.sha256.is_some() {
                     return Err("--peer requires only --version; do not specify a source or --dev".into());
@@ -837,7 +899,7 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             }
             if let Some(spec) = registry {
                 if dep.path.is_some() || dep.git.is_some() || dep.url.is_some() || dep.workspace || dep.rev.is_some() || dep.branch.is_some() || dep.sha256.is_some() { return Err("--registry cannot be combined with other package sources".into()); }
-                dep = registry_dependency(name, &spec, dep.version.as_deref())?;
+                dep = registry_dependency(&name, &spec, dep.version.as_deref())?;
             }
             validate_dependency(&dep)?;
             let mut m = manifest(&project)?;

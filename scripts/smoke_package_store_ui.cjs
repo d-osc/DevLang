@@ -18,7 +18,7 @@ assert.ok(node('package-results').innerHTML.includes('another/cli') && !node('pa
 vm.runInContext("packageState.kind='all';packageState.query='OWNER';filterPackages()",sandbox);
 assert.equal(node('package-count').textContent,'1 / 2 packages');
 sandbox.location.hash='#/packages/owner/math';vm.runInContext('paintPackages()',sandbox);
-assert.ok(node('package-view').innerHTML.includes('d pkg add math --git https://github.com/owner/math.git --tag v1.0.0'));
+assert.ok(node('package-view').innerHTML.includes('d pkg add @owner/math --as math --version =1.0.0'));
 assert.ok(node('package-view').innerHTML.includes('&lt;img') && !node('package-view').innerHTML.includes('<img'));
 vm.runInContext('fixture.latest=null;paintPackages()',sandbox);
 assert.ok(!node('package-view').innerHTML.includes('d pkg add'));
@@ -27,3 +27,11 @@ assert.ok(node('package-view').innerHTML.includes('ไม่พบ package น�
 vm.runInContext('packageError=true;paintPackages()',sandbox);
 assert.ok(node('package-view').innerHTML.includes('data-package-refresh'));
 console.log('Package Store UI: filtering, ownership, escaping, install tags, source-only, invalid routes and retry passed');
+
+vm.runInContext("packageError=false;packageState.query='';packageState.kind='all';packageCatalog.packages=Array.from({length:26},(_,i)=>({...fixture,id:'owner/pkg'+i,name:'pkg'+i,latest:{version:'1.0.0',tag:'v1.0.0',commit:'a'.repeat(40)}}));packageState.page=2;location.hash='#/packages';paintPackages()",sandbox);
+assert.equal((node('package-results').innerHTML.match(/class="package-card"/g)||[]).length,12);
+assert.ok(node('package-results').innerHTML.includes('หน้า 2 / 3'));
+vm.runInContext("packageCatalog.rejected=[{repository:'owner/bad',reason:'<script>bad</script>'}];packageCatalog.deferred=[{repository:'owner/wait',reason:'budget'}];location.hash='#/packages/status';paintPackages()",sandbox);
+assert.ok(node('package-status-results').innerHTML.includes('&lt;script&gt;bad'));
+assert.ok(!node('package-status-results').innerHTML.includes('<script>'));
+console.log('Package Store UI: pagination and escaped indexing diagnostics passed');

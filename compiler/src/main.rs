@@ -9,7 +9,7 @@ mod tests;
 use std::path::PathBuf;
 use std::time::Instant;
 
-const HELP: &str = "Dev Lang 0.4.0 — small syntax, native code, C interoperability
+const HELP: &str = "Dev Lang 0.4.0 â€” small syntax, native code, C interoperability
 
   devc run   main.dev [options] [-- program arguments]
   devc build main.dev [options]
@@ -127,19 +127,9 @@ fn cli() -> Result<i32, String> {
             "--native" => options.native = true,
             "--module-dir" => {
                 let value = args.next().ok_or("--module-dir needs NAME=DIR")?;
-                let (name, path) = value.split_once('=').ok_or("--module-dir needs NAME=DIR")?;
-                if name.is_empty()
-                    || path.is_empty()
-                    || !name.bytes().enumerate().all(|(i, b)| {
-                        b == b'_' || b.is_ascii_alphabetic() || (i > 0 && b.is_ascii_digit())
-                    })
-                {
-                    return Err(
-                        "--module-dir needs an identifier NAME and nonempty directory".into(),
-                    );
-                }
+                let (name, path) = dev_syntax::modules::mapping(&value)?;
                 if module_dirs
-                    .insert(name.to_string(), PathBuf::from(path))
+                    .insert(name.clone(), path)
                     .is_some()
                 {
                     return Err(format!("duplicate module namespace '{name}'"));

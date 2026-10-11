@@ -77,6 +77,9 @@ fn registry_dependency(
         sha256: Some(release.sha256.to_lowercase()),
         version: Some(format!("={version}")),
         workspace: false,
+        registry: Some(spec.to_owned()),
+        range: Some(requested.unwrap_or("*").to_owned()),
+        ..Dependency::default()
     };
     validate_dependency(&dep)?;
     Ok(dep)

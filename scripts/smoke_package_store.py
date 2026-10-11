@@ -10,7 +10,7 @@ import tempfile
 from threading import Thread
 from urllib.error import HTTPError
 from urllib.parse import urlparse
-from build_package_store import Api, collect, inspect, version_key
+from build_package_store import Api, collect, inspect, version_key, quality, package_documents
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--d', required=True)
@@ -81,6 +81,30 @@ try:
         run = subprocess.run(['python',str(repo/'scripts/build_package_store.py'),'--d',str(d),'--api-base',api.base,'--output',str(output)],capture_output=True,text=True,encoding='utf-8',timeout=30)
         check(run.returncode != 0 and output.read_text()=='preserved','API failure must preserve catalog')
     del response_overrides['/search/repositories']
+    with tempfile.TemporaryDirectory(prefix='store cache ') as cache:
+        caching = Api(api.base, Path(cache))
+        immutable_path='/repos/owner/math/git/trees/'+'a'*40
+        first=caching.get(immutable_path, recursive='1')
+        second=caching.get(immutable_path, recursive='1')
+        check(first==second and caching.calls==1 and caching.cache_hits==1,'immutable snapshot cache')
+        limited=collect(Api(api.base,max_requests=2),d)
+        check(limited['limited'] and limited['deferred'][0]['repository']=='owner/math','request budget reports deferred packages')
+    checks_path='/repos/owner/math/commits/head/check-runs'
+    for conclusion, expected in [('success','passed'),('failure','failed'),('skipped','skipped')]:
+        response_overrides[checks_path]=(200,{'total_count':1,'check_runs':[{'id':1,'name':'test','status':'completed','conclusion':conclusion}]})
+        check(quality(api,'owner/math','head')['state']==expected,'CI '+expected)
+    response_overrides[checks_path]=(200,{'total_count':1,'check_runs':[{'id':1,'name':'test','status':'in_progress'}]})
+    check(quality(api,'owner/math','head')['state']=='pending','CI pending')
+    response_overrides[checks_path]=(200,{'total_count':2,'check_runs':[{'id':1,'name':'test','status':'completed','conclusion':'failure'},{'id':2,'name':'test','status':'completed','conclusion':'success'}]})
+    check(quality(api,'owner/math','head')['state']=='passed','CI latest rerun supersedes failure')
+    del response_overrides[checks_path]
+    body=b'# API\n<script>alert(1)</script>\n[bad](javascript:alert(1))'
+    files.append({'path':'README.md','type':'blob','mode':'100644'})
+    response_overrides['/repos/owner/math/contents/README.md']=(200,{'encoding':'base64','size':len(body),'content':base64.b64encode(body).decode()})
+    check(package_documents(api,'owner/math','head')==[{'path':'README.md','markdown':body.decode()}],'document snapshot preserves source for safe rendering')
+    response_overrides['/repos/owner/math/contents/README.md']=(200,{'encoding':'base64','size':65537})
+    check(not package_documents(api,'owner/math','head'),'document size limit')
+    del response_overrides['/repos/owner/math/contents/README.md'];files.pop()
     for args, expected in [(('pkg','inspect','--json'),None),(('examples/main.dev',),'42'),(('tests/main.dev',),''),(('run','tests/main.dev','--engine','ast'),'')]:
         run = subprocess.run([str(d),'-C',str(repo/'templates/devlang-package'),*args],capture_output=True,text=True,encoding='utf-8',timeout=30)
         check(run.returncode==0 and (expected is None or run.stdout.strip()==expected),(args,run.stdout,run.stderr))

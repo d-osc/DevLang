@@ -792,7 +792,7 @@ Selectors อยู่ argument แรก Compiler options ใส่หลัง
 
 ## สิ่งที่ยังไม่มี
 
-Source ล่าสุดมี package manager แบบ path/Git, formatter, LSP เบื้องต้น และ native debugger integration แล้ว ดู [เครื่องมือพัฒนา](#/docs/tooling) รองรับ workspace และ SemVer Git tags แล้ว ส่วน registry/global version solver, workspace type checking และ interpreter debugger ยังไม่มี เช่นเดียวกับ coroutine event loop, async I/O, trait objects, literal/struct/slice patterns, inclusive/custom-step ranges และ iterator for collections
+Source ล่าสุดมี package manager แบบ path/Git, formatter, LSP เบื้องต้น และ native debugger integration แล้ว ดู [เครื่องมือพัฒนา](#/docs/tooling) รองรับ workspace และ SemVer Git tags แล้ว ส่วน general backtracking solver, workspace type checking และ interpreter debugger ยังไม่มี เช่นเดียวกับ coroutine event loop, async I/O, trait objects, literal/struct/slice patterns, inclusive/custom-step ranges และ iterator for collections
 
 Native `str` เป็น borrowed storage และ arbitrary foreign pointers ไม่ได้รับ lifetime proof Shared collection mutation อาจ copy O(n) Capturing raw C callbacks มี slot/lifetime limits ให้เลือก managed userdata API เมื่อเหมาะสม
 
@@ -940,7 +940,7 @@ d pkg list
 d pkg remove math
 ```
 
-Commit manifest และ `package-lock.don`; ignore `.dev/` และ `out/` Lockfile เก็บ commit ของ Git และ SHA-256 ของ package files `install` รักษา Git commit เดิมและบันทึก local edits ที่ตั้งใจ `update` resolve Git refs ใหม่ `--locked` ติดตั้ง checkout ที่ขาดด้วย commit เดิมและตรวจเนื้อหาโดยไม่แก้ lock การรัน/build ตรวจ lock แต่ไม่ดาวน์โหลดอัตโนมัติ Git ใช้ HTTPS/file URL และต้องมี Git ติดตั้ง รองรับ transitive dependencies แบบ namespace เดียว ถ้าชื่อชนกันคนละ source จะเป็น error รองรับ workspace และเลือก Git tag ตาม SemVer แล้ว ดู [Workspace และ versions](#/docs/packages) ยังไม่มี registry หรือ publish command
+Commit manifest และ `package-lock.don`; ignore `.dev/` และ `out/` Lockfile เก็บ commit ของ Git และ SHA-256 ของ package files `install` รักษา Git commit เดิมและบันทึก local edits ที่ตั้งใจ `update` resolve Git refs ใหม่ `--locked` ติดตั้ง checkout ที่ขาดด้วย commit เดิมและตรวจเนื้อหาโดยไม่แก้ lock การรัน/build ตรวจ lock แต่ไม่ดาวน์โหลดอัตโนมัติ Git ใช้ HTTPS/file URL และต้องมี Git ติดตั้ง รองรับ transitive dependencies โดย lock version 2 แยก namespace ตาม package เมื่อ source/version ชนกัน รองรับ workspace และเลือก Git tag ตาม SemVer แล้ว ดู [Workspace และ versions](#/docs/packages) รองรับ static registry และ GitHub release publication แล้ว
 
 ## Formatter
 
@@ -1482,10 +1482,10 @@ CLI ใช้ `d pkg add math --url URL --sha256 HASH` ไฟล์ archive ต�
 
 ติดตั้งคำสั่งส่วนกลางด้วย `d pkg install -g` หรือ `--global` แล้วเรียก `mycli` ได้ตรง ๆ โฟลเดอร์คือ `~/.devlang/bin` (Windows: `%USERPROFILE%\.devlang\bin`) ระบบเพิ่ม user PATH บน Windows หรือ startup file ของ bash/zsh/profile บน Unix ต้องเปิดโปรแกรม terminal ใหม่หลังเพิ่ม PATH ครั้งแรก ระบบเก็บสำเนา source และ dependencies ใน `.devlang/packages` และ runtime ใน `.devlang/runtime` จึงยังเรียกคำสั่งได้หลังย้ายหรือลบต้นฉบับ คำสั่งทำงานจาก snapshot และต้อง install ใหม่เมื่อแก้ source ใช้ `pkg update --global` อัปเดต และ `pkg uninstall --global` ถอนคำสั่งของโปรเจกต์นี้ หรือ `pkg uninstall --global PACKAGE_NAME` จากที่ใดก็ได้ ใช้ `pkg list --global` ดูรายการ โดยไม่ลบ source/cache หรือคำสั่งของโปรเจกต์อื่น
 
-รองรับ static registry: `d pkg publish --registry DIRECTORY` สร้าง `index.don` และ archive ในโฟลเดอร์นอก source จากนั้นโฮสต์ด้วย HTTP/HTTPS หรือใช้ file URL ค้นหาด้วย `d pkg search --registry INDEX_URL [QUERY]` และติดตั้งด้วย `d pkg add math --registry INDEX_URL --version '^1.2'` ระบบเลือก SemVer ที่สูงสุดตามเงื่อนไขและบันทึก URL/checksum/version แบบ exact ใน manifest ใช้ add อีกครั้งเมื่อต้องการเลือก release ใหม่ เพราะ `pkg update` ยังคง archive ที่ pin ไว้ ไม่มีบริการ registry กลางหรืออัปโหลด remote อัตโนมัติ ตัวอย่างเต็มอยู่ใน `examples/registry`
+รองรับ static registry: `d pkg publish --registry DIRECTORY` สร้าง `index.don` และ archive ในโฟลเดอร์นอก source จากนั้นโฮสต์ด้วย HTTP/HTTPS หรือใช้ file URL ค้นหาด้วย `d pkg search --registry INDEX_URL [QUERY]` และติดตั้งด้วย `d pkg add math --registry INDEX_URL --version '^1.2'` ระบบเลือก SemVer ที่สูงสุดตามเงื่อนไขและบันทึก URL/checksum/version แบบ exact ใน manifest ใช้ add อีกครั้งเมื่อต้องการเลือก release ใหม่ เพราะ `pkg update` ยังคง archive ที่ pin ไว้ Store ค้นหา GitHub packages ได้ และ pkg publish --github OWNER/REPO อัปโหลด GitHub release ได้ ตัวอย่างเต็มอยู่ใน `examples/registry`
 
 
-ยังเป็น namespace เดียว: constraints ที่ใช้ version ที่เลือกเดียวกันได้จะแชร์ package แต่ไม่มี backtracking หรือหลาย version ของชื่อเดียวกัน และยังไม่มี public registry/publish ถ้า add/remove ติดตั้งไม่สำเร็จจะคืน manifest เดิม การติดตั้ง `--workspace` ไม่เป็น transaction ทั้งกลุ่ม
+constraints ที่ใช้ version เดียวกันได้จะแชร์ package ส่วน source/version ที่ชนกันจะแยกด้วย lock version 2 ยังไม่มี general backtracking แต่รองรับ Store และ publishing แล้ว ถ้า add/remove ติดตั้งไม่สำเร็จจะคืน manifest เดิม การติดตั้ง `--workspace` ไม่เป็น transaction ทั้งกลุ่ม
 
 # [module-api-intro] คู่มือแต่ละ Module
 
@@ -1526,3 +1526,10 @@ LSP ตรวจ syntax, duplicate keys, escapes, missing references และ r
 ## File icon และสี code
 
 แยกสี keys, strings, numbers, comments และ `@root.path` ออกจากกันโดยไม่เปลี่ยนธีม editor เมื่อใช้ Material Icon Theme จะเพิ่ม icon `.don` ให้อัตโนมัติ โดยเก็บ association ที่ผู้ใช้ตั้งเองไว้ สำหรับธีมอื่นใช้ language icon ตามที่ธีมรองรับ หรือเลือก DevLang File Icons
+
+
+## Package Store และ CLI รุ่น 0.2.0
+
+ค้นหา `d pkg search math`, ดูเวอร์ชัน `d pkg info @owner/repo`, ติดตั้ง `d pkg add @owner/repo --as math --version '^1'` ตัวตน owner/repo แยกจาก alias ที่ใช้ import ใช้ `d pkg outdated` ดู CURRENT/WANTED/LATEST และ `d pkg upgrade math` เพื่ออัปเกรดตามช่วงเดิม ใช้ --latest เมื่อต้องการข้าม major และ --dry-run เพื่อดูก่อนแก้ manifest
+
+Git รองรับ --subdir packages/math แล้ว ส่วน Store ยังค้นพบ package.don ที่ root เท่านั้น หน้า Store มี README/API/changelog, ผล GitHub CI, pagination และหน้าสถานะ repo พร้อมเหตุผลการไม่ผ่าน ดู [Package Store](#/docs/package-store) สำหรับขีดจำกัดและวิธีใช้ทั้งหมด Template มี workflow ทดสอบสอง runtime engines และออก release เมื่อ push tag ที่ตรง version

@@ -2,7 +2,7 @@
 
 For a complete runnable `package.don` example covering manifest fields, workspace and path dependencies, Git templates, DON references and lock commands, see [the full package example](../examples/package-don/README.md).
 
-Use the current source-built `d`, `devrun` and `devc`. These additions extend the existing path/Git package manager; there is no public package registry or publish command yet.
+Use the current source-built `d`, `devrun` and `devc`. These additions extend the existing path/Git package manager; Store search and GitHub release publication are available alongside the static archive registry.
 
 ## Workspace layout
 
@@ -88,7 +88,7 @@ Requirements follow [the semver crate syntax](https://docs.rs/semver/latest/semv
 
 Local/workspace requirements validate the member's manifest version; they do not fetch another version. Git requirements select a tag during initial install or explicit `pkg update`. Regular install keeps a matching locked commit pinned. `--locked` restores the exact old commit and verifies its contents even if newer tags exist. `resolved_version` in package-lock.don records the selected version. `tag` remains available for arbitrary Git refs but cannot be combined with a dependency version.
 
-Within one package graph, namespaces remain flat. Different version declarations for the same source can share an already selected version when it satisfies both requirements; all declarations are recorded in the lock. Different sources, incompatible constraints or a later constraint that excludes the selected version are rejected. There is no backtracking to a lower tag, multi-version namespace support, or npm-style global solver yet. Dependencies with and without version requirements for the same namespace are not merged.
+Compatible declarations can share an already selected package. Incompatible namespace/source collisions switch to an isolated version-2 graph, as described below. There is no general constraint backtracking to a lower shared tag.
 
 `pkg add` / `pkg remove` restore the original manifest bytes if dependency installation fails. Completed cache fetches may remain; failed/verification fetch directories are retained for inspection. Successful mutation still rewrites DON formatting/comments as before.
 
@@ -117,7 +117,7 @@ devDependencies: { testkit: { path: '../testkit' } }
 
 Normal `pkg install/update` includes the current package's development dependencies. Dependencies' own development dependencies are not installed transitively. `pkg install/update --production` excludes them. Each mode writes its graph to `package-lock.don`; production locks include `production: true`. `--locked` requires a matching mode, so switching modes needs an ordinary install first. Run/build/check and LSP mappings follow the lock's mode. Existing cached downloads are retained when switching to production.
 
-Use `pkg add NAME SOURCE_OPTIONS --dev` and `pkg remove NAME --dev` to edit the development section. Add/remove installs in development mode and preserves manifest rollback on failure. Namespaces cannot appear in both sections. Workspace install/update supports `--production` for all packages. Peer dependencies remain unsupported. See [the runnable devDependencies example](../examples/dev-dependencies/README.md).
+Use `pkg add NAME SOURCE_OPTIONS --dev` and `pkg remove NAME --dev` to edit the development section. Add/remove installs in development mode and preserves manifest rollback on failure. Namespaces cannot appear in both sections. Workspace install/update supports `--production` for all packages. Peer dependencies are supported as described below. See [the runnable devDependencies example](../examples/dev-dependencies/README.md).
 
 ## Lock and content hashes
 
@@ -150,8 +150,20 @@ d pkg search --registry https://packages.example.org/index.don math
 d pkg add math --registry https://packages.example.org/index.don --version '^1.2'
 ```
 
-`search` works outside a project. HTTP(S) and file URLs are supported. Selection chooses the highest matching SemVer; default `*` excludes prereleases. The resolved manifest stores the exact version, archive URL and SHA-256, so locked cached installs do not require the registry online. `--dev` works; other source options/`--peer` cannot be combined with `--registry`. The original registry/range are not stored: `pkg update` retains this archive, and repeating `pkg add --registry` re-resolves the index.
+`search` works outside a project. HTTP(S) and file URLs are supported. Selection chooses the highest matching SemVer; default `*` excludes prereleases. The resolved manifest stores the exact version, archive URL and SHA-256, so locked cached installs do not require the registry online. `--dev` works; other source options/`--peer` cannot be combined with `--registry`. New registry adds retain registry/range metadata beside the pinned archive; pkg upgrade re-resolves that range. pkg update retains the archive. Older manifests can be re-added to track their registry.
 
 This is a static registry protocol, not a hosted central service or remote upload API. Checksums authenticate bytes relative to the index; use a trusted HTTPS index for remote distribution. The index is limited to 1 MiB and package extraction uses existing archive limits. See `examples/registry/README.md` for the generated DON schema and a complete local HTTP example.
 
 When an archive cache remains after removing a dependency or changing install modes, a new installation without a matching lock verifies the downloaded archive checksum and compares extracted source contents against that cache. A changed cache is rejected, never silently overwritten. A matching lock continues to support offline cached installs.
+
+## Scoped packages and monorepos
+
+See [Package Store](package-store.md) for scoped identity, search/info, outdated/upgrade, quality/docs and GitHub publication. Import aliases stay identifiers; ownership such as @owner/repo is source identity. Git dependencies support `subdir: 'packages/math'`, or `pkg add math --git URL --subdir packages/math --version '^1'`. The selected directory needs its own manifest/modules and cannot escape the checkout. Lock roots include the subdirectory.
+
+## Isolated dependency versions
+
+Version-2 locks store package IDs plus per-package alias edges. Each importing package uses its own mappings, so two libraries can both import math/lib and select different versions. IDs normalize local paths relative to the consumer project; relocating an identical local workspace preserves the lock. Runtime auto/AST, native compiler, LSP, bin execution and global snapshots share these mappings. Compatible graphs retain version-1 locks. Version-2 checks validate edges, all declarations, source content, commits and reachability; older components do not support these locks/scopes.
+
+Peer providers in isolated graphs come from the root consumer or a package's explicit dependencies. There is no general npm-style ancestor peer solver or full backtracking. CLI bins are exposed from the root and direct dependencies in version-2 graphs, avoiding private transitive command collisions; conflicting direct commands still fail.
+
+Optional top-level devlang is a d CLI SemVer requirement. `pkg compatibility --json` reports it without installing; source inspection validates schema while execution/installation enforce compatibility.
