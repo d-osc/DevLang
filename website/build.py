@@ -17,12 +17,13 @@ sys.path.insert(0, str(HERE / '.build-deps'))
 from markdown_it import MarkdownIt
 
 GROUPS = {
-    'เริ่มต้น': ['intro', 'install', 'layout', 'cli', 'tooling', 'packages'],
+    'เริ่มต้น': ['intro', 'cheat-sheet', 'install', 'layout', 'cli', 'tooling', 'packages'],
     'พื้นฐานภาษา': ['variables', 'types', 'operators', 'loops', 'functions', 'strings-arrays', 'modules'],
     'ข้อมูลและ abstraction': ['structs', 'enums-match', 'references', 'collections', 'generics', 'closures'],
     'ระบบและ interoperability': ['module-api-intro', 'tasks', 'sync', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'don-editor', 'fs-http', 'node-core', 'limitations', 'ai'],
 }
 REFERENCES = {
+    'cheat-sheet': ('Dev Language Cheat Sheet', 'docs/cheat-sheet.md'),
     'package-features': ('Scripts, resolution, offline and package security', 'docs/package-features.md'),
     'package-store': ('GitHub Package Store', 'docs/package-store.md'),
     'packages-reference': ('Workspaces and dependency versions', 'docs/packages.md'),
@@ -126,9 +127,12 @@ def main():
         raw.append(dict(id=slug, title=title, text='# ' + title + '\n' + text, group=group, source='website/content/guide.md', language='TH'))
     for slug, (title, path) in REFERENCES.items():
         module_page = slug == 'module-api' or slug.startswith('std-')
-        raw.append(dict(id=slug, title=title, text=(REPO / path).read_text(encoding='utf-8'),
-                        group='Module API' if module_page else 'Reference · EN', source=path,
-                        language='TH' if module_page else 'EN'))
+        group = next((name for name, ids in GROUPS.items() if slug in ids),
+                     'Module API' if module_page else 'Reference · EN')
+        raw.insert(1 if slug == 'cheat-sheet' else len(raw),
+                   dict(id=slug, title=title, text=(REPO / path).read_text(encoding='utf-8'),
+                        group=group, source=path,
+                        language='EN' if group == 'Reference · EN' else 'TH'))
     markdown = MarkdownIt('commonmark', {'html': False}).enable('table')
     link_map = {str((REPO / path).resolve()): slug for slug, (_, path) in REFERENCES.items()}
     documents = []
