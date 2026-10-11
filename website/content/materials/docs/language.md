@@ -364,3 +364,15 @@ fn has_address(p *i64) bool {
 ```
 
 This pointer cast parity fix is available in current source, after v0.5.0.
+
+### Native string address casts
+
+Converting an integer or raw pointer to native `str`, or extracting an integer
+address from `str`, requires a lexical `unsafe` block. These casts do not copy
+text or validate that the address contains a live, NUL-terminated string.
+`text as str` with an existing string remains safe. Direct casts from `str` to a
+mutable pointer remain rejected, including inside `unsafe`.
+
+The source runtime owns its string values and does not implement string address
+casts, even inside `unsafe`; use the supported FFI string interface instead.
+These additional native safety checks are available in current source after v0.5.0.

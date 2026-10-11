@@ -35,10 +35,20 @@ def main():
         check('unsafe { let p=null as *i64; print(p as bool) }','false\n')
         check('fn exists(p *i64) bool { return p as bool }; unsafe { print(exists(0 as *i64)) }',error='unsafe block')
         check('let p=null; print(p as bool)',error='unsafe block')
+        check('let text=1 as str; print(text)',error='unsafe block')
+        check('let text="hello"; print(text as usize)',error='unsafe block')
+        check('let text="hello"; print(text as str)','hello\n')
         check('if 1 { print(99) }',error='bool')
         check('fn bad() { while 1 { break } }; bad()',error='bool')
         check('let n i64=-9223372036854775808; print(n/-1); print(n%-1)','-9223372036854775808\n0\n')
         check('let n i64=-1; print(n<<1)','-2\n')
+        # The source runtime deliberately does not expose owned string addresses.
+        # Validate the native round-trip using a live literal, never an arbitrary address.
+        source.write_text('let text="hello"; unsafe { let address=text as usize; let restored=address as str; print(restored) }',encoding='utf-8')
+        command=[str(folder/('devc'+ext)),'run',str(source),'--release','-o',str(root/('program'+ext))]
+        result=subprocess.run(command,capture_output=True,text=True,timeout=45)
+        assert result.returncode==0 and result.stdout=='hello\n',(result.stdout,result.stderr)
+        count+=1
         (root/'native.c').write_text('#include <stdint.h>\n#include <stdlib.h>\ntypedef struct { int32_t x; double y; } Point;\nPoint native_point(Point p) { p.x+=1; p.y+=0.5; return p; }\nvoid *native_alloc(void) { return calloc(4,sizeof(int64_t)); }\nvoid native_free(void *p) { free(p); }',encoding='utf-8')
         check('extern fn printf(format str, ...) i32; unsafe { printf("%d %.1f %s\\n",7 as i8,1.5 as f32,"ok"); printf("%d\\n",true) }','7 1.5 ok\n1\n')
         check('fn add(x i64) i64 { return x+1 }; unsafe { let cb=callback(add); print(cb(41)) }','42\n')

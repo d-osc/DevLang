@@ -1720,6 +1720,12 @@ impl Engine {
                     if matches!(value, Value::Ptr(..)) && f.unsafe_depth == 0 {
                         return Err("raw pointer casts require an unsafe block".into());
                     }
+                    if ((*t == Type::Str && !matches!(&value, Value::Str(_)))
+                        || (matches!(&value, Value::Str(_)) && t.integer()))
+                        && f.unsafe_depth == 0
+                    {
+                        return Err("raw string address casts require an unsafe block".into());
+                    }
                     convert(value, t, true)?
                 }
                 ExprKind::Unary(op, a) => {

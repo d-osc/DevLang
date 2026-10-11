@@ -148,6 +148,24 @@ mod tests {
         }
     }
     #[test]
+    fn string_address_casts_require_lexical_unsafe_in_editor() {
+        for source in [
+            "let text=1 as str",
+            "let text=\"hello\"; let address=text as usize",
+            "fn address(text str) usize { return text as usize }",
+        ] {
+            let diagnostics = errors(source);
+            assert!(diagnostics.iter().any(|e| e.contains("unsafe block")), "{source}: {diagnostics:?}");
+        }
+        for source in [
+            "let text=\"hello\"; print(text as str)",
+            "unsafe { let text=1 as str }",
+            "fn address(text str) usize { unsafe { return text as usize } }",
+        ] {
+            assert!(errors(source).is_empty(), "{source}: {:?}", errors(source));
+        }
+    }
+    #[test]
     fn valid_code_has_no_diagnostics() {
         for source in [
             "fn add(a i64, b i64) i64 { return a + b }\nprint(add(1, 2))",

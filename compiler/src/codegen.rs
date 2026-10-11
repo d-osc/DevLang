@@ -1521,6 +1521,12 @@ impl Emitter<'_> {
                 if matches!(v.ty, Type::Ptr(_)) && self.unsafe_depth == 0 {
                     return self.fail(expr.span, "pointer casts require an unsafe block");
                 }
+                if ((*ty == Type::Str && v.ty != Type::Str)
+                    || (v.ty == Type::Str && ty.integer()))
+                    && self.unsafe_depth == 0
+                {
+                    return self.fail(expr.span, "raw string address casts require an unsafe block");
+                }
                 let from_pointer = matches!(v.ty, Type::Ptr(_) | Type::Str);
                 let to_pointer = matches!(ty, Type::Ptr(_) | Type::Str);
                 if (from_pointer && !(to_pointer || ty.integer() || *ty == Type::Bool))
