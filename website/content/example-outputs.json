@@ -6,47 +6,47 @@
   },
   "modules": {
     "source_sha256": "d7137a407ef33173ec52447e2454081fa3e57cf06b08f23d7b796ac83a0eeae3",
-    "validation_sha256": "6fc39f51ccb394fd44717d7f33bdebea32b471891510b2d5be85c0c850f91030",
+    "validation_sha256": "43045a1f03fdc695a53410084bd9f11b9e5234ddde9adcab8c7f60c55c7fe02c",
     "output": "Three files, one native program\n42\n55\n"
   },
   "features": {
     "source_sha256": "3d93e4796d712fc41f95d75cbd1faf90d2ec8e088d4db8d0b5a987cc54b47de5",
-    "validation_sha256": "763e1646b6e50a9b92bb1663a722a24d2700a01f1b0963e8e1eac81bbbd4ac9b",
+    "validation_sha256": "d42d6004765bd9171b416e17bb5bc45b21c2fe3752e25a80778d084e7e3c6e19",
     "output": "42\n43\nGreen\ntrue\n42\n4\n23\n"
   },
   "payload": {
     "source_sha256": "0bed160700fde68396623d16784f6482f2c4ea4961c94c734763bd36e276875d",
-    "validation_sha256": "f3fed7b8a71afc4b2d907353a4f500b56ddf81f784842d6c5a819bc32ee351e9",
+    "validation_sha256": "9d82623f2d2cf2d269115700d00a152cc1d36ac76140c89623a8a8c33716baff",
     "output": "42\n19\nend\n"
   },
   "advanced": {
-    "source_sha256": "002eb3d966310271a7f3526b34bf9cabc5e03162906550f2f20fd7cff79f42a1",
-    "validation_sha256": "41226a024193950044320d6c5d152145ed25a68833340413363499e8053ab8eb",
+    "source_sha256": "d732f260c7ad67c227035c5fdc7ede8cb2c3a6765befd831889a38f2dd632744",
+    "validation_sha256": "4c7e758af43ac1aa78ee6637bf9e3bf5ef971d27cf88bb74601ee82a4d5c6a56",
     "output": "42\n42\n42\n42\n42\n42\n42\n42\n"
   },
   "continuations": {
-    "source_sha256": "cabaace86c622b54b259df56666c943708b5d05deccdc546061fad293b2e670c",
-    "validation_sha256": "efa6200c8f3b20e4a506eb91a6156733c43258f8dfd70c502caf96843e174337",
+    "source_sha256": "e0f594aeb275362463aa714e21eb87c8f62281f0f21077c90b9cd42330294677",
+    "validation_sha256": "f5dfb72d2ee08502fe1420438fb8f2f8d2aacad1d5fe832e832e583f0b9ecf14",
     "output": "42\n42\n"
   },
   "variables": {
-    "source_sha256": "543009243f75a688ee539facc448681ac860e75df9a575e79dc1b83b6e53abac",
-    "validation_sha256": "2e5b6daf3c591845f933a1ece239cb488048bb1aa462ca0783ec6cf7145a32b1",
+    "source_sha256": "c74e0a2705f98866feb462a46f884169557a399a45b20ff00bccf9e8cc6c2b7e",
+    "validation_sha256": "c94efdf64443debfa0b25108eb5c5b890e92b7ff7c37108742d27b68870e1c94",
     "output": "3\n42\n255\ntrue\nDevLang\n99\n3\n"
   },
   "conditions": {
-    "source_sha256": "17e390921dba0a6e5191ff63426c0c6dd2eacf62b0aeb81262ee8ef9d5ff5aa8",
-    "validation_sha256": "989a691482d72317e9436b3f6dc153b815ebd0f9b53af29a4e158074a5184c09",
+    "source_sha256": "570ca0a62024bd6262e226e08f1f1a9e9926a1a56e7c3113da37790116a89960",
+    "validation_sha256": "7a1dc817d23028ea5ca1821348a2634bcd4e0c79d5320bd7bd98f855531f9fb9",
     "output": "excellent\npass\nretry\nmember reward\n"
   },
   "logical": {
-    "source_sha256": "707262bb4650a08510a56d6d6ec481b592315ac935bdaf97094075323460520f",
-    "validation_sha256": "be0bd5a9edd03310f94dc7ca52241933ad4bae7fe4b6ca39175ffabea1bc8130",
+    "source_sha256": "92580f38310699f46033a8a00226bfd74af452ceeb1ee307e73c8d273dc5e3ee",
+    "validation_sha256": "c1c281917ec093edf071b0da727d5be513b62dcff600575d00553d9a15000f95",
     "output": "true\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\nfalse\ntrue\nright side evaluated\ntrue\n"
   },
   "operators": {
-    "source_sha256": "32647e140a67dba31f9dd81e3b04db5e3757027d57caa94a6f6e5db0dc02601c",
-    "validation_sha256": "9c8f7790be406645846e1d927cfccbe1e2d8253f58e880ba63a279408ebefc7c",
+    "source_sha256": "99f7dbb29abd757d2d4aa23762c51e8fd60d9b1f143ddf71e8e3b9f87f4f0cd2",
+    "validation_sha256": "cb01d25f6c4edb83cf7dda8ce9a42a0f3b6cc76178fcd5c4c81396f4c407dd4c",
     "output": "42\n42\n42\n42\n1\n-7\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\n2\n11\n9\n20\n5\n4294967285\n8\n4\n"
   },
   "loops": {
@@ -55,33 +55,33 @@
     "output": "8\n3\n2\n1\n6\n19\n23\n"
   },
   "functions": {
-    "source_sha256": "acfabccb1f1db33580c206a09fdb08186e8192286769d6f9ec1a7ffa54ea1a76",
-    "validation_sha256": "16784dff30583b1f71792368bf086f1b1b59beeb219302c72135b96f329dddc9",
+    "source_sha256": "de3a8d65139c4477fae890d5f4e828e9d6699eb335b9ac377f3d5f18fbd0e062",
+    "validation_sha256": "c76bf81ba377f33fc31307c909109aca842c5e44711c62e5f9dde3c109e66c69",
     "output": "explicit main call\n42\n120\n42\n"
   },
   "arrays": {
-    "source_sha256": "9fd89beb00b1937cbba38c3a9e73d7d0787b157a78d40719d4434c9120b38464",
-    "validation_sha256": "580e136ccda729d77a91c6586131e4a1da3a40a62172465a8bb0e96a373271d8",
+    "source_sha256": "3047397a36aec1d0cd55ed6bec2a35c769fff9d8ed52b754ad0889ab3d8b628b",
+    "validation_sha256": "52b9b3d1747afe0297551f0ee67a4d72b1ee0effb8f41a45b95a26d730189814",
     "output": "42\n23\n24\nDev\n68\nline one\nline two\n"
   },
   "structs": {
-    "source_sha256": "5629b14c6385bbae6cc69ee9b55a19984ec91ae9693f83739d278db5c9b4314f",
-    "validation_sha256": "c880fc80ee36a4f8d7b7ae658178bce8154edea313ed6427efa5327afcde6152",
+    "source_sha256": "d4862e2358d49663dcab81bd33b772f241b4eaad52814c268e2199148b83dd7d",
+    "validation_sha256": "dc95cd3c3c111188ff1016e4f9ff0b804272d033227d5149e4822fdf4ff8c6db",
     "output": "42\n99\n43\n20\n"
   },
   "enums": {
-    "source_sha256": "c2f71b5f315a496f99b004a6157ce3517b88ed9b6615001627c679adaba0e807",
-    "validation_sha256": "0ec7690328b46613f966f8e6df071a6f405b8e5f9a5b041a8afb0b23084a0662",
+    "source_sha256": "42a94a1aea910126c46e1548e42bf4b0c94992dec8048443ea849cdffbad5200",
+    "validation_sha256": "202743c902960f5d9e5a836b25216e0124a466e340f505a1bb905053030673c9",
     "output": "true\n1\n42\ninvalid input\n"
   },
   "matching": {
-    "source_sha256": "23f4ebb38a3a2cb97fd059b52229a09393a0a9644937f8848f6aaed1d069fa25",
-    "validation_sha256": "3b4520334e4a600461de678cde3c7a68ced9b75766ebfa11c6cca53e1ad4ed22",
+    "source_sha256": "9e719bbff8d770a0683041c49ca48cd73b3fb03349034c1ef4c14e09da219f59",
+    "validation_sha256": "1b8e9b631c7920e450afabb239ea50118f1bff5fb042e7a3da51923f03f5db8a",
     "output": "42\nnon-positive\nempty\nerror\n"
   },
   "references": {
-    "source_sha256": "8b9bb62ca4142d75559109d50f073a2392e8a617987419817c1bd15f06e0522a",
-    "validation_sha256": "8dc824d453a783222c2ef23b7f1b8e5e8724c07762ad406a60eea4260ccf1e7f",
+    "source_sha256": "5448f6457a9f739b17edfeb4e77895efaf03affca5ab33a05ba6a5fabe881fb7",
+    "validation_sha256": "d2eab1fbbeb5c0915e9227586a5e4e966892118b2db17a9bc4291f9fe436ae90",
     "output": "42\n42\n"
   },
   "vector": {
@@ -100,43 +100,43 @@
     "output": "99\n42\nfalse\n1\n0\n2\n"
   },
   "generics": {
-    "source_sha256": "6d720b88650473c4268a185c8065a75a379c65905832d7903b3baad38b3a6098",
-    "validation_sha256": "a52681a5d6d0fc4223ddad6178eb41773c7702c2bfcfd6d628d01900a69ace10",
+    "source_sha256": "5fa92a51e0864c9d25b9ee0bcd7196c3ca5ec1c1160b12db82a31618ac80081e",
+    "validation_sha256": "36734796389541d785b4108cbd6b5978f86deb9e1b3f9b82a12b1997ab6fc93b",
     "output": "42\n42\n42\n4\ntrue\n42\n42\n"
   },
   "traits": {
-    "source_sha256": "b62e586401cd9c7b76d438185442bd59581e2d814533b63613d4b0abdf2cdac0",
-    "validation_sha256": "2cbebbcacacd7e7a7d3d2bed98ef6d3e345dfdfa1087c079cc33997430f0f2b3",
+    "source_sha256": "aac6117f08fd01cb3581780c5a51c42287d21c776828325abac756fa67a3c9af",
+    "validation_sha256": "feb7810eccd05451e03ee0c8a24706950dcccdbc369606dff391c0265a9e40c5",
     "output": "42\n"
   },
   "closures": {
-    "source_sha256": "1eba909c5d4579b71b40c4450365857231b1a64bd8beec656eaeb07d879c083b",
-    "validation_sha256": "d80c90b6dbf4e8ea96b07342eb02b49c926ad578f9540748b6d7c62d540daa54",
+    "source_sha256": "f7cae3cc31643f99d1a177a982594c752bdf5b203268dad8563b36f3e5744087",
+    "validation_sha256": "4c195cf14b2cf84d5564b4ae64ea1edcd4e509092d9d7b09f99cb0a352b78ef6",
     "output": "42\n42\n42\n1\n1\n0\n"
   },
   "tasks": {
-    "source_sha256": "782d721ddeff368558511a068ea12bc5172bb2322b57f85d6c3962d7514cd33d",
-    "validation_sha256": "9c738cacdb90f0a6478763dcba3f8ef884226509a40be05606e85dd8dd1f18cf",
+    "source_sha256": "0938dc734e92af1d24ad6b9d86a47606f3fea2c0d21ae7785df7121e81b3454e",
+    "validation_sha256": "ef9d26c6969f40da79e23e0c899e3dd97bf5d71aef4a71c41e90f9416f85419f",
     "output": "42\ntrue\n42\n42\n43\n7\n"
   },
   "callbacks": {
-    "source_sha256": "f43bdef6de23e97ce8a8a515e2bd17c671eb81119e72ec1cb7f98b6620e659ae",
-    "validation_sha256": "32908bb4b1c2a762cacb8fca355e2e437d6010f56d751f586548608d6069f718",
+    "source_sha256": "28792ed2ef0164eb481a4f9355babbc04ad9b6fa9c52131357ca3c6c9361a5b9",
+    "validation_sha256": "654cd1f27f5cecf92fe3de6eac743995808d52475ed7ad3364de78b877ae07d8",
     "output": "42\n42\n42\n"
   },
   "foreign_memory": {
-    "source_sha256": "caec73869ff574ec3548751cce4abc3be3645b630ceafb86f3a6d3f386a7a409",
-    "validation_sha256": "ba3105011ee8e019c8bd716a452a19be70040d50885904e05d52ddf63c61a796",
+    "source_sha256": "c649d255504ef152a851b2c459c41a7dc3e4d833ea7eacd14b14993714de5e09",
+    "validation_sha256": "4a3a2cf97a1ebc61197e15d0d0d78c0cb609f75d5c4dcdbda28491d400a6a46a",
     "output": "42\n42\n"
   },
   "variadic": {
-    "source_sha256": "5b97c81e7c1cf407fa090c7dab2b6123d3f59f3378f8972a668695cfaec7ac89",
-    "validation_sha256": "275c541afb5c39e14773ac13bc23d5db43024bc23e6cd53aa371dee15db168de",
+    "source_sha256": "eba21da651d081b6a90b4fc9446fb9eed7cc1e358c5a1068120c782c8ebe16b2",
+    "validation_sha256": "8d9402a4b978649b1906d4c5fdb285a7f71e0e3688d9b9045968d6f9ac6af336",
     "output": "value=42 real=1.5\n"
   },
   "exports": {
-    "source_sha256": "5437130a90f24d2990dbefa07aaf2578a3c9c15d6270eecf588ece9b6305cc5f",
-    "validation_sha256": "2f6e01bd982cb8a34f9a0710abb44e41b0e2b684aeba3976d089b5bf3e4ab054",
+    "source_sha256": "0624bb89f2ac299c3ceca97cc47641b711f2a315f4b89298e9382ebaa8db8b90",
+    "validation_sha256": "d04e5cdbaeaa7b89f3ae60f0b0b52f41b591f6e145f8818f3566ca99342fe8d6",
     "output": "42\n"
   },
   "safe_checks": {
@@ -160,33 +160,33 @@
     "output": "What is your name?\nHello DevLang\n"
   },
   "ffi": {
-    "source_sha256": "e76bd245950ff2bc554250fdcbcb53a0f7af1210ec4ec7165d14d8c45649af54",
-    "validation_sha256": "def2a33dbae8e5af182319bfa5ee75c7ffd46cac8ebd363c2bdc345cb7c527e2",
+    "source_sha256": "22d296a445ba3ef0be3682e04125b2018f41cd551e784dfced3041244295eda0",
+    "validation_sha256": "0e7260a00f78e156f7ce11504cb2e883912c64fc7cfa2427ac6fd641a57cb77f",
     "output": "Calling C directly\n42\n"
   },
   "aggregate": {
-    "source_sha256": "871e22fddd290b4b2607b82b27fe3598da5133622f26135ee3f4587b0f73835c",
-    "validation_sha256": "5bd7e4834bf6d32d3bbabb8c138985bf386ae221432352f2fd33d11fd799b99b",
+    "source_sha256": "538a32431b39256de588ec68bb772798c28ca48a230bfc8b1d902b54f719c019",
+    "validation_sha256": "34095b71baaf9d208afe4d8edaed9d90d0b7c99c8a90d52a21ac3b407c98b67d",
     "output": "44\n42\n"
   },
   "native-memory": {
-    "source_sha256": "3c094b79887b9a73f3e3339bbedd42c9b0fbca6e1802315188199526659f6b00",
-    "validation_sha256": "36e45a38b8bf0e0f733c8c3860848e765d9a6448b59ddf4199dca026879db8d8",
+    "source_sha256": "23bc7332926c711ae0e0bd36ab990dad4877e143c4c2c5bdb082489c70855ba9",
+    "validation_sha256": "41816ca7cd164d6a31c3e580179dc3cd41092f5c3c4ad785478321561a9e46d1",
     "output": "32\n99\n4\n"
   },
   "native-stdlib": {
-    "source_sha256": "7afdb98da2365b9b3d41cc7c70108e6127e51449c09334de7f0d421c7900a624",
-    "validation_sha256": "b30d5f70c788bb5c4ab160ee588962c905eaa68bd23788575df6027ec7b07b75",
-    "output": "Hello Dev runtime ภาษาไทย\n39\ntrue\n"
+    "source_sha256": "0e79e7962707fa7be6c8e351f4305d155fb23f00e3265f5fed2e5e1079e125b6",
+    "validation_sha256": "a0233a9edcc8614914444277fb283fee51a46faae493c8c9bb798104367c52db",
+    "output": "Hello Dev runtime à¸ à¸²à¸©à¸²à¹„à¸—à¸¢\n62\ntrue\n"
   },
   "json": {
-    "source_sha256": "0753e40874d02718b988aa2ff104fb79a2ff4c2e2acfb343c16c9848b2a31e51",
-    "validation_sha256": "7b73b8e194550e72f61d207915bad24d24870a673d0574d6f721976218e13cd6",
+    "source_sha256": "0776017c66f76b4b231cfe7b5554caf77d5ddc44d138f47c46b9622d46620d3a",
+    "validation_sha256": "b059df457a5e0d00ac9376b2572e366bcc260189446faac2d9b69c12962a7029",
     "output": "true\nDev\n18\ntrue\n19\n23\ntrue\nfalse\n18\n21\n{\"empty\":null,\"items\":[42],\"user\":{\"age\":21,\"name\":\"Dev\"}}\nobject\nempty\nitems\nuser\n2\n1.5\n18446744073709551615\n{\"items\":[42],\"user\":{\"age\":21,\"name\":\"Dev\"}}\n"
   },
   "json-literals": {
     "source_sha256": "88c12206ff07f927ffbf406292df7bc7b5281bc52e1454c0017d9c194cfe6634",
-    "validation_sha256": "24d9249b31ad23b17abb4b765c6627aa3f10e48bb951880d592916ab0f65f9ce",
+    "validation_sha256": "1bb330ff507683d424efa762267e3bfb3cd9e85f972c9a54ab659aeefe7576b4",
     "output": "Dev\n19\nChiang Mai\nDevLang user\n18\n{\"active\":true,\"address\":{\"city\":\"Chiang Mai\"},\"age\":19,\"display-name\":\"DevLang user\",\"name\":\"Dev\",\"tags\":[\"developer\",100,true,null]}\n"
   },
   "filesystem": {
@@ -205,39 +205,39 @@
     "output": "Hello DevLang\nHello DevLang\n"
   },
   "http-server": {
-    "source_sha256": "cd839b1e1ea20db9a877a14c4f22148b716b12cf81db6d13285e4c400520bfcf",
-    "validation_sha256": "063a639bf0f22e6d24b6addd5588fdc7a71b73773d9d86a6547ab93ee958a544",
+    "source_sha256": "74eb93b2ad8bc52681a7cc8299baf81cb745f466d0536f09ce86852f6d0963ac",
+    "validation_sha256": "606b74824bbb6c01cf608b8f56595bb78dffe9673866e0c51c96b768575a2904",
     "output": "Usage: d examples/http-server/main.dev -- serve\n"
   },
   "core-modules": {
-    "source_sha256": "d914eebc55edc3701530d4e234a32da121c96dd8a54de238b40956d5e994e540",
-    "validation_sha256": "46f1c110cb71faa4975edd2afd45cbe23eacae8fc5a4d646f9ef23dbaaa0fe88",
+    "source_sha256": "8f3fdf07a796a1b3baacb7e8faa786bd40f0e5312544f3c81103993b6e49831e",
+    "validation_sha256": "d93db30325e1529f385007a3c43cda26b5e1b49affb5a5a84302d819f8d89bf1",
     "output": "example.dev\ntrue\ntrue\ntrue\ntrue\nexample.com\nhello world\nevent:ready\n0\nDevLang\n0\n4\ntrue\n"
   },
   "tcp": {
-    "source_sha256": "1be3fcfcdb4dd4c39ea278b66506f3378417ac8870ad4e6f2abf11930a024fe7",
-    "validation_sha256": "ebc7a97fc561cfb86c09797a693686ca000bad22766488a34be1b8193dbbcee7",
+    "source_sha256": "b65a64bfdb30c2e7bd334ca2cd6536278dc67e9b5a7d164e77a392d0038b0659",
+    "validation_sha256": "21dc1db1735e5df7c8594392d8b42f71556addcd96eb2d878ccbae99cdbb43b9",
     "output": "TCP hello\n"
   },
   "udp": {
-    "source_sha256": "f26c13784099df62189a617c14fd7f686251ffa38d16bf6d39bc06cdd02c0db0",
-    "validation_sha256": "bde2f9555a8d62aefb4fc35e5701f01c30480e496236bc9c02d0251d624a6485",
+    "source_sha256": "6881411e7f4985012bfae55e8fd367e5ddced8d0c989fb69af5d9ee1cbbfa0fa",
+    "validation_sha256": "16d501174a0b737d7e52bd00fafa7c1cfde919c71b4c29a2e7ef71d6e76a6b61",
     "output": "UDP hello\n"
   },
   "don": {
     "source_sha256": "9962c2cbf984f0fbef480aa1ef0e7d74e050e3f5b0a13e30e08a5ae7f75b0e2d",
-    "validation_sha256": "823dafcd4923845172271e0133d723c0e855fcd846ec804248f5739674a1bfd8",
+    "validation_sha256": "43618d651e960955885865b32e37026120430c1b1908861a2c4a26ef96b7d6bc",
     "output": "DevLang demo\n3000\n8080\nfalse\n{\"name\":\"Dev\"}\n"
   },
   "basic-libs": {
-    "source_sha256": "922a21672ca092172c7bf690906acc21f01d83240f7df2c58e8cf7d5a067ddc0",
-    "validation_sha256": "c4e46b59788a9ca9a53a8b786d90b1d3a66c77788b71d0a367311f7c80f8b406",
-    "output": "3\nDEVLANG\ntrue\n2024-02-29T12:30:00.000Z\n2024-02-29 19:30:00 +07:00\nPASS math\nPASS unicode\ntrue\n"
+    "source_sha256": "7bea9b8369a55f03518dbf71fe3611920175f56bcc7ff88786b4a4b580cc312a",
+    "validation_sha256": "ecadeb9581aef10e93056e858c0ca797ce500e15772bcfbbd973f7348db4181c",
+    "output": "3\nDEVLANG\ntrue\n2024-02-29T12:30:00.000Z\n2024-02-29 19:30:00 +07:00\nPASS math\nFAIL unicode: \\\\?\\C:\\Users\\ondev\\Projects\\dev-lang\\out\\type-syntax-site\\examples\\basic-libs\\main.dev:22:13: std/test.g_equal_8ee5e9315bcacf54: assertion failed: characters\nfalse\n"
   },
   "data-libs": {
-    "source_sha256": "e74d60c306e693b34a5f755dc0e8798465218173ddf23e50633f3fb3458b0d63",
-    "validation_sha256": "45d327bf29008cc03493c465b18ba8a0afd2a611339ee77296a6f46b7918cd73",
-    "output": "3000\na# b#\nDevLang 🚀\nba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\ntrue\nDevLang 🚀\nhello.txt\nDevLang 🚀\nhello.txt\ntrue\n"
+    "source_sha256": "177b7cb427fee372984106e0485bfe42a6381ed96129171af7d329928bbd98b1",
+    "validation_sha256": "864c381daf8cbf656c9add83a5e47c2892f93111e9a6c2ec5f477f69e6aa364f",
+    "output": "3000\na# b#\nDevLang Ã°Å¸Å¡â‚¬\nba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\ntrue\nDevLang Ã°Å¸Å¡â‚¬\nhello.txt\nDevLang Ã°Å¸Å¡â‚¬\nhello.txt\ntrue\n"
   },
   "system-libs": {
     "source_sha256": "2424096e3bd85d97f9987f08e8023cd9dcf2a8f302327c579113220dda1a8ed9",
@@ -245,8 +245,8 @@
     "output": "true\n3000\nserve\n--literal\n127.0.0.1\n4\n::1\n0\n"
   },
   "control-libs": {
-    "source_sha256": "63389ddb20d53aebbc8792a471cd1b711c0ed162d347992acbdb3b5d5826066d",
-    "validation_sha256": "ab8b4c2e04bd62a92cbe47b382c50c1bbf351321ccba67b086210db7abdfb3f5",
+    "source_sha256": "e49f2d421c0ef3913e7aaa228ac028e5b7be14e9467c45fdcad9506e02bd24e5",
+    "validation_sha256": "fc1e82ed2b4fee6d9da4128e25a8a0ce82d4e692271d7742664ccb6713313e93",
     "output": "read failed; program continues\nfallback\n42\n30000\nmain finished; timers run next\n1\n2\n3\n"
   },
   "storage-libs": {
@@ -255,18 +255,18 @@
     "output": "1\nDevLang\nname\nDev\nDev\n1\ntrue\n"
   },
   "secure-network": {
-    "source_sha256": "59bea272b81483a8c8e63ac2aeea92d1a04d66653ea755b655b943b6ab3ad9b2",
-    "validation_sha256": "2f0d26103807b8e2a6c8a36658064041796adf92aa887b2e46465204e8cda00a",
+    "source_sha256": "24c1e972ff801278089b25c9851123fe53d95cc5657ffb18ac3441f6247e5431",
+    "validation_sha256": "96a9a3c41544359ea727a2eef30eb27fdd6fc9d4432484dcd6ec2c0b045468bc",
     "output": "10000\ntrue\nUse ws:// or wss://; TLS verifies certificates\n"
   },
   "sync": {
-    "source_sha256": "994cfbca4ffdb2f7b41609128588aaf57b688757d043a1867b067f8d1749a5a7",
-    "validation_sha256": "eef4088f773ce6ce9ab745dc126935e55adb1827c7cf57cdc3d9ca4b9c9422c2",
+    "source_sha256": "4135bb9576d2f5383a3d03a6c1a869a136acfcd912eb2419be6453b4af66722c",
+    "validation_sha256": "98b62a7b8ed8bad47349c9be1f351a7310f1d419147f8a164396e695c1133915",
     "output": "15\ntrue\n15\ntrue\n"
   },
   "workspace": {
     "source_sha256": "7c57d7d4048ad1acf58524af90de7e75313219fbb0daa19b3ca0c0a4115c41f1",
-    "validation_sha256": "7b18ef06c782d07a505dcd859905c9233e0cc014907c3966d6222115632d336a",
+    "validation_sha256": "27323128915182623e55cc8502d92134d17fc917478b4f957135fec7868b69ef",
     "output": "42\n"
   },
   "api-math": {
@@ -280,9 +280,9 @@
     "output": "true\n"
   },
   "api-strings": {
-    "source_sha256": "cffab00bd009360bde11cf0e6dcabe5515066d4fa49ca4eb435d86f60afd5271",
-    "validation_sha256": "63deccd6f4ab179d8ad464f52bc1148f161124749a389cbdbbb803d9266dbc76",
-    "output": "5\nDEV\n"
+    "source_sha256": "39ecb3454f84f9d346d3004f970f6bbb011ad26d60b343ec93c2b0653e305e2e",
+    "validation_sha256": "6a206c9fa86911ac9d9a00123913d4712aaeb3853c2600866b3f2338d35ad34e",
+    "output": "8\nDEV\n"
   },
   "api-datetime": {
     "source_sha256": "2347edfdb48b35ab382ea8a768cba950794da5142aff2747ccc2019d3153710b",
@@ -305,9 +305,9 @@
     "output": "3000\n"
   },
   "api-encoding": {
-    "source_sha256": "73c416d5ec8b830483eb86fa7bcddbd84eaa5f0ecd842bababaa8dff17987d3e",
-    "validation_sha256": "f9f87bc80cbe2344271cc4d22189870e5965a14e8461a9ada8becaf9d26bb4f5",
-    "output": "Dev 🚀\n"
+    "source_sha256": "c75720ae92b1a0139cda743fb1946745bb7b9ea343a3bce8147d804cbe382551",
+    "validation_sha256": "725127f5ab8a2f4bebb1631183811a93974f4d3fdf192f09111e067a6f492f39",
+    "output": "Dev ðŸš€\n"
   },
   "api-crypto": {
     "source_sha256": "6a559d49e6466d53716e09281b5ed7e970944fbcf305b999d8409a7df0b5b85f",
@@ -340,13 +340,13 @@
     "output": "Dev\n"
   },
   "api-result": {
-    "source_sha256": "fde2e8d82becc366879108bd210485563c6de807e222610db92860baa374f178",
-    "validation_sha256": "172114b93ffd02d1b2e11a5cd78d73173b98b9a064a5bbba2123525d49b74fee",
+    "source_sha256": "b972b9539a55cfade2716c873bfb7a7282251e58a3b4bd7aa1d0128af208bacc",
+    "validation_sha256": "91fc8ac4715ff5084c91c807464a52c89a1d99762732e5f3d0d6abe4d6d9158d",
     "output": "true\n42\n"
   },
   "api-timers": {
-    "source_sha256": "fd18bf459cb67964b68226e37f7da8ca7c8e52c5e12e3fae3f86da68cc703c16",
-    "validation_sha256": "0e5bd07bf85370cdeba94d439cf6a72e6759798edcd095f82b9972de023ab4f6",
+    "source_sha256": "d393a39e02dafe18d5e56dbb1224170055991fef60f1e1b31d42136b54dff7be",
+    "validation_sha256": "793e4e5c016979474a3c989633bb55be4b32ba5b6cfc7472c55eadfd4a9b7476",
     "output": "1\n2\n"
   },
   "api-child_process": {
@@ -380,8 +380,8 @@
     "output": "10000\n"
   },
   "api-websocket": {
-    "source_sha256": "eda63037c1681bba4a07575c855cbdc8af57961bb5cb94bd39b89581c73e08f4",
-    "validation_sha256": "f4250b9560b145543c06e79d2a7758ef22f1df8a2137c32fc43f779f84e6ede1",
+    "source_sha256": "ef79fe35332c3fa7029c484a33578ed196105a8ff9e80ed8fc0475d0179f75d6",
+    "validation_sha256": "11e94e6e68f2d89158b83f068e58410ae823b92aa97cb7e79064504cb1d299fb",
     "output": "true\n"
   },
   "api-path": {
@@ -415,8 +415,8 @@
     "output": "Dev\n"
   },
   "api-events": {
-    "source_sha256": "d625e5c49558c7e5fcae48b159f97c5d15d861ab00893f13d9f12d98d06a8c70",
-    "validation_sha256": "729df9f3b40982a32f6772b88f2857b8a58ba0a7ca7be02c45c444b1861c6043",
+    "source_sha256": "a10e4c5d11c76b0f6cb4a435ce8d3ae46ea6d31220a99589ba10c35c239cfa08",
+    "validation_sha256": "ff6d83797c02750318fad54e671fd0a4e4475dd4cba3eb3a53fc7d7aa1d96084",
     "output": "Dev\n"
   },
   "api-stream": {
@@ -425,8 +425,8 @@
     "output": "Hello\n"
   },
   "api-net": {
-    "source_sha256": "8afbb959d84a528e9385407d643e8309ae2329a803e0effb612987326d7841ca",
-    "validation_sha256": "81a0b17fdb7c18201b183ce38e9be653963dec2005944e972259094269a68a52",
+    "source_sha256": "ba494fbdd6361e56391fe3f7ae97476be4d06626850dac40c19fc2e4f82b7515",
+    "validation_sha256": "60b9b808f3652653f6bc88e81bf2a1f085d9bd33d86c04b118593550a8aa6eb9",
     "output": "true\n"
   },
   "api-dgram": {
@@ -435,8 +435,8 @@
     "output": "true\n"
   },
   "api-sync": {
-    "source_sha256": "3899f9947985abf0701334e13c4b3ef23c3d1a22bac63e599bd3a586a9bc06cc",
-    "validation_sha256": "a303ee25807fb803883e37754b7106408630467e62310d9bba4cd5823ad14217",
+    "source_sha256": "4215c8eee6fd774401741d7a1d6ae122783add72c6d68434fecb10f6ba011286",
+    "validation_sha256": "43d4a31bc6643b3a9f438cd8efb584bdb3548aa0f520c35c2c60e0f0f911b46d",
     "output": "42\n"
   },
   "api-json": {
@@ -460,8 +460,8 @@
     "output": "Hello\n"
   },
   "api-http": {
-    "source_sha256": "a7458b120434e8079360d5dd0cfcdc0a9669f884029beb8cb4aae9ccf59e3a5b",
-    "validation_sha256": "a7e176f595001814cbc49c7dee4a7ad6562d166e83fc88165b6278478dcb72b4",
+    "source_sha256": "57e4bfc05c3a40d863c698bff51c622770f0e3287860bbf5ae37e5c3146f3b01",
+    "validation_sha256": "2cd4174126b40994719995d148d351f59d2cfc867f04f9a0e5dbb31f3090e1b9",
     "output": "server closed\n"
   },
   "api-io": {

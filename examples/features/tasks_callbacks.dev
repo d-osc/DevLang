@@ -1,8 +1,8 @@
-async fn answer(n i64) Ref<i64> { return ref(n + 1) }
+async fn answer(n: i64): Ref<i64> { return ref(n + 1) }
 
-fn make(offset i64) fn(i64) i64 {
+fn make(offset: i64): fn(i64): i64 {
     let retained = ref(offset)
-    return fn(value i64) i64 { return deref(retained) + value }
+    return fn(value: i64): i64 { return deref(retained) + value }
 }
 
 fn main() {

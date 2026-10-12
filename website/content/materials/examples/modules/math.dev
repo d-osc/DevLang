@@ -1,8 +1,8 @@
-fn add(a i64, b i64) i64 {
+fn add(a: i64, b: i64): i64 {
     return a + b
 }
 
-fn fib(n i64) i64 {
+fn fib(n: i64): i64 {
     if n < 2 {
         return n
     }

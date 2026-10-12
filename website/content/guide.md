@@ -90,7 +90,7 @@ let b = 23; print(a + b)
 ## main และ exit status
 
 ```dev
-fn main() i32 {
+fn main(): i32 {
     print("เรียก main อย่างชัดเจน")
     return 0
 }
@@ -108,7 +108,7 @@ Entry file เขียน executable statements ได้ตามลำดั�
 ```dev
 let answer = 40
 answer += 2
-let small i32 = 42
+let small: i32 = 42
 let explicit: i32 = 42
 print(answer)
 print(small + explicit)
@@ -157,10 +157,10 @@ print(value)
 Integer literal ที่ไม่มี context เป็น `i64` ส่วน float เป็น `f64` รองรับเลขฐานสิบ ฐานสิบหก `_` คั่นหลัก และ exponent สำหรับ float Context จาก type annotation, parameter หรือ return ช่วยกำหนด type ของ literal
 
 ```dev
-let hex u32 = 0xFF
+let hex: u32 = 0xFF
 let count = 1_000
 let ratio = 1.5e2
-let narrow i32 = 42
+let narrow: i32 = 42
 let wide = narrow as i64
 print(hex)
 print(count)
@@ -244,10 +244,10 @@ print(total)
 ## ประกาศและเรียก
 
 ```dev
-fn add(a i64, b i64) i64 {
+fn add(a: i64, b: i64): i64 {
     return a + b
 }
-fn greet(message str) {
+fn greet(message: str) {
     print(message)
 }
 greet("Hello")
@@ -259,7 +259,7 @@ Parameter ต้องระบุ type Return type เขียนหลัง 
 ## Recursion
 
 ```dev
-fn factorial(n i64) i64 {
+fn factorial(n: i64): i64 {
     if n <= 1 { return 1 }
     return n * factorial(n - 1)
 }
@@ -270,7 +270,7 @@ print(factorial(5))
 
 ## ตัวอย่างที่รันและดาวน์โหลดได้
 
-- [ฟังก์ชัน recursion และ exit status](#/examples/functions) — Typed parameters, return, factorial, optional :/-> และ return main()
+- [ฟังก์ชัน recursion และ exit status](#/examples/functions) — Typed parameters, return, factorial, รูปแบบ `name: Type` และ `): ReturnType` และ return main()
 
 # [strings-arrays] Strings และ fixed arrays
 
@@ -280,7 +280,7 @@ print(factorial(5))
 let text = "Dev ภาษาไทย"
 print(text)
 print(text[0])
-let values [i64; 3] = [19, 23, 7]
+let values: [i64; 3] = [19, 23, 7]
 values[2] = 0
 print(values[0] + values[1])
 print(sizeof(values))
@@ -323,7 +323,7 @@ main()
 ฟังก์ชันของ module เรียกได้จาก direct importer อยู่แล้ว ไม่ต้อง `export` Imports ไม่ re-export ต่อโดยอัตโนมัติ ชื่อฟังก์ชัน Dev ถูกแยก C symbol ตาม module
 
 ```dev
-export fn device_add(a i32, b i32) i32 { return a + b }
+export fn device_add(a: i32, b: i32): i32 { return a + b }
 print(device_add(19, 23))
 ```
 
@@ -339,8 +339,8 @@ print(device_add(19, 23))
 ## ข้อมูลแบบมี fields
 
 ```dev
-struct Point { x i64; y i64 }
-fn Point.sum(self Point) i64 { return self.x + self.y }
+struct Point { x: i64; y: i64 }
+fn Point.sum(self: Point): i64 { return self.x + self.y }
 let p = Point(19, 23)
 print(p.sum())
 p.x += 1
@@ -478,8 +478,8 @@ Hash lookup/update/remove คาดหวัง O(1) แต่ collision อา�
 ## Function และ type arguments
 
 ```dev
-fn identity<T>(value T) T { return value }
-struct Box<T> { value T }
+fn identity<T>(value: T): T { return value }
+struct Box<T> { value: T }
 print(identity(42))
 print(identity<str>("Dev"))
 let boxed = Box<i64>(42)
@@ -493,11 +493,11 @@ Frontend specialize แต่ละ combination Native ได้ concrete C type
 ## Constraints
 
 ```dev
-fn sum<T:Number>(a T, b T) T { return a + b }
-trait HasValue { fn value(self Self) i64 }
-struct Point { x i64 }
-fn Point.value(self Point) i64 { return self.x }
-fn read<T:HasValue>(p T) i64 { return p.value() }
+fn sum<T:Number>(a: T, b: T): T { return a + b }
+trait HasValue { fn value(self: Self): i64 }
+struct Point { x: i64 }
+fn Point.value(self: Point): i64 { return self.x }
+fn read<T:HasValue>(p: T): i64 { return p.value() }
 print(sum(19, 23))
 print(read(Point(42)))
 ```
@@ -507,7 +507,7 @@ Built-in bounds คือ `Number`, `Integer`, `Equatable` รวมหลาย
 ## Const generics
 
 ```dev
-struct Buffer<T, const N> { data [T; N] }
+struct Buffer<T, const N> { data: [T; N] }
 let buffer = Buffer<i64, 2>([19, 23])
 print(buffer.data[0] + buffer.data[1])
 ```
@@ -522,8 +522,8 @@ Const argument เป็น nonnegative integer ใช้เป็น array leng
 # [closures] Function values และ closures
 
 ```dev
-fn make(offset i64) fn(i64) i64 {
-    return fn(value i64) i64 { return offset + value }
+fn make(offset: i64): fn(i64): i64 {
+    return fn(value: i64): i64 { return offset + value }
 }
 let add = make(19)
 print(add(23))
@@ -544,9 +544,9 @@ Fixed arrays ให้ capture ผ่าน struct/Vec แทน Closure/functio
 ## เริ่มงาน
 
 ```dev
-async fn answer(n i64) i64 { return n + 1 }
+async fn answer(n: i64): i64 { return n + 1 }
 let job = answer(41)
-let other = spawn(fn() i64 { return 19 + 23 })
+let other = spawn(fn(): i64 { return 19 + 23 })
 print(await(job))
 print(ready(job))
 print(await(other))
@@ -557,8 +557,8 @@ print(await(other))
 ## ต่อขั้นตอนด้วย then
 
 ```dev
-let job = spawn(fn() i64 { return 19 })
-let next = then(job, fn(n i64) Ref<i64> { return ref(n + 23) })
+let job = spawn(fn(): i64 { return 19 })
+let next = then(job, fn(n: i64): Ref<i64> { return ref(n + 23) })
 print(deref(await(next)))
 ```
 
@@ -579,7 +579,7 @@ Await งานที่จำเป็นก่อน process จบ Dropping l
 Raw address-of/dereference/casts/arithmetic/indexing, volatile access, extern calls และการสร้าง C callbacks ต้องอยู่ใน lexical `unsafe { ... }` ฟังก์ชันที่เรียกยังต้องมี unsafe ใน body ของตัวเอง
 
 ```dev
-fn increment(n i64) i64 { return n + 1 }
+fn increment(n: i64): i64 { return n + 1 }
 unsafe {
     let cb = callback(increment)
     print(cb(41))
@@ -642,7 +642,7 @@ Variadic ต้องมี fixed parameter อย่างน้อยหนึ
 ## Raw callback
 
 ```dev
-fn increment(value i64) i64 { return value + 1 }
+fn increment(value: i64): i64 { return value + 1 }
 unsafe {
     let pointer = callback(increment)
     print(pointer(41))
@@ -654,8 +654,8 @@ unsafe {
 ## Managed context
 
 ```dev
-fn make(offset i64) fn(i64) i64 {
-    return fn(value i64) i64 { return offset + value }
+fn make(offset: i64): fn(i64): i64 {
+    return fn(value: i64): i64 { return offset + value }
 }
 unsafe {
     let cb = callback_context(make(19))
@@ -1538,3 +1538,7 @@ LSP ตรวจ syntax, duplicate keys, escapes, missing references และ r
 ## File icon และสี code
 
 แยกสี keys, strings, numbers, comments และ `@root.path` ออกจากกันโดยไม่เปลี่ยนธีม editor เมื่อใช้ Material Icon Theme จะเพิ่ม icon `.don` ให้อัตโนมัติ โดยเก็บ association ที่ผู้ใช้ตั้งเองไว้ สำหรับธีมอื่นใช้ language icon ตามที่ธีมรองรับ หรือเลือก DevLang File Icons
+
+## รูปแบบ type annotation
+
+ใช้ `let a: i32 = 1` และ `fn t(a: i32): i32 { return a }` เป็นรูปแบบมาตรฐาน `d fmt` และ Format Document จะปรับ syntax เก่าให้เป็นรูปแบบนี้ โค้ดเดิมที่ไม่ใส่ colon ยังอ่านได้ ฟังก์ชันที่ระบุชนิดคืนค่าต้องคืนค่าตามชนิดนั้น จึงใช้ body ว่างไม่ได้ ยกเว้นชนิด `void` การเปลี่ยน formatter นี้อยู่ใน source ล่าสุดหลัง release v0.5.1

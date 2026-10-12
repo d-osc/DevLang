@@ -1,7 +1,7 @@
 use "std/strings"
 
 fn main() {
-    print(strings.charLength("Dev 🚀"))
+    print(strings.charLength("Dev ðŸš€"))
     print(strings.toUpperCase("dev"))
     return 0
 }

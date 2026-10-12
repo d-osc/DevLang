@@ -42,10 +42,10 @@ fn sleep(delayMs i64) void
 use "std/timers"
 
 fn main() {
-    timers.setInterval(fn(t timers.Timer) {
-        print(t.ticks())
-        if t.ticks() >= 2 { t.cancel() }
-    }, 1)
+    timers.setInterval(fn(t: timers.Timer) {
+            print(t.ticks())
+            if t.ticks() >= 2 { t.cancel() }
+        }, 1)
     return 0
 }
 return main()
@@ -71,10 +71,10 @@ Timers run after a successful entry call, or when `timers.run()` explicitly pump
 ```dev
 use "std/timers"
 fn main() {
-    timers.setInterval(fn(t timers.Timer) {
-        print(t.ticks())
-        if t.ticks() >= 3 { t.cancel() }
-    }, 1)
+    timers.setInterval(fn(t: timers.Timer) {
+            print(t.ticks())
+            if t.ticks() >= 3 { t.cancel() }
+        }, 1)
 }
 main()
 ```

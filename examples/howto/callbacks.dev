@@ -1,6 +1,6 @@
-fn increment(value i64) i64 { return value + 1 }
-fn make(offset i64) fn(i64) i64 {
-    return fn(value i64) i64 { return offset + value }
+fn increment(value: i64): i64 { return value + 1 }
+fn make(offset: i64): fn(i64): i64 {
+    return fn(value: i64): i64 { return offset + value }
 }
 fn main() {
     unsafe {

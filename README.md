@@ -175,7 +175,7 @@ the interpreter's intrinsic API.
 `math.dev`:
 
 ```dev
-fn add(a i64, b i64) i64 {
+fn add(a: i64, b: i64): i64 {
     return a + b
 }
 ```
@@ -199,11 +199,11 @@ main()
 ## Pointer, C และ hardware
 
 ```dev
-extern fn puts(message str) i32
+extern fn puts(message: str): i32
 
 fn main() {
     puts("C ABI works")
-    let register u32 = 0
+    let register: u32 = 0
     let port = &register
     volatile_store(port, 0x20)
     print(volatile_load(port))

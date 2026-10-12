@@ -55,7 +55,7 @@ use "std/sync"
 fn main() {
     let channel = sync.channel<i64>(1)
     let worker = spawn(fn() { channel.send(42)
-        channel.close() })
+            channel.close() })
     match channel.receive() {
         Item(value) => { print(value) }
         Empty => { print("empty") }
@@ -122,9 +122,9 @@ use "std/sync"
 fn main() {
     let counter = sync.mutex(0)
     let worker = spawn(fn() {
-        for i in 0..1000 { counter.update(fn(n i64) i64 { return n + 1 }) }
+            for i in 0..1000 { counter.update(fn(n: i64): i64 { return n + 1 }) }
     })
-    for i in 0..1000 { counter.update(fn(n i64) i64 { return n + 1 }) }
+    for i in 0..1000 { counter.update(fn(n: i64): i64 { return n + 1 }) }
     await(worker)
     print(counter.get())
     counter.close()

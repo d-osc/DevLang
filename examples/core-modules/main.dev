@@ -23,7 +23,7 @@ fn main() {
     query.close()
 
     let emitter = events.createEmitter()
-    emitter.once("ready", fn(value str) { print("event:" + value) })
+    emitter.once("ready", fn(value: str) { print("event:" + value) })
     emitter.emit("ready", "ready")
     print(emitter.listenerCount("ready"))
     emitter.close()

@@ -10,13 +10,13 @@ A program consists of `.dev` files. Imports, function declarations and executabl
 use math
 use "../common/device.dev" as device
 
-fn add(a i32, b i32) i32 {
+fn add(a: i32, b: i32): i32 {
     return a + b
 }
 
 fn main() {
     let value = 42
-    let register u32 = 0x4000_0000
+    let register: u32 = 0x4000_0000
     value += 1
     print(value)
 }
@@ -26,7 +26,9 @@ main()
 
 Parameter types are required; the return type defaults to `void`, except a defined `main` defaults to `i32`. Entry-file statements execute in order; defining `main` never invokes it. Write `main()` explicitly, or use top-level statements directly. Reaching the end of an i32 `main` returns zero. A file-level `return main()` forwards its result as the exit status. Other value-returning functions must return on every path; this check conservatively does not treat a loop as guaranteed to terminate or return.
 
-`let` variables are mutable. Local variables can shadow an outer scope, but duplicate declarations in the same scope are errors. Variables must have an initializer. File-level variables belong to the script scope and cannot be captured by functions; pass them as parameters. A colon between a name and its type, and `->` before a return type, are accepted as optional spelling; neither is required.
+`let` variables are mutable. Local variables can shadow an outer scope, but duplicate declarations in the same scope are errors. Variables must have an initializer. File-level variables belong to the script scope and cannot be captured by functions; pass them as parameters. Use `name: Type` for explicit annotations and `fn name(arg: Type): ReturnType` for functions. The formatter normalizes declarations to this spelling. Legacy colon-free annotations and `->` return types remain accepted for compatibility.
+
+Colon return annotations and canonical formatting are available in current source after release v0.5.1.
 
 ## Types
 
@@ -55,7 +57,7 @@ The float-cast checks are available in current source builds; the published
 Included in release v0.5.1.
 
 ```dev
-let x i32 = 42
+let x: i32 = 42
 let wide = x as i64
 let real = wide as f64
 ```
@@ -63,12 +65,12 @@ let real = wide as f64
 Arrays infer their element type from the first element when no type is specified. Every element must match. Arrays are initialized by literals and cannot be copied, returned by value, passed by value, nested, or addressed as a whole. Pass `&array[0]` and an explicit length to functions instead.
 
 ```dev
-fn first(data *u8) u8 {
+fn first(data: *u8): u8 {
     unsafe { return data[0] }
 }
 
 fn main() {
-    let bytes [u8; 3] = [10, 20, 30]
+    let bytes: [u8; 3] = [10, 20, 30]
     bytes[1] = 42
     unsafe { print(first(&bytes[0])) }
 }
@@ -124,20 +126,20 @@ if i == 8 {
 Functions are visible to direct importers. Imports are not transitively re-exported. Dev functions get module-specific C symbols, preventing unrelated modules' same-name functions from colliding. `export fn` keeps its declared name as a C symbol; export names must be unique across the program. Imported `extern fn` declarations for one C symbol must agree on their types.
 
 ```dev
-extern fn malloc(bytes usize) *void
-extern fn free(memory *void)
+extern fn malloc(bytes: usize): *void
+extern fn free(memory: *void)
 
-export fn add(a i32, b i32) i32 {
+export fn add(a: i32, b: i32): i32 {
     return a + b
 }
 
 fn main() {
     unsafe {
-    let data = malloc(64) as *u8
-    if data == null { return 1 }
-    data[0] = 42
-    print(data[0])
-    free(data as *void)
+        let data = malloc(64) as *u8
+        if data == null { return 1 }
+        data[0] = 42
+        print(data[0])
+        free(data as *void)
     }
 }
 
@@ -191,8 +193,8 @@ steps and inclusive ranges are not yet implemented.
 
 ```dev
 struct Point {
-    x i64
-    y i64
+    x: i64
+    y: i64
 }
 
 let p = Point(19, 23)
@@ -200,7 +202,7 @@ p.x += 1
 print(p.x + p.y)
 
 enum Color { Red, Green, Blue }
-let color Color = Color.Green
+let color: Color = Color.Green
 print(color)
 print(color == Color.Green)
 print(color as i32)
@@ -288,7 +290,7 @@ and synchronization of external memory remain the unsafe caller's responsibility
 Raw recursive layouts are also accepted:
 
 ```dev
-struct Node { value i64; next *Node }
+struct Node { value: i64; next: *Node }
 let first = Node(1, null)
 unsafe {
     let second = Node(2, &first)
@@ -303,13 +305,13 @@ nor a mutual by-value cycle is accepted.
 ## Generics
 
 ```dev
-fn identity<T>(value T) T {
+fn identity<T>(value: T): T {
     return value
 }
 print(identity<i64>(42))
 print(identity<str>("Dev"))
 
-struct Box<T> { value T }
+struct Box<T> { value: T }
 let boxed = Box<Point>(p)
 print(boxed.value.x)
 ```
@@ -357,7 +359,7 @@ becomes `false`, and any non-null address becomes `true`. This only checks the
 address; it does not prove that the pointer is alive, readable or safe to dereference.
 
 ```dev
-fn has_address(p *i64) bool {
+fn has_address(p: *i64): bool {
     unsafe { return p as bool }
 }
 ```
@@ -385,11 +387,11 @@ addresses may be converted to a callback; floating-point, boolean and string
 sources are rejected. Null callbacks convert to `false`.
 
 ```dev
-fn add(n i64) i64 { return n + 1 }
+fn add(n: i64): i64 { return n + 1 }
 unsafe {
     let cb = callback(add)
     let address = cb as usize
-    let restored = address as callback(i64) i64
+    let restored = address as callback(i64): i64
     print(restored(41))
 }
 ```

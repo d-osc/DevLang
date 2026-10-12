@@ -1,10 +1,10 @@
 struct Point {
-    x i64
-    y i64
+    x: i64
+    y: i64
 }
 
 struct Box<T> {
-    value T
+    value: T
 }
 
 enum Color {
@@ -13,10 +13,10 @@ enum Color {
     Blue
 }
 
-fn identity<T>(value T) T {
+fn identity<T>(value: T): T {
     return value
 }
 
-fn sum<T>(a T, b T) T {
+fn sum<T>(a: T, b: T): T {
     return a + b
 }

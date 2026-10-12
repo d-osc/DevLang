@@ -6,7 +6,7 @@ fn main() {
     let options = tls.options()
     print(options.timeoutMs)
     let outcome = result.run(fn() {
-        websocket.connect("https://invalid.example", 1000, "")
+            websocket.connect("https://invalid.example", 1000, "")
     })
     print(result.isErr(outcome))
     print("Use ws:// or wss://; TLS verifies certificates")

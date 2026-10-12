@@ -52,7 +52,7 @@ fn Socket.remoteAddress(self Socket) Address
 use "std/net"
 
 fn main() {
-    let server = net.createServer(fn(socket net.Socket) { socket.destroy() })
+    let server = net.createServer(fn(socket: net.Socket) { socket.destroy() })
     server.listenOn(0, "127.0.0.1")
     print(server.address().port > 0)
     server.close()

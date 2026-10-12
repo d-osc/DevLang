@@ -102,8 +102,8 @@ Explicit and adjacent prebuilt libraries take precedence, so remove stale
 prebuilt libraries when switching to C source preparation.
 
 ```dev
-extern fn puts(message str) i32
-extern fn device_add(a i32, b i32) i32
+extern fn puts(message: str): i32
+extern fn device_add(a: i32, b: i32): i32
 
 fn main() {
     puts("Calling C directly")

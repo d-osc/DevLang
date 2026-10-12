@@ -10,7 +10,7 @@ fn main() {
     print(pattern.find("port=3000").text)
     print(pattern.replaceAll("a1 b2", "#"))
     pattern.close()
-    let text = "DevLang 🚀"
+    let text = "DevLang Ã°Å¸Å¡â‚¬"
     let utf16 = encoding.encode(text, "utf-16le")
     print(encoding.decode(utf16, "utf-16le"))
     print(crypto.hashText("sha256", "abc"))

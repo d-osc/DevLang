@@ -1,8 +1,8 @@
 use "std/json"
 use "std/io"
 
-struct User { name str; age i64 }
-fn age_of(value json.Value) i64 { return json.int(json.get(value, "age")) }
+struct User { name: str; age: i64 }
+fn age_of(value: json.Value): i64 { return json.int(json.get(value, "age")) }
 fn main() {
     let text = "{\"name\":\"Dev\",\"age\":18,\"active\":true,\"scores\":[19,23],\"extra\":null}"
     print(json.valid(text))

@@ -48,7 +48,7 @@ fn Server.close(self Server) void
 use "std/websocket"
 
 fn main() {
-    let server = websocket.createServer(fn(socket websocket.Socket) { socket.close() })
+    let server = websocket.createServer(fn(socket: websocket.Socket) { socket.close() })
     server.listenOn(0, "127.0.0.1")
     print(server.address().port > 0)
     server.close()

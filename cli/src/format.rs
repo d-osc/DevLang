@@ -4,9 +4,59 @@ use dev_syntax::{
 };
 use std::path::{Path, PathBuf};
 
-// Preserve tokens and line boundaries; never reconstruct strings or comments.
+fn typed_source(text: &str) -> Result<String, String> {
+    let annotations = parser::type_annotations(PathBuf::from("<format>"), text)?;
+    let offset = |span: dev_syntax::ast::Span| {
+        let line_start = text
+            .split_inclusive('\n')
+            .take(span.line - 1)
+            .map(str::len)
+            .sum::<usize>();
+        line_start
+            + text[line_start..]
+                .chars()
+                .take(span.col - 1)
+                .map(char::len_utf8)
+                .sum::<usize>()
+    };
+    let mut edits = annotations
+        .into_iter()
+        .map(|(a, b)| (offset(a), offset(b), ": "))
+        .collect::<Vec<_>>();
+    // A separator may straddle a comment; retain that text exactly.
+    edits.retain(|(a, b, _)| {
+        text[*a..*b]
+            .chars()
+            .all(|c| c.is_whitespace() || c == ':' || c == '-' || c == '>')
+    });
+    for token in lex(text).map_err(|(_, e)| e)? {
+        if matches!(&token.kind, Kind::Symbol(s) if s == "=") {
+            let at = offset(token.span);
+            let start = text[..at].trim_end_matches([' ', '\t']).len();
+            let end = at
+                + 1
+                + text[at + 1..]
+                    .chars()
+                    .take_while(|c| *c == ' ' || *c == '\t')
+                    .map(char::len_utf8)
+                    .sum::<usize>();
+            edits.push((start, end, " = "));
+        }
+    }
+    edits.sort_by_key(|(a, b, _)| (*a, *b));
+    edits.dedup();
+    let mut result = text.to_owned();
+    for (a, b, replacement) in edits.into_iter().rev() {
+        result.replace_range(a..b, replacement);
+    }
+    parser::parse(PathBuf::from("<format>"), &result)?;
+    Ok(result)
+}
+
+// Normalize declaration type separators, then preserve all other tokens and comments.
 pub fn source(text: &str) -> Result<String, String> {
-    parser::parse(PathBuf::from("<format>"), text)?;
+    let typed = typed_source(text)?;
+    let text = typed.as_str();
     let tokens = lex(text).map_err(|(_, e)| e)?;
     let mut depth = 0usize;
     let mut quoted = false;
@@ -154,4 +204,45 @@ pub fn command(args: &[String]) -> Result<i32, String> {
         }
     }
     Ok(if check && changed { 1 } else { 0 })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn canonical_type_annotations_preserve_literals_and_comments() {
+        let original = "fn t(a i32) -> i32 { return a }\nlet a:i32=1\nlet text=\"let a i32 = 1\" // fn f(a i32) i32\n";
+        let result = source(original).unwrap();
+        assert_eq!(result, "fn t(a: i32): i32 { return a }\nlet a: i32 = 1\nlet text = \"let a i32 = 1\" // fn f(a i32) i32\n");
+        assert_eq!(source(&result).unwrap(), result);
+    }
+    #[test]
+    fn nested_types_and_closures_are_canonical() {
+        let result = source("fn apply(f fn(i32) i32, a i32) i32 { return f(a) }\nlet cb=fn(a i32) i32 { return a }\n").unwrap();
+        assert!(result.contains("f: fn(i32): i32, a: i32): i32"));
+        assert!(result.contains("let cb = fn(a: i32): i32"));
+        assert_eq!(source(&result).unwrap(), result);
+    }
+    #[test]
+    fn separator_comments_and_unicode_are_preserved() {
+        let code = "fn t(a /* unsupported */ i32) i32 { return a }";
+        assert!(source(code).is_err());
+        let code = "let text str=\"ไทย\" // keep : =\n";
+        assert_eq!(
+            source(code).unwrap(),
+            "let text: str = \"ไทย\" // keep : =\n"
+        );
+    }
+}
+
+#[cfg(test)]
+mod nested_regression {
+    #[test]
+    fn collection_function_type() {
+        let code = "let callbacks = Vec<ContextCallback<fn(i64) i64>>()\n";
+        assert_eq!(
+            super::typed_source(code).unwrap(),
+            "let callbacks = Vec<ContextCallback<fn(i64): i64>>()\n"
+        );
+    }
 }

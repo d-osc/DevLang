@@ -80,12 +80,12 @@ managed allocation aborts, runtime returns a diagnostic where allocation permits
 ## Functions, methods and closures
 
 ```dev
-struct Point { x i64; y i64 }
-fn Point.sum(self Point) i64 { return self.x + self.y }
+struct Point { x: i64; y: i64 }
+fn Point.sum(self: Point): i64 { return self.x + self.y }
 print(Point(19,23).sum())
 
-fn make(offset i64) fn(i64) i64 {
-    return fn(value i64) i64 { return offset + value }
+fn make(offset: i64): fn(i64): i64 {
+    return fn(value: i64): i64 { return offset + value }
 }
 let add = make(19)
 print(add(23))
@@ -109,19 +109,19 @@ Imported receiver methods require the defining module to be imported.
 ## Generic inference, constraints and const arguments
 
 ```dev
-fn identity<T>(value T) T { return value }
+fn identity<T>(value: T): T { return value }
 print(identity(42))
-let typed i32 = identity(42)
-let values Vec<i64> = Vec()
+let typed: i32 = identity(42)
+let values: Vec<i64> = Vec()
 
-trait HasValue { fn value(self Self) i64 }
-struct Point { x i64 }
-fn Point.value(self Point) i64 { return self.x }
-fn read<T:HasValue>(p T) i64 { return p.value() }
+trait HasValue { fn value(self: Self): i64 }
+struct Point { x: i64 }
+fn Point.value(self: Point): i64 { return self.x }
+fn read<T:HasValue>(p: T): i64 { return p.value() }
 print(read(Point(42)))
 
-fn sum<T:Number>(a T, b T) T { return a + b }
-struct Buffer<T, const N> { data [T;N] }
+fn sum<T:Number>(a: T, b: T): T { return a + b }
+struct Buffer<T, const N> { data: [T;N] }
 let b = Buffer<i64,2>([19,23])
 ```
 
@@ -159,9 +159,9 @@ literal/struct/slice patterns or expression-valued arms.
 ## Threads and async
 
 ```dev
-async fn answer(n i64) i64 { return n + 1 }
+async fn answer(n: i64): i64 { return n + 1 }
 let first = answer(41)
-let second = spawn(fn() i64 { return 19 + 23 })
+let second = spawn(fn(): i64 { return 19 + 23 })
 print(await(first))
 print(ready(first)) // true
 print(await(second))
@@ -197,8 +197,8 @@ in runtime and is reported by awaiting the returned task. Continuations can be
 chained, and a void result is supported.
 
 ```dev
-let result = then(spawn(fn() i64 { return 19 }),
-                  fn(n i64) Ref<i64> { return ref(n + 23) })
+let result = then(spawn(fn(): i64 { return 19 }),
+    fn(n: i64): Ref<i64> { return ref(n + 23) })
 print(deref(await(result))) // 42
 ```
 
@@ -210,9 +210,9 @@ Await required work before process exit; dropping handles detaches the workers.
 ## C ABI
 
 ```dev
-fn increment(x i64) i64 { return x + 1 }
-extern fn invoke(cb callback(i64) i64, x i64) i64
-extern fn printf(format str, ...) i32
+fn increment(x: i64): i64 { return x + 1 }
+extern fn invoke(cb: callback(i64): i64, x: i64): i64
+extern fn printf(format: str, ...): i32
 unsafe {
     print(invoke(callback(increment), 41))
     printf("value=%d\n", 42 as i32)
@@ -245,10 +245,10 @@ C unregisters the callback and all invocations finish. The managed owner is a
 releases the captured environment. Do not replace or mix the pair's fields.
 
 ```dev
-extern fn invoke(cb callback(i64,*void) i64, value i64, data *void) i64
+extern fn invoke(cb: callback(i64,*void): i64, value: i64, data: *void): i64
 let offset = 19
 unsafe {
-    let cb = callback_context(fn(n i64) i64 { return offset + n })
+    let cb = callback_context(fn(n: i64): i64 { return offset + n })
     print(invoke(cb.call, 23, cb.data))
 }
 ```

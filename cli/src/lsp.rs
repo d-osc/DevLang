@@ -51,7 +51,7 @@ fn symbols(uri: &str, doc: &Document) -> Vec<Value> {
     let mut result = Vec::new();
     for f in module.functions {
         let r = range(&doc.text, f.span.line, f.span.col, 1);
-        result.push(json!({"name":f.name,"kind":12,"range":r,"selectionRange":r,"detail":format!("fn({}) {}",f.params.iter().map(|(n,t)| format!("{n} {}",t.name())).collect::<Vec<_>>().join(", "),f.ret.name())}));
+        result.push(json!({"name":f.name,"kind":12,"range":r,"selectionRange":r,"detail":format!("fn({}): {}",f.params.iter().map(|(n,t)| format!("{n}: {}",t.name())).collect::<Vec<_>>().join(", "),f.ret.name())}));
     }
     for d in module.definitions {
         let r = range(&doc.text, d.span.line, d.span.col, 1);

@@ -11,7 +11,7 @@ fn main() {
     print(2 <= 2)
     print(3 > 2)
     print(3 >= 3)
-    let bits u32 = 10
+    let bits: u32 = 10
     print(bits & 3)
     print(bits | 1)
     print(bits ^ 3)

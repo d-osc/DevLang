@@ -133,14 +133,14 @@ Streaming, multipart upload and an async I/O event loop are not implemented.
 ```dev
 use "std/http"
 fn main() {
-    let server = http.createServer(fn(req http.IncomingMessage, res http.ServerResponse) {
-        res.setHeader("Content-Type", "text/plain; charset=utf-8")
-        if req.url == "/" {
-            res.end("Hello DevLang!\n")
-        } else {
-            res.statusCode = 404
-            res.end("Not found\n")
-        }
+    let server = http.createServer(fn(req: http.IncomingMessage, res: http.ServerResponse) {
+            res.setHeader("Content-Type", "text/plain; charset=utf-8")
+            if req.url == "/" {
+                res.end("Hello DevLang!\n")
+            } else {
+                res.statusCode = 404
+                res.end("Not found\n")
+            }
     })
     server.listen(3000)
     print("Listening on http://localhost:3000")

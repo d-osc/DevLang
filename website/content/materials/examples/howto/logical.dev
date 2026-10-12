@@ -1,4 +1,4 @@
-fn probe() bool { print("right side evaluated"); return true }
+fn probe(): bool { print("right side evaluated"); return true }
 fn main() {
     let age = 20
     let ticket = true

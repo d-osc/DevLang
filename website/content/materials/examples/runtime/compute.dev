@@ -1,5 +1,5 @@
 # 100 million iterations, evaluated entirely by the source runtime.
-fn sum_masked(n i64) i64 {
+fn sum_masked(n: i64): i64 {
     let i = 0
     let total = 0
     while i < n {

@@ -2,6 +2,8 @@
 
 สรุป syntax ที่ใช้บ่อยใน DevLang v0.5.1 สำหรับเปิดดูระหว่างเขียนโค้ด ตัวอย่างแต่ละ block รันแยกกันได้ ยกเว้นส่วน modules และ FFI ที่ระบุเป็น template อ่าน [คู่มือทั้งหมด](#/docs/intro) หรือ [ตัวอย่างพร้อมไฟล์ดาวน์โหลด](#/examples) เมื่อต้องการรายละเอียด
 
+การเขียน `): ReturnType` และ formatter ที่ใช้ colon เป็นรูปแบบมาตรฐานอยู่ใน source ล่าสุดหลัง release v0.5.1
+
 ## เริ่มเขียนและรัน
 
 ```dev
@@ -32,10 +34,10 @@ Pure Dev runtime ไม่ต้อง build โปรแกรมก่อน N
 # comment
 // comment อีกแบบ
 let count = 10                // อนุมานเป็น i64
-let price f64 = 12.5
-let enabled bool = true
-let name str = "Dev"
-let byte u8 = 255
+let price: f64 = 12.5
+let enabled: bool = true
+let name: str = "Dev"
+let byte: u8 = 255
 count += 2
 let wide = byte as i64
 print(count + wide)
@@ -103,9 +105,9 @@ print(total)
 ## ฟังก์ชันและ generics
 
 ```dev
-fn add(a i64, b i64) i64 { return a + b }
-fn identity<T>(value T) T { return value }
-fn sum<T: Number>(a T, b T) T { return a + b }
+fn add(a: i64, b: i64): i64 { return a + b }
+fn identity<T>(value: T): T { return value }
+fn sum<T: Number>(a: T, b: T): T { return a + b }
 print(add(19, 23))
 print(identity<i64>(42))
 print(sum<f64>(1.5, 2.5))
@@ -116,8 +118,8 @@ Parameter ต้องระบุชนิด Return type อยู่หลั
 ## Structs และ methods
 
 ```dev
-struct Point { x i64; y i64 }
-fn Point.sum(self Point) i64 { return self.x + self.y }
+struct Point { x: i64; y: i64 }
+fn Point.sum(self: Point): i64 { return self.x + self.y }
 let point = Point(19, 23)
 point.x += 1
 print(point.sum())
@@ -142,7 +144,7 @@ match result {
 ## Arrays, Vec, Slice และ Map
 
 ```dev
-let fixed [i64; 3] = [10, 20, 30]
+let fixed: [i64; 3] = [10, 20, 30]
 fixed[1] = 42
 print(fixed[1])
 let values = Vec<i64>(19, 23)
@@ -175,8 +177,8 @@ match list {
 ## Function values และ closures
 
 ```dev
-fn make(offset i64) fn(i64) i64 {
-    return fn(value i64) i64 { return offset + value }
+fn make(offset: i64): fn(i64): i64 {
+    return fn(value: i64): i64 { return offset + value }
 }
 let add = make(19)
 print(add(23))
@@ -216,10 +218,10 @@ print(json.stringify(user))
 ## Threads และ async
 
 ```dev
-async fn answer(n i64) i64 { return n + 1 }
+async fn answer(n: i64): i64 { return n + 1 }
 let task = answer(41)
 print(await(task))
-let worker = spawn(fn() i64 { return 19 + 23 })
+let worker = spawn(fn(): i64 { return 19 + 23 })
 print(await(worker))
 ```
 

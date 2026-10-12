@@ -10,11 +10,28 @@ pub fn parse(path: PathBuf, source: &str) -> Result<Module, String> {
         path,
         constraints: vec![],
         object_literals: false,
+        annotations: vec![],
     }
     .module()
 }
 
+/// Ranges containing only the separator between a declared name/parameter list and its type.
+pub fn type_annotations(path: PathBuf, source: &str) -> Result<Vec<(Span, Span)>, String> {
+    let tokens = lex(source).map_err(|(span, msg)| error(&path, span, msg))?;
+    let mut parser = Parser {
+        tokens,
+        at: 0,
+        path,
+        constraints: vec![],
+        object_literals: false,
+        annotations: vec![],
+    };
+    parser.module()?;
+    Ok(parser.annotations)
+}
+
 struct Parser {
+    annotations: Vec<(Span, Span)>,
     object_literals: bool,
     constraints: Vec<(String, Vec<String>)>,
     tokens: Vec<Token>,
@@ -22,6 +39,33 @@ struct Parser {
     path: PathBuf,
 }
 impl Parser {
+    fn type_separator(&mut self, arrow: bool) -> Result<(), String> {
+        let previous = self.tokens[self.at - 1].clone();
+        let separator = self.eat(":") || (arrow && self.eat("->"));
+        if self.is("=")
+            || self.is("{")
+            || self.is(";")
+            || matches!(self.token().kind, Kind::Newline | Kind::Eof)
+        {
+            return if separator {
+                self.fail("expected a type after annotation separator")
+            } else {
+                Ok(())
+            };
+        }
+        let length = match &previous.kind {
+            Kind::Word(s) | Kind::Symbol(s) => s.chars().count(),
+            _ => return Ok(()),
+        };
+        self.annotations.push((
+            Span {
+                line: previous.span.line,
+                col: previous.span.col + length,
+            },
+            self.token().span,
+        ));
+        Ok(())
+    }
     fn token(&self) -> &Token {
         &self.tokens[self.at]
     }
@@ -90,7 +134,7 @@ impl Parser {
             self.fail("expected a newline or ';' between statements")
         }
     }
-    fn module(mut self) -> Result<Module, String> {
+    fn module(&mut self) -> Result<Module, String> {
         let mut imports = Vec::new();
         let mut traits = vec![];
         let mut functions = Vec::new();
@@ -112,14 +156,14 @@ impl Parser {
                     let mut params = vec![];
                     while !self.eat(")") {
                         let n = self.ident()?;
-                        self.eat(":");
+                        self.type_separator(false)?;
                         params.push((n, self.ty()?));
                         if !self.eat(",") {
                             self.expect(")")?;
                             break;
                         }
                     }
-                    self.eat("->");
+                    self.type_separator(true)?;
                     let ret = if self.is(";") || matches!(self.token().kind, Kind::Newline) {
                         Type::Void
                     } else {
@@ -216,7 +260,7 @@ impl Parser {
                         }
                         variants.push((field, payload));
                     } else {
-                        self.eat(":");
+                        self.type_separator(false)?;
                         fields.push((field, self.ty()?));
                     }
                     if self.eat(",") {
@@ -265,7 +309,7 @@ impl Parser {
                         break;
                     }
                     let param = self.ident()?;
-                    self.eat(":");
+                    self.type_separator(false)?;
                     let ty = self.ty()?;
                     params.push((param, ty));
                     if !self.eat(",") {
@@ -273,7 +317,7 @@ impl Parser {
                         break;
                     }
                 }
-                self.eat("->");
+                self.type_separator(true)?;
                 let mut ret = if self.is("{")
                     || matches!(self.token().kind, Kind::Newline | Kind::Eof)
                     || self.is(";")
@@ -335,7 +379,7 @@ impl Parser {
         }
         Ok(Module {
             traits,
-            path: self.path,
+            path: self.path.clone(),
             imports,
             functions,
             statements,
@@ -358,7 +402,7 @@ impl Parser {
                     break;
                 }
             }
-            self.eat("->");
+            self.type_separator(true)?;
             let ret = self.ty()?;
             return Ok(if callback {
                 Type::Callback(params, Box::new(ret))
@@ -505,7 +549,7 @@ impl Parser {
                 Kind::Symbol(s) if s == "]" && brackets > 0 => brackets -= 1,
                 Kind::Word(_) | Kind::Number(_) => {}
                 Kind::Symbol(s)
-                    if ["*", ".", ",", "(", ")", "->"].contains(&s.as_str())
+                    if ["*", ".", ",", "(", ")", "->", ":"].contains(&s.as_str())
                         || (s == ";" && brackets > 0) => {}
                 _ => return false,
             }
@@ -585,7 +629,7 @@ impl Parser {
         }
         if self.eat("let") {
             let name = self.ident()?;
-            self.eat(":");
+            self.type_separator(false)?;
             let ty = if self.is("=") { None } else { Some(self.ty()?) };
             self.expect("=")?;
             let value = self.expr(0)?;
@@ -758,14 +802,14 @@ impl Parser {
                 let mut params = vec![];
                 while !self.eat(")") {
                     let n = self.ident()?;
-                    self.eat(":");
+                    self.type_separator(false)?;
                     params.push((n, self.ty()?));
                     if !self.eat(",") {
                         self.expect(")")?;
                         break;
                     }
                 }
-                self.eat("->");
+                self.type_separator(true)?;
                 let ret = if self.is("{") { Type::Void } else { self.ty()? };
                 let body = self.block()?;
                 Expr {
@@ -850,6 +894,7 @@ impl Parser {
             {
                 let saved_at = self.at;
                 let saved_tokens = self.tokens.clone();
+                let saved_annotations = self.annotations.len();
                 if let Ok(types) = self.type_arguments() {
                     let mut variant = None;
                     if self.eat(".") {
@@ -879,6 +924,7 @@ impl Parser {
                 }
                 self.at = saved_at;
                 self.tokens = saved_tokens;
+                self.annotations.truncate(saved_annotations);
             }
             if min <= 12 && self.eat(".") {
                 let field = self.ident()?;

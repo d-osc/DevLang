@@ -73,15 +73,15 @@ use "std/time"
 
 fn main() {
     unsafe {
-    let message = strings.new("Hello")
-    if message == null { return 1 }
-    if not strings.append(message, " ภาษาไทย") {
+        let message = strings.new("Hello")
+        if message == null { return 1 }
+        if not strings.append(message, " ภาษาไทย") {
+            strings.free(message)
+            return 1
+        }
+        io.writeln(strings.view(message))
+        print(strings.len(message))
         strings.free(message)
-        return 1
-    }
-    io.writeln(strings.view(message))
-    print(strings.len(message))
-    strings.free(message)
     }
 }
 

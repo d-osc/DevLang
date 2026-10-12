@@ -1,5 +1,5 @@
-struct Point { x i64; y i64 }
-struct Node { value i64; next Ref<Link> }
+struct Point { x: i64; y: i64 }
+struct Node { value: i64; next: Ref<Link> }
 enum Link { End, More(Node) }
 fn main() {
     let p = Point(19, 23)

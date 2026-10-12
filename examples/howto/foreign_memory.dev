@@ -1,5 +1,5 @@
-extern fn malloc(bytes usize) *void
-extern fn free(memory *void)
+extern fn malloc(bytes: usize): *void
+extern fn free(memory: *void)
 fn main() {
     unsafe {
         let data = malloc(16) as *u32

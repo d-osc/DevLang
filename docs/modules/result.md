@@ -36,8 +36,8 @@ fn raise(message str) void
 use "std/result"
 
 fn main() {
-    let outcome = result.attempt(fn() i64 { result.raise("failed")
-        return 0 })
+    let outcome = result.attempt(fn(): i64 { result.raise("failed")
+            return 0 })
     print(result.isErr(outcome))
     print(result.unwrapOr(outcome, 42))
     return 0
@@ -63,7 +63,7 @@ These modules run in `d file.dev` / `d run file.dev`, without a native compiler.
 ```dev
 use "std/result"
 fn main() {
-    let outcome = result.attempt(fn() i64 { return 6 * 7 })
+    let outcome = result.attempt(fn(): i64 { return 6 * 7 })
     match outcome {
         Ok(value) => { print(value) }
         Err(message) => { print(message) }

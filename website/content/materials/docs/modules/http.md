@@ -50,8 +50,8 @@ fn request_bytes(method str, url str, headers Map<str,str>, body Vec<u8>, timeou
 use "std/http"
 
 fn main() {
-    let server = http.createServer(fn(req http.IncomingMessage, res http.ServerResponse) {
-        res.end("Hello")
+    let server = http.createServer(fn(req: http.IncomingMessage, res: http.ServerResponse) {
+            res.end("Hello")
     })
     server.listenOn(0, "127.0.0.1")
     server.close()
@@ -131,14 +131,14 @@ Streaming, multipart upload and an async I/O event loop are not implemented.
 ```dev
 use "std/http"
 fn main() {
-    let server = http.createServer(fn(req http.IncomingMessage, res http.ServerResponse) {
-        res.setHeader("Content-Type", "text/plain; charset=utf-8")
-        if req.url == "/" {
-            res.end("Hello DevLang!\n")
-        } else {
-            res.statusCode = 404
-            res.end("Not found\n")
-        }
+    let server = http.createServer(fn(req: http.IncomingMessage, res: http.ServerResponse) {
+            res.setHeader("Content-Type", "text/plain; charset=utf-8")
+            if req.url == "/" {
+                res.end("Hello DevLang!\n")
+            } else {
+                res.statusCode = 404
+                res.end("Not found\n")
+            }
     })
     server.listen(3000)
     print("Listening on http://localhost:3000")

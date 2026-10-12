@@ -40,7 +40,7 @@ use "std/events"
 
 fn main() {
     let emitter = events.createEmitter()
-    emitter.once("hello", fn(text str) { print(text) })
+    emitter.once("hello", fn(text: str) { print(text) })
     emitter.emit("hello", "Dev")
     emitter.close()
     return 0

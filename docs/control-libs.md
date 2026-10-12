@@ -9,7 +9,7 @@ These modules run in `d file.dev` / `d run file.dev`, without a native compiler.
 ```dev
 use "std/result"
 fn main() {
-    let outcome = result.attempt(fn() i64 { return 6 * 7 })
+    let outcome = result.attempt(fn(): i64 { return 6 * 7 })
     match outcome {
         Ok(value) => { print(value) }
         Err(message) => { print(message) }
@@ -29,10 +29,10 @@ Timers run after a successful entry call, or when `timers.run()` explicitly pump
 ```dev
 use "std/timers"
 fn main() {
-    timers.setInterval(fn(t timers.Timer) {
-        print(t.ticks())
-        if t.ticks() >= 3 { t.cancel() }
-    }, 1)
+    timers.setInterval(fn(t: timers.Timer) {
+            print(t.ticks())
+            if t.ticks() >= 3 { t.cancel() }
+        }, 1)
 }
 main()
 ```

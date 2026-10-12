@@ -78,7 +78,7 @@ def main():
         code='fn main() {\r\nprint("{literal}") // " { comment\r\nlet x={\r\nname:"Dev",\r\n}\r\nprint(x.name)\r\n}\r\nmain()\r\n'
         sample=root/'format.dev'; sample.write_bytes(code.encode())
         command('fmt','--check',sample,error='needs formatting')
-        expected='fn main() {\n    print("{literal}") // " { comment\n    let x={\n        name:"Dev",\n    }\n    print(x.name)\n}\nmain()\n'
+        expected='fn main() {\n    print("{literal}") // " { comment\n    let x = {\n        name:"Dev",\n    }\n    print(x.name)\n}\nmain()\n'
         assert command('fmt','--stdout',sample).stdout==expected
         command('fmt',sample); command('fmt','--check',sample)
         assert command('run',sample,env=no_cc).stdout=='{literal}\nDev\n'
@@ -93,7 +93,7 @@ def main():
         command('fmt',no_newline); command('fmt','--check',no_newline)
         # Standard LSP framing through an actual subprocess; responses + notifications.
         uri=sample.as_uri()
-        valid='fn answer() i64 { return 42 }\nprint(answer())\n'
+        valid='fn answer(): i64 { return 42 }\nprint(answer())\n'
         messages=[
             {'id':0,'method':'textDocument/completion','params':{}},
             {'id':1,'method':'initialize','params':{'capabilities':{}}},

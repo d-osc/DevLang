@@ -1,8 +1,8 @@
 use "std/http"
 
 fn main() {
-    let server = http.createServer(fn(req http.IncomingMessage, res http.ServerResponse) {
-        res.end("Hello")
+    let server = http.createServer(fn(req: http.IncomingMessage, res: http.ServerResponse) {
+            res.end("Hello")
     })
     server.listenOn(0, "127.0.0.1")
     server.close()

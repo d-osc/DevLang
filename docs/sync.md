@@ -46,9 +46,9 @@ use "std/sync"
 fn main() {
     let counter = sync.mutex(0)
     let worker = spawn(fn() {
-        for i in 0..1000 { counter.update(fn(n i64) i64 { return n + 1 }) }
+            for i in 0..1000 { counter.update(fn(n: i64): i64 { return n + 1 }) }
     })
-    for i in 0..1000 { counter.update(fn(n i64) i64 { return n + 1 }) }
+    for i in 0..1000 { counter.update(fn(n: i64): i64 { return n + 1 }) }
     await(worker)
     print(counter.get())
     counter.close()
