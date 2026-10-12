@@ -22,6 +22,12 @@ def main():
         ('use "helper"; print(helper.greeting("Dev"))','Hello Dev\n'),
         ('async fn greeting(): str { return "Hello ${42}" }; print(await(greeting()))','Hello 42\n'),
     ]
+    cases.extend([
+        ('let a="Hello "; let b="Dev"; let c=a+b; c+="!"; print(c)','Hello Dev!\n'),
+        ('fn text(n: i64): str { print(n); return "v${n}" }; print(text(1)+text(2))','1\n2\nv1v2\n'),
+        ('struct S { text: str }; let s=S("a"); s.text+="b"; print(s.text)','ab\n'),
+        ('fn join(a: str,b: str): str { return a+b }; let a=join("a","b"); let b=join("c","d"); print(a+b)','abcd\n'),
+    ])
     failures=[('print("${}")','expected an expression'),('print("${missing}")','unknown variable'),('print("${1 2}")','expected end of interpolation'),('print("${name")','unterminated string interpolation'),('print("${[1,2]}")','interpolation supports')]
     with tempfile.TemporaryDirectory(prefix='dev-interpolation-') as directory:
         root=Path(directory);source=root/'main.dev'

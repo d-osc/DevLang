@@ -819,6 +819,16 @@ impl Emitter<'_> {
                         "assignment requires a writable variable, pointer, or array element",
                     );
                 }
+                if op == "+=" && t.ty == Type::Str {
+                    if !self.hosted { return self.fail(target.span, "string concatenation requires hosted allocation"); }
+                    self.uses_templates = true;
+                    let pointer = format!("dev_concat_target_{}", self.next_var);
+                    self.next_var += 1;
+                    self.prelude.push_str(&format!("const char **{pointer} = &{};\n", t.code));
+                    let v = self.expr(value, Some(&Type::Str))?;
+                    self.compatible(&v, &Type::Str, value.span)?;
+                    return Ok(format!("*{pointer} = dev_interpolate(\"%s%s\", *{pointer}, {});\n", v.code));
+                }
                 let v = self.expr(value, Some(&t.ty))?;
                 self.compatible(&v, &t.ty, value.span)?;
                 if op == "=" && contains_managed(&t.ty) {
@@ -1395,12 +1405,15 @@ impl Emitter<'_> {
                 } else {
                     expected.filter(|t| t.numeric() || **t == Type::Bool)
                 };
+                let saved_prefix = std::mem::take(&mut self.prelude);
+                let mut left_prefix = String::new();
                 let (a, b) = if literal(left) && !literal(right) {
                     let b = self.expr(right, context)?;
                     let a = self.expr(left, Some(&b.ty))?;
                     (a, b)
                 } else {
                     let a = self.expr(left, context)?;
+                    left_prefix = std::mem::take(&mut self.prelude);
                     let right_type = if matches!(a.ty, Type::Ptr(_)) && (op == "+" || op == "-") {
                         None
                     } else {
@@ -1409,6 +1422,23 @@ impl Emitter<'_> {
                     let b = self.expr(right, right_type)?;
                     (a, b)
                 };
+                let right_prefix = std::mem::take(&mut self.prelude);
+                self.prelude = saved_prefix;
+                if op == "+" && a.ty == Type::Str && b.ty == Type::Str {
+                    if !self.hosted { return self.fail(expr.span, "string concatenation requires hosted allocation"); }
+                    self.uses_templates = true;
+                    let first = format!("dev_concat_a_{}", self.next_var);
+                    self.next_var += 1;
+                    let second = format!("dev_concat_b_{}", self.next_var);
+                    self.next_var += 1;
+                    self.prelude.push_str(&left_prefix);
+                    self.prelude.push_str(&format!("const char *{first} = {};\n", a.code));
+                    self.prelude.push_str(&right_prefix);
+                    self.prelude.push_str(&format!("const char *{second} = {};\n", b.code));
+                    return Ok(Value { code: format!("dev_interpolate(\"%s%s\", {first}, {second})"), ty: Type::Str, lvalue: false });
+                }
+                self.prelude.push_str(&left_prefix);
+                self.prelude.push_str(&right_prefix);
                 let ty = if logic {
                     self.compatible(&a, &Type::Bool, left.span)?;
                     self.compatible(&b, &Type::Bool, right.span)?;

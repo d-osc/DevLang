@@ -80,6 +80,19 @@ main()
 
 `str[index]` reads a UTF-8 **byte** as `u8`, not a Unicode character. String bytes cannot be assigned. String equality is deliberately undefined; call C `strcmp` for content comparison. Strings and `null` follow C lifetime and NUL-termination rules; embedded `\0` truncates ordinary C string output.
 
+### String concatenation
+
+Both source runtime and hosted native builds support `str + str` and `+=`.
+Native concatenation is available in source after v0.5.1. It uses the same storage
+policy as interpolation: resulting strings remain alive until process exit.
+Operands must both be strings; numbers require interpolation or explicit conversion.
+
+```dev
+let text: str = "Hello " + "Dev"
+text += "!"
+print(text)
+```
+
 ### String interpolation
 
 Use `${expression}` inside a double-quoted string to insert strings, integers,

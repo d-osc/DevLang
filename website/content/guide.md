@@ -290,6 +290,16 @@ print(sizeof(values))
 
 Runtime เป็นเจ้าของ string bytes ส่วน native `str` ยืม C storage ต้องรักษา lifetime ถ้าใช้ค่าจาก library โดยเฉพาะ pointer ที่คืนจาก buffer ชั่วคราว `\0` ทำให้การพิมพ์แบบ C หยุดก่อนข้อความท้าย
 
+## ต่อ string ด้วย + และ +=
+
+Runtime และ hosted native compiler ใน source ล่าสุดรองรับ `str + str` และ `+=` แล้ว Native เก็บข้อความที่สร้างจนโปรแกรมจบเหมือน interpolation; binary v0.5.1 ยังไม่มีการแก้ไขนี้
+
+```dev
+let text: str = "Hello " + "Dev"
+text += "!"
+print(text)
+```
+
 ## String interpolation
 
 ใช้ `${expression}` ภายใน string ที่ครอบด้วย double quotes เพื่อแทรก `str`, จำนวนเต็ม, float หรือ bool แต่ละ expression ประเมินหนึ่งครั้งจากซ้ายไปขวา ใช้ `\${...}` เมื่อต้องการข้อความ placeholder ตามตัวอักษร
