@@ -17,20 +17,20 @@ use "std/path"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-struct Parts { root str, dir str, base str, ext str, name str }
-fn join(base str, child str) str
-fn joinMany(parts Vec<str>) str
-fn resolve(base str, child str) str
-fn normalize(path str) str
-fn dirname(path str) str
-fn basename(path str) str
-fn extname(path str) str
-fn isAbsolute(path str) bool
-fn relative(from str, to str) str
-fn parse(path str) Parts
-fn format(parts Parts) str
-fn sep() str
-fn delimiter() str
+struct Parts { root: str, dir: str, base: str, ext: str, name: str }
+fn join(base: str, child: str): str
+fn joinMany(parts: Vec<str>): str
+fn resolve(base: str, child: str): str
+fn normalize(path: str): str
+fn dirname(path: str): str
+fn basename(path: str): str
+fn extname(path: str): str
+fn isAbsolute(path: str): bool
+fn relative(from: str, to: str): str
+fn parse(path: str): Parts
+fn format(parts: Parts): str
+fn sep(): str
+fn delimiter(): str
 ```
 
 ## ตัวอย่างเริ่มต้น

@@ -17,11 +17,11 @@ use "std/yaml"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn parse(text str) json.Value
-fn valid(text str) bool
-fn stringify<T>(value T) str
-fn toJSON(text str) str
-fn fromJSON(text str) str
+fn parse(text: str): json.Value
+fn valid(text: str): bool
+fn stringify<T>(value: T): str
+fn toJSON(text: str): str
+fn fromJSON(text: str): str
 ```
 
 ## ตัวอย่างเริ่มต้น

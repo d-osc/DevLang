@@ -17,34 +17,34 @@ use "std/fs"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn readFileSync(path str, encoding str) str
-fn writeFileSync(path str, data str) bool
-fn appendFileSync(path str, data str) bool
-fn existsSync(path str) bool
-fn mkdirSync(path str, recursive bool) bool
-fn readdirSync(path str) Vec<str>
-fn unlinkSync(path str) bool
-fn rmdirSync(path str) bool
-fn copyFileSync(from str, to str) bool
-fn renameSync(from str, to str) bool
-fn read_text(path str) str
-fn write_text(path str, text str) bool
-fn append_text(path str, text str) bool
-fn read_bytes(path str) Vec<u8>
-fn write_bytes(path str, bytes Vec<u8>) bool
-fn exists(path str) bool
-fn is_file(path str) bool
-fn is_dir(path str) bool
-fn create_dir(path str) bool
-fn create_dirs(path str) bool
-fn remove_file(path str) bool
-fn remove_dir(path str) bool
-fn read_dir(path str) Vec<str>
-fn copy(from str, to str) bool
-fn rename(from str, to str) bool
-fn size(path str) i64
-fn current_dir() str
-fn join(base str, child str) str
+fn readFileSync(path: str, encoding: str): str
+fn writeFileSync(path: str, data: str): bool
+fn appendFileSync(path: str, data: str): bool
+fn existsSync(path: str): bool
+fn mkdirSync(path: str, recursive: bool): bool
+fn readdirSync(path: str): Vec<str>
+fn unlinkSync(path: str): bool
+fn rmdirSync(path: str): bool
+fn copyFileSync(from: str, to: str): bool
+fn renameSync(from: str, to: str): bool
+fn read_text(path: str): str
+fn write_text(path: str, text: str): bool
+fn append_text(path: str, text: str): bool
+fn read_bytes(path: str): Vec<u8>
+fn write_bytes(path: str, bytes: Vec<u8>): bool
+fn exists(path: str): bool
+fn is_file(path: str): bool
+fn is_dir(path: str): bool
+fn create_dir(path: str): bool
+fn create_dirs(path: str): bool
+fn remove_file(path: str): bool
+fn remove_dir(path: str): bool
+fn read_dir(path: str): Vec<str>
+fn copy(from: str, to: str): bool
+fn rename(from: str, to: str): bool
+fn size(path: str): i64
+fn current_dir(): str
+fn join(base: str, child: str): str
 ```
 
 ## ตัวอย่างเริ่มต้น

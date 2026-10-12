@@ -17,12 +17,12 @@ use "std/dns"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-struct Address { address str, family i64 }
-fn lookup(host str, family i64) Vec<str>
-fn lookupOne(host str, family i64) Address
-fn isIP(address str) i64
-fn isIPv4(address str) bool
-fn isIPv6(address str) bool
+struct Address { address: str, family: i64 }
+fn lookup(host: str, family: i64): Vec<str>
+fn lookupOne(host: str, family: i64): Address
+fn isIP(address: str): i64
+fn isIPv4(address: str): bool
+fn isIPv6(address: str): bool
 ```
 
 ## ตัวอย่างเริ่มต้น

@@ -20,15 +20,15 @@ Handle fields เช่น id เป็น metadata ของ runtime อย่�
 
 ```text
 enum Value { Null, Integer(i64), Real(f64), Text(str), Blob(Vec<u8>) }
-struct Database { id i64 }
-struct Rows { columns Vec<str>, rows Vec<Vec<Value>> }
-fn open(path str) Database
-fn version() str
-fn Database.execute(self Database, sql str, params Vec<Value>) i64
-fn Database.query(self Database, sql str, params Vec<Value>) Rows
-fn Database.lastInsertRowId(self Database) i64
-fn Database.setTimeout(self Database, timeoutMs i64) void
-fn Database.close(self Database) void
+struct Database { id: i64 }
+struct Rows { columns: Vec<str>, rows: Vec<Vec<Value>> }
+fn open(path: str): Database
+fn version(): str
+fn Database.execute(self: Database, sql: str, params: Vec<Value>): i64
+fn Database.query(self: Database, sql: str, params: Vec<Value>): Rows
+fn Database.lastInsertRowId(self: Database): i64
+fn Database.setTimeout(self: Database, timeoutMs: i64): void
+fn Database.close(self: Database): void
 ```
 
 ## ตัวอย่างเริ่มต้น

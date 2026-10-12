@@ -17,11 +17,11 @@ use "std/io"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn write(text str) bool
-fn writeln(text str) bool
-fn read_line() str
-fn read_file(path str) str
-fn write_file(path str, text str) bool
+fn write(text: str): bool
+fn writeln(text: str): bool
+fn read_line(): str
+fn read_file(path: str): str
+fn write_file(path: str, text: str): bool
 ```
 
 ## ตัวอย่างเริ่มต้น

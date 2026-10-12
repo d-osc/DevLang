@@ -17,12 +17,12 @@ use "std/compression"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn gzip(data Vec<u8>, level i64) Vec<u8>
-fn gunzip(data Vec<u8>) Vec<u8>
-fn zlib(data Vec<u8>, level i64) Vec<u8>
-fn unzlib(data Vec<u8>) Vec<u8>
-fn deflate(data Vec<u8>, level i64) Vec<u8>
-fn inflate(data Vec<u8>) Vec<u8>
+fn gzip(data: Vec<u8>, level: i64): Vec<u8>
+fn gunzip(data: Vec<u8>): Vec<u8>
+fn zlib(data: Vec<u8>, level: i64): Vec<u8>
+fn unzlib(data: Vec<u8>): Vec<u8>
+fn deflate(data: Vec<u8>, level: i64): Vec<u8>
+fn inflate(data: Vec<u8>): Vec<u8>
 ```
 
 ## ตัวอย่างเริ่มต้น

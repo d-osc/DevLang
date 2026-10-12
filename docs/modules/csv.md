@@ -17,9 +17,9 @@ use "std/csv"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-struct Table { headers Vec<str>, rows Vec<Vec<str>> }
-fn parse(text str, delimiter str, hasHeaders bool) Table
-fn stringify(table Table, delimiter str) str
+struct Table { headers: Vec<str>, rows: Vec<Vec<str>> }
+fn parse(text: str, delimiter: str, hasHeaders: bool): Table
+fn stringify(table: Table, delimiter: str): str
 ```
 
 ## ตัวอย่างเริ่มต้น

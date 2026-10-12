@@ -17,19 +17,19 @@ use "std/os"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn platform() str
-fn arch() str
-fn hostname() str
-fn homedir() str
-fn tmpdir() str
-fn release() str
-fn type() str
-fn endianness() str
-fn EOL() str
-fn availableParallelism() i64
-fn uptime() i64
-fn totalmem() i64
-fn freemem() i64
+fn platform(): str
+fn arch(): str
+fn hostname(): str
+fn homedir(): str
+fn tmpdir(): str
+fn release(): str
+fn type(): str
+fn endianness(): str
+fn EOL(): str
+fn availableParallelism(): i64
+fn uptime(): i64
+fn totalmem(): i64
+fn freemem(): i64
 ```
 
 ## ตัวอย่างเริ่มต้น

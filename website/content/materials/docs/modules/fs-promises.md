@@ -17,13 +17,13 @@ use "std/fs/promises"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn readFile(path str, encoding str) Task<str>
-fn writeFile(path str, data str) Task<bool>
-fn appendFile(path str, data str) Task<bool>
-fn mkdir(path str, recursive bool) Task<bool>
-fn readdir(path str) Task<Vec<str>>
-fn unlink(path str) Task<bool>
-fn rename(from str, to str) Task<bool>
+fn readFile(path: str, encoding: str): Task<str>
+fn writeFile(path: str, data: str): Task<bool>
+fn appendFile(path: str, data: str): Task<bool>
+fn mkdir(path: str, recursive: bool): Task<bool>
+fn readdir(path: str): Task<Vec<str>>
+fn unlink(path: str): Task<bool>
+fn rename(from: str, to: str): Task<bool>
 ```
 
 ## ตัวอย่างเริ่มต้น

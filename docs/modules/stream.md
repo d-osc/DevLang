@@ -19,16 +19,16 @@ use "std/stream"
 Handle fields เช่น id เป็น metadata ของ runtime อย่าสร้างหรือเปลี่ยนเอง ใช้ constructor function และปิด resource ตามสัญญา API
 
 ```text
-struct Readable { id i64 }
-struct Writable { id i64 }
-fn createReadStream(path str) Readable
-fn createWriteStream(path str, append bool) Writable
-fn Readable.read(self Readable, size i64) Vec<u8>
-fn Readable.pipe(self Readable, destination Writable) i64
-fn Readable.close(self Readable) void
-fn Writable.write(self Writable, bytes Vec<u8>) i64
-fn Writable.end(self Writable) void
-fn Writable.close(self Writable) void
+struct Readable { id: i64 }
+struct Writable { id: i64 }
+fn createReadStream(path: str): Readable
+fn createWriteStream(path: str, append: bool): Writable
+fn Readable.read(self: Readable, size: i64): Vec<u8>
+fn Readable.pipe(self: Readable, destination: Writable): i64
+fn Readable.close(self: Readable): void
+fn Writable.write(self: Writable, bytes: Vec<u8>): i64
+fn Writable.end(self: Writable): void
+fn Writable.close(self: Writable): void
 ```
 
 ## ตัวอย่างเริ่มต้น

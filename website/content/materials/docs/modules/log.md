@@ -17,14 +17,14 @@ use "std/log"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn setLevel(level str) void
-fn toFile(path str) void
-fn toStderr() void
-fn debug(message str) void
-fn info(message str) void
-fn warn(message str) void
-fn error(message str) void
-fn flush() void
+fn setLevel(level: str): void
+fn toFile(path: str): void
+fn toStderr(): void
+fn debug(message: str): void
+fn info(message: str): void
+fn warn(message: str): void
+fn error(message: str): void
+fn flush(): void
 ```
 
 ## ตัวอย่างเริ่มต้น

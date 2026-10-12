@@ -17,10 +17,10 @@ use "std/cli"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-struct Option { name str, short str, takesValue bool }
-struct Parsed { values Map<str,str>, flags Map<str,bool>, positionals Vec<str> }
-fn args() Vec<str>
-fn parse(args Vec<str>, options Vec<Option>) Parsed
+struct Option { name: str, short: str, takesValue: bool }
+struct Parsed { values: Map<str,str>, flags: Map<str,bool>, positionals: Vec<str> }
+fn args(): Vec<str>
+fn parse(args: Vec<str>, options: Vec<Option>): Parsed
 ```
 
 ## ตัวอย่างเริ่มต้น

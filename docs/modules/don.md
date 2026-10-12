@@ -20,17 +20,17 @@ Value เป็น managed data ที่สร้างผ่าน API ไม�
 
 ```text
 struct Value {}
-fn parse(text str) Value
-fn valid(text str) bool
-fn stringify<T>(value T) str
-fn toJSON<T>(value T) str
-fn fromJSON(text str) Value
-fn get(value Value, key str) Value
-fn at(value Value, index i64) Value
-fn has(value Value, key str) bool
-fn string(value Value) str
-fn int(value Value) i64
-fn bool(value Value) bool
+fn parse(text: str): Value
+fn valid(text: str): bool
+fn stringify<T>(value: T): str
+fn toJSON<T>(value: T): str
+fn fromJSON(text: str): Value
+fn get(value: Value, key: str): Value
+fn at(value: Value, index: i64): Value
+fn has(value: Value, key: str): bool
+fn string(value: Value): str
+fn int(value: Value): i64
+fn bool(value: Value): bool
 ```
 
 ## ตัวอย่างเริ่มต้น

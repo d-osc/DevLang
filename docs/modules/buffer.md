@@ -19,29 +19,29 @@ use "std/buffer"
 Handle fields เช่น id เป็น metadata ของ runtime อย่าสร้างหรือเปลี่ยนเอง ใช้ constructor function และปิด resource ตามสัญญา API
 
 ```text
-struct Buffer { id i64, length i64 }
-fn alloc(size i64, fill u8) Buffer
-fn from(text str, encoding str) Buffer
-fn fromBytes(bytes Vec<u8>) Buffer
-fn concat(buffers Vec<Buffer>) Buffer
-fn byteLength(text str, encoding str) i64
-fn Buffer.toString(self Buffer, encoding str) str
-fn Buffer.toBytes(self Buffer) Vec<u8>
-fn Buffer.readUInt8(self Buffer, offset i64) u8
-fn Buffer.writeUInt8(self Buffer, value u8, offset i64) bool
-fn Buffer.readUInt16LE(self Buffer, offset i64) u16
-fn Buffer.readUInt16BE(self Buffer, offset i64) u16
-fn Buffer.readUInt32LE(self Buffer, offset i64) u32
-fn Buffer.readUInt32BE(self Buffer, offset i64) u32
-fn Buffer.writeUInt16LE(self Buffer, value u16, offset i64) bool
-fn Buffer.writeUInt16BE(self Buffer, value u16, offset i64) bool
-fn Buffer.writeUInt32LE(self Buffer, value u32, offset i64) bool
-fn Buffer.writeUInt32BE(self Buffer, value u32, offset i64) bool
-fn Buffer.slice(self Buffer, start i64, end i64) Buffer
-fn Buffer.equals(self Buffer, other Buffer) bool
-fn Buffer.fill(self Buffer, value u8) bool
-fn Buffer.copy(self Buffer, target Buffer, targetStart i64, sourceStart i64, sourceEnd i64) i64
-fn Buffer.close(self Buffer) void
+struct Buffer { id: i64, length: i64 }
+fn alloc(size: i64, fill: u8): Buffer
+fn from(text: str, encoding: str): Buffer
+fn fromBytes(bytes: Vec<u8>): Buffer
+fn concat(buffers: Vec<Buffer>): Buffer
+fn byteLength(text: str, encoding: str): i64
+fn Buffer.toString(self: Buffer, encoding: str): str
+fn Buffer.toBytes(self: Buffer): Vec<u8>
+fn Buffer.readUInt8(self: Buffer, offset: i64): u8
+fn Buffer.writeUInt8(self: Buffer, value: u8, offset: i64): bool
+fn Buffer.readUInt16LE(self: Buffer, offset: i64): u16
+fn Buffer.readUInt16BE(self: Buffer, offset: i64): u16
+fn Buffer.readUInt32LE(self: Buffer, offset: i64): u32
+fn Buffer.readUInt32BE(self: Buffer, offset: i64): u32
+fn Buffer.writeUInt16LE(self: Buffer, value: u16, offset: i64): bool
+fn Buffer.writeUInt16BE(self: Buffer, value: u16, offset: i64): bool
+fn Buffer.writeUInt32LE(self: Buffer, value: u32, offset: i64): bool
+fn Buffer.writeUInt32BE(self: Buffer, value: u32, offset: i64): bool
+fn Buffer.slice(self: Buffer, start: i64, end: i64): Buffer
+fn Buffer.equals(self: Buffer, other: Buffer): bool
+fn Buffer.fill(self: Buffer, value: u8): bool
+fn Buffer.copy(self: Buffer, target: Buffer, targetStart: i64, sourceStart: i64, sourceEnd: i64): i64
+fn Buffer.close(self: Buffer): void
 ```
 
 ## ตัวอย่างเริ่มต้น

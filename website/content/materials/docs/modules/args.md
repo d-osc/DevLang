@@ -17,8 +17,8 @@ use "std/args"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn len() usize
-fn get(index integer) str
+fn len(): usize
+fn get(index: integer): str
 ```
 
 ## ตัวอย่างเริ่มต้น

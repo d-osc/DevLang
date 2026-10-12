@@ -19,24 +19,24 @@ use "std/url"
 Handle fields เช่น id เป็น metadata ของ runtime อย่าสร้างหรือเปลี่ยนเอง ใช้ constructor function และปิด resource ตามสัญญา API
 
 ```text
-struct URL { href str, protocol str, host str, hostname str, port str, pathname str, search str, hash str, origin str, username str, password str }
-struct URLSearchParams { id i64 }
-fn parse(input str) URL
-fn resolve(base str, relative str) URL
-fn format(value URL) str
-fn URL.toString(self URL) str
-fn pathToFileURL(path str) str
-fn fileURLToPath(input str) str
-fn domainToASCII(domain str) str
-fn searchParams(query str) URLSearchParams
-fn URLSearchParams.append(self URLSearchParams, name str, value str) void
-fn URLSearchParams.set(self URLSearchParams, name str, value str) void
-fn URLSearchParams.get(self URLSearchParams, name str) str
-fn URLSearchParams.getAll(self URLSearchParams, name str) Vec<str>
-fn URLSearchParams.has(self URLSearchParams, name str) bool
-fn URLSearchParams.delete(self URLSearchParams, name str) void
-fn URLSearchParams.toString(self URLSearchParams) str
-fn URLSearchParams.close(self URLSearchParams) void
+struct URL { href: str, protocol: str, host: str, hostname: str, port: str, pathname: str, search: str, hash: str, origin: str, username: str, password: str }
+struct URLSearchParams { id: i64 }
+fn parse(input: str): URL
+fn resolve(base: str, relative: str): URL
+fn format(value: URL): str
+fn URL.toString(self: URL): str
+fn pathToFileURL(path: str): str
+fn fileURLToPath(input: str): str
+fn domainToASCII(domain: str): str
+fn searchParams(query: str): URLSearchParams
+fn URLSearchParams.append(self: URLSearchParams, name: str, value: str): void
+fn URLSearchParams.set(self: URLSearchParams, name: str, value: str): void
+fn URLSearchParams.get(self: URLSearchParams, name: str): str
+fn URLSearchParams.getAll(self: URLSearchParams, name: str): Vec<str>
+fn URLSearchParams.has(self: URLSearchParams, name: str): bool
+fn URLSearchParams.delete(self: URLSearchParams, name: str): void
+fn URLSearchParams.toString(self: URLSearchParams): str
+fn URLSearchParams.close(self: URLSearchParams): void
 ```
 
 ## ตัวอย่างเริ่มต้น

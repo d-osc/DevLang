@@ -17,12 +17,12 @@ use "std/test"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-struct Report { total i64, passed i64, failed i64, summary str }
-fn expect(condition bool, message str) void
-fn equal<T>(actual T, expected T, message str) void
-fn near(actual f64, expected f64, tolerance f64, message str) void
-fn case(name str, body fn() void) void
-fn run() Report
+struct Report { total: i64, passed: i64, failed: i64, summary: str }
+fn expect(condition: bool, message: str): void
+fn equal<T>(actual: T, expected: T, message: str): void
+fn near(actual: f64, expected: f64, tolerance: f64, message: str): void
+fn case(name: str, body: fn(): void): void
+fn run(): Report
 ```
 
 ## ตัวอย่างเริ่มต้น

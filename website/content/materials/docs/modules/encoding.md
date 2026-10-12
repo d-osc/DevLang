@@ -17,10 +17,10 @@ use "std/encoding"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn encode(text str, charset str) Vec<u8>
-fn decode(data Vec<u8>, charset str) str
-fn transcode(data Vec<u8>, from str, to str) Vec<u8>
-fn supported(charset str) bool
+fn encode(text: str, charset: str): Vec<u8>
+fn decode(data: Vec<u8>, charset: str): str
+fn transcode(data: Vec<u8>, from: str, to: str): Vec<u8>
+fn supported(charset: str): bool
 ```
 
 ## ตัวอย่างเริ่มต้น
@@ -31,7 +31,7 @@ fn supported(charset str) bool
 use "std/encoding"
 
 fn main() {
-    let bytes = encoding.encode("Dev 🚀", "utf-16le")
+    let bytes = encoding.encode("Dev ðŸš€", "utf-16le")
     print(encoding.decode(bytes, "utf-16le"))
     return 0
 }

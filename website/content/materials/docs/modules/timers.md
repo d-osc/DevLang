@@ -19,19 +19,19 @@ use "std/timers"
 Handle fields เช่น id เป็น metadata ของ runtime อย่าสร้างหรือเปลี่ยนเอง ใช้ constructor function และปิด resource ตามสัญญา API
 
 ```text
-struct Timer { id i64 }
-fn setTimeout(callback fn(Timer) void, delayMs i64) Timer
-fn setInterval(callback fn(Timer) void, delayMs i64) Timer
-fn setImmediate(callback fn(Timer) void) Timer
-fn clearTimeout(timer Timer) bool
-fn clearInterval(timer Timer) bool
-fn Timer.cancel(self Timer) bool
-fn Timer.ticks(self Timer) i64
-fn Timer.ref(self Timer) void
-fn Timer.unref(self Timer) void
-fn Timer.hasRef(self Timer) bool
-fn run() void
-fn sleep(delayMs i64) void
+struct Timer { id: i64 }
+fn setTimeout(callback: fn(Timer): void, delayMs: i64): Timer
+fn setInterval(callback: fn(Timer): void, delayMs: i64): Timer
+fn setImmediate(callback: fn(Timer): void): Timer
+fn clearTimeout(timer: Timer): bool
+fn clearInterval(timer: Timer): bool
+fn Timer.cancel(self: Timer): bool
+fn Timer.ticks(self: Timer): i64
+fn Timer.ref(self: Timer): void
+fn Timer.unref(self: Timer): void
+fn Timer.hasRef(self: Timer): bool
+fn run(): void
+fn sleep(delayMs: i64): void
 ```
 
 ## ตัวอย่างเริ่มต้น

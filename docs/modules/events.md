@@ -19,16 +19,16 @@ use "std/events"
 Handle fields เช่น id เป็น metadata ของ runtime อย่าสร้างหรือเปลี่ยนเอง ใช้ constructor function และปิด resource ตามสัญญา API
 
 ```text
-struct EventEmitter { id i64 }
-fn createEmitter() EventEmitter
-fn EventEmitter.on(self EventEmitter, event str, listener fn(str) void) i64
-fn EventEmitter.once(self EventEmitter, event str, listener fn(str) void) i64
-fn EventEmitter.off(self EventEmitter, event str, listener_id i64) bool
-fn EventEmitter.emit(self EventEmitter, event str, payload str) bool
-fn EventEmitter.listenerCount(self EventEmitter, event str) i64
-fn EventEmitter.removeAllListeners(self EventEmitter, event str) i64
-fn EventEmitter.eventNames(self EventEmitter) Vec<str>
-fn EventEmitter.close(self EventEmitter) void
+struct EventEmitter { id: i64 }
+fn createEmitter(): EventEmitter
+fn EventEmitter.on(self: EventEmitter, event: str, listener: fn(str): void): i64
+fn EventEmitter.once(self: EventEmitter, event: str, listener: fn(str): void): i64
+fn EventEmitter.off(self: EventEmitter, event: str, listener_id: i64): bool
+fn EventEmitter.emit(self: EventEmitter, event: str, payload: str): bool
+fn EventEmitter.listenerCount(self: EventEmitter, event: str): i64
+fn EventEmitter.removeAllListeners(self: EventEmitter, event: str): i64
+fn EventEmitter.eventNames(self: EventEmitter): Vec<str>
+fn EventEmitter.close(self: EventEmitter): void
 ```
 
 ## ตัวอย่างเริ่มต้น

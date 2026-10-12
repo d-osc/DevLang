@@ -17,13 +17,13 @@ use "std/archive"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-struct Entry { name str, data Vec<u8> }
-fn writeZIP(entries Vec<Entry>) Vec<u8>
-fn listZIP(data Vec<u8>) Vec<str>
-fn readZIP(data Vec<u8>, name str) Vec<u8>
-fn writeTAR(entries Vec<Entry>) Vec<u8>
-fn listTAR(data Vec<u8>) Vec<str>
-fn readTAR(data Vec<u8>, name str) Vec<u8>
+struct Entry { name: str, data: Vec<u8> }
+fn writeZIP(entries: Vec<Entry>): Vec<u8>
+fn listZIP(data: Vec<u8>): Vec<str>
+fn readZIP(data: Vec<u8>, name: str): Vec<u8>
+fn writeTAR(entries: Vec<Entry>): Vec<u8>
+fn listTAR(data: Vec<u8>): Vec<str>
+fn readTAR(data: Vec<u8>, name: str): Vec<u8>
 ```
 
 ## ตัวอย่างเริ่มต้น

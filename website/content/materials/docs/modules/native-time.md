@@ -17,9 +17,9 @@ use "std/time"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn now_ns() u64
-fn now_ms() u64
-fn sleep_ms(milliseconds u64) bool
+fn now_ns(): u64
+fn now_ms(): u64
+fn sleep_ms(milliseconds: u64): bool
 ```
 
 ## ตัวอย่างเริ่มต้น

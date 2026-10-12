@@ -17,18 +17,18 @@ use "std/io"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn open(path str, mode str) *void
-fn read(file *void, data *u8, bytes usize) usize
-fn write_bytes(file *void, data *u8, bytes usize) usize
-fn write_file(file *void, text str) usize
-fn flush_file(file *void) bool
-fn close(file *void) bool
-fn error(file *void) bool
-fn eof(file *void) bool
-fn write(text str) bool
-fn writeln(text str) bool
-fn flush() bool
-fn read_line(data *u8, capacity usize) isize
+fn open(path: str, mode: str): *void
+fn read(file: *void, data: *u8, bytes: usize): usize
+fn write_bytes(file: *void, data: *u8, bytes: usize): usize
+fn write_file(file: *void, text: str): usize
+fn flush_file(file: *void): bool
+fn close(file: *void): bool
+fn error(file: *void): bool
+fn eof(file: *void): bool
+fn write(text: str): bool
+fn writeln(text: str): bool
+fn flush(): bool
+fn read_line(data: *u8, capacity: usize): isize
 ```
 
 ## ตัวอย่างเริ่มต้น

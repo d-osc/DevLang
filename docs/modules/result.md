@@ -18,14 +18,14 @@ use "std/result"
 
 ```text
 enum Result<T> { Ok(T), Err(str) }
-fn attempt<T>(body fn() T) Result<T>
-fn run(body fn() void) Result<bool>
-fn isOk<T>(value Result<T>) bool
-fn isErr<T>(value Result<T>) bool
-fn unwrap<T>(value Result<T>) T
-fn unwrapOr<T>(value Result<T>, fallback T) T
-fn message<T>(value Result<T>) str
-fn raise(message str) void
+fn attempt<T>(body: fn(): T): Result<T>
+fn run(body: fn(): void): Result<bool>
+fn isOk<T>(value: Result<T>): bool
+fn isErr<T>(value: Result<T>): bool
+fn unwrap<T>(value: Result<T>): T
+fn unwrapOr<T>(value: Result<T>, fallback: T): T
+fn message<T>(value: Result<T>): str
+fn raise(message: str): void
 ```
 
 ## ตัวอย่างเริ่มต้น

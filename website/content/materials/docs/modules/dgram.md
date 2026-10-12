@@ -19,17 +19,17 @@ use "std/dgram"
 Handle fields เช่น id เป็น metadata ของ runtime อย่าสร้างหรือเปลี่ยนเอง ใช้ constructor function และปิด resource ตามสัญญา API
 
 ```text
-struct Socket { id i64 }
-struct Address { address str, port i64, family str }
-struct Message { data Vec<u8>, address str, port i64 }
-fn createSocket(kind str) Socket
-fn Socket.bind(self Socket, port i64, host str) void
-fn Socket.send(self Socket, bytes Vec<u8>, port i64, host str) i64
-fn Socket.recv(self Socket, size i64, timeout_ms i64) Message
-fn Socket.on(self Socket, event str, handler fn(Message) void) void
-fn Socket.address(self Socket) Address
-fn Socket.setBroadcast(self Socket, enable bool) void
-fn Socket.close(self Socket) void
+struct Socket { id: i64 }
+struct Address { address: str, port: i64, family: str }
+struct Message { data: Vec<u8>, address: str, port: i64 }
+fn createSocket(kind: str): Socket
+fn Socket.bind(self: Socket, port: i64, host: str): void
+fn Socket.send(self: Socket, bytes: Vec<u8>, port: i64, host: str): i64
+fn Socket.recv(self: Socket, size: i64, timeout_ms: i64): Message
+fn Socket.on(self: Socket, event: str, handler: fn(Message): void): void
+fn Socket.address(self: Socket): Address
+fn Socket.setBroadcast(self: Socket, enable: bool): void
+fn Socket.close(self: Socket): void
 ```
 
 ## ตัวอย่างเริ่มต้น

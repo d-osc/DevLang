@@ -19,25 +19,25 @@ use "std/websocket"
 Handle fields เช่น id เป็น metadata ของ runtime อย่าสร้างหรือเปลี่ยนเอง ใช้ constructor function และปิด resource ตามสัญญา API
 
 ```text
-struct Socket { id i64 }
-struct Server { id i64 }
-struct Address { address str, port i64, family str }
-struct Message { kind str, text str, data Vec<u8>, code i64 }
-fn connect(url str, timeoutMs i64, caFile str) Socket
-fn createServer(callback fn(Socket) void) Server
-fn createSecureServer(certFile str, keyFile str, callback fn(Socket) void) Server
-fn Socket.sendText(self Socket, text str) void
-fn Socket.sendBytes(self Socket, data Vec<u8>) void
-fn Socket.receive(self Socket) Message
-fn Socket.setTimeout(self Socket, timeoutMs i64) void
-fn Socket.path(self Socket) str
-fn Socket.origin(self Socket) str
-fn Socket.close(self Socket) void
-fn Server.listen(self Server, port i64) void
-fn Server.listenOn(self Server, port i64, host str) void
-fn Server.address(self Server) Address
-fn Server.on(self Server, event str, callback fn(Socket) void) void
-fn Server.close(self Server) void
+struct Socket { id: i64 }
+struct Server { id: i64 }
+struct Address { address: str, port: i64, family: str }
+struct Message { kind: str, text: str, data: Vec<u8>, code: i64 }
+fn connect(url: str, timeoutMs: i64, caFile: str): Socket
+fn createServer(callback: fn(Socket): void): Server
+fn createSecureServer(certFile: str, keyFile: str, callback: fn(Socket): void): Server
+fn Socket.sendText(self: Socket, text: str): void
+fn Socket.sendBytes(self: Socket, data: Vec<u8>): void
+fn Socket.receive(self: Socket): Message
+fn Socket.setTimeout(self: Socket, timeoutMs: i64): void
+fn Socket.path(self: Socket): str
+fn Socket.origin(self: Socket): str
+fn Socket.close(self: Socket): void
+fn Server.listen(self: Server, port: i64): void
+fn Server.listenOn(self: Server, port: i64, host: str): void
+fn Server.address(self: Server): Address
+fn Server.on(self: Server, event: str, callback: fn(Socket): void): void
+fn Server.close(self: Server): void
 ```
 
 ## ตัวอย่างเริ่มต้น

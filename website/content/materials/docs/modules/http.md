@@ -19,27 +19,27 @@ use "std/http"
 Handle fields เช่น id เป็น metadata ของ runtime อย่าสร้างหรือเปลี่ยนเอง ใช้ constructor function และปิด resource ตามสัญญา API
 
 ```text
-struct IncomingMessage { method str, url str, headers Map<str,str>, body str, bytes Vec<u8> }
-struct ServerResponse { id i64, statusCode i64 }
-struct Server { id i64 }
-fn createServer(handler fn(IncomingMessage,ServerResponse) void) Server
-fn Server.listen(self Server, port i64) void
-fn Server.listenOn(self Server, port i64, host str) void
-fn Server.close(self Server) void
-fn Server.on(self Server, event str, handler fn(IncomingMessage,ServerResponse) void) void
-fn ServerResponse.writeHead(self ServerResponse, status i64, headers Map<str,str>) void
-fn ServerResponse.setHeader(self ServerResponse, name str, value str) void
-fn ServerResponse.write(self ServerResponse, text str) void
-fn ServerResponse.end(self ServerResponse, text str) void
-struct Response { status i64, body str, bytes Vec<u8>, headers Map<str,str>, ok bool }
-fn get(url str) Response
-fn head(url str) Response
-fn post(url str, body str) Response
-fn put(url str, body str) Response
-fn patch(url str, body str) Response
-fn delete(url str) Response
-fn request(method str, url str, headers Map<str,str>, body str, timeout_ms i64) Response
-fn request_bytes(method str, url str, headers Map<str,str>, body Vec<u8>, timeout_ms i64) Response
+struct IncomingMessage { method: str, url: str, headers: Map<str,str>, body: str, bytes: Vec<u8> }
+struct ServerResponse { id: i64, statusCode: i64 }
+struct Server { id: i64 }
+fn createServer(handler: fn(IncomingMessage,ServerResponse): void): Server
+fn Server.listen(self: Server, port: i64): void
+fn Server.listenOn(self: Server, port: i64, host: str): void
+fn Server.close(self: Server): void
+fn Server.on(self: Server, event: str, handler: fn(IncomingMessage,ServerResponse): void): void
+fn ServerResponse.writeHead(self: ServerResponse, status: i64, headers: Map<str,str>): void
+fn ServerResponse.setHeader(self: ServerResponse, name: str, value: str): void
+fn ServerResponse.write(self: ServerResponse, text: str): void
+fn ServerResponse.end(self: ServerResponse, text: str): void
+struct Response { status: i64, body: str, bytes: Vec<u8>, headers: Map<str,str>, ok: bool }
+fn get(url: str): Response
+fn head(url: str): Response
+fn post(url: str, body: str): Response
+fn put(url: str, body: str): Response
+fn patch(url: str, body: str): Response
+fn delete(url: str): Response
+fn request(method: str, url: str, headers: Map<str,str>, body: str, timeout_ms: i64): Response
+fn request_bytes(method: str, url: str, headers: Map<str,str>, body: Vec<u8>, timeout_ms: i64): Response
 ```
 
 ## ตัวอย่างเริ่มต้น

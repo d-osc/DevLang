@@ -20,13 +20,13 @@ Value เป็น managed data ที่สร้างผ่าน API ไม�
 
 ```text
 struct Value {}
-fn parse(text str) Value
-fn get(value Value, key str) Value
-fn at(value Value, index i64) Value
-fn object() Value
-fn array() Value
-fn null_value() Value
-fn remove(value Value, key str) Value
+fn parse(text: str): Value
+fn get(value: Value, key: str): Value
+fn at(value: Value, index: i64): Value
+fn object(): Value
+fn array(): Value
+fn null_value(): Value
+fn remove(value: Value, key: str): Value
 ```
 
 JSON มี dynamic intrinsics เพิ่มจาก shared declarations ข้างต้น เช่น value/stringify/pretty/set/push และ scalar accessors รายการ API เต็มพร้อมชนิดผลลัพธ์อยู่ในตารางด้านล่าง

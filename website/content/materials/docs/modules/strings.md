@@ -17,27 +17,27 @@ use "std/strings"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn len(text str) usize
-fn charLength(text str) i64
-fn concat(a str, b str) str
-fn equal(a str, b str) bool
-fn trim(text str) str
-fn trimStart(text str) str
-fn trimEnd(text str) str
-fn toLowerCase(text str) str
-fn toUpperCase(text str) str
-fn contains(text str, pattern str) bool
-fn startsWith(text str, pattern str) bool
-fn endsWith(text str, pattern str) bool
-fn indexOf(text str, pattern str) i64
-fn lastIndexOf(text str, pattern str) i64
-fn split(text str, separator str) Vec<str>
-fn join(parts Vec<str>, separator str) str
-fn replace(text str, pattern str, replacement str) str
-fn replaceAll(text str, pattern str, replacement str) str
-fn repeat(text str, count i64) str
-fn substring(text str, start i64, end i64) str
-fn charAt(text str, index i64) str
+fn len(text: str): usize
+fn charLength(text: str): i64
+fn concat(a: str, b: str): str
+fn equal(a: str, b: str): bool
+fn trim(text: str): str
+fn trimStart(text: str): str
+fn trimEnd(text: str): str
+fn toLowerCase(text: str): str
+fn toUpperCase(text: str): str
+fn contains(text: str, pattern: str): bool
+fn startsWith(text: str, pattern: str): bool
+fn endsWith(text: str, pattern: str): bool
+fn indexOf(text: str, pattern: str): i64
+fn lastIndexOf(text: str, pattern: str): i64
+fn split(text: str, separator: str): Vec<str>
+fn join(parts: Vec<str>, separator: str): str
+fn replace(text: str, pattern: str, replacement: str): str
+fn replaceAll(text: str, pattern: str, replacement: str): str
+fn repeat(text: str, count: i64): str
+fn substring(text: str, start: i64, end: i64): str
+fn charAt(text: str, index: i64): str
 ```
 
 ## ตัวอย่างเริ่มต้น
@@ -48,7 +48,7 @@ fn charAt(text str, index i64) str
 use "std/strings"
 
 fn main() {
-    print(strings.charLength("Dev 🚀"))
+    print(strings.charLength("Dev ðŸš€"))
     print(strings.toUpperCase("dev"))
     return 0
 }

@@ -15,6 +15,14 @@ ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / 'docs/modules/catalog.json'
 
 
+def colon_signature(declaration):
+    """Normalize displayed typed parameters/fields without changing source bindings."""
+    declaration = re.sub(r'([({,;]\s*)([A-Za-z_]\w*)\s+(?=[A-Za-z_*\[])', r'\1\2: ', declaration)
+    if not declaration.startswith('enum '):
+        declaration = re.sub(r'\)\s+(?:->\s*)?(?=[A-Za-z_*\[])', '): ', declaration)
+    return declaration
+
+
 def signatures(text):
     """Keep public declarations, excluding implementation/stub function bodies."""
     declarations = []
@@ -22,7 +30,7 @@ def signatures(text):
         declaration = match.group().strip()
         if declaration.startswith('fn ') and declaration.endswith(')'):
             declaration += ' void'
-        declarations.append(declaration)
+        declarations.append(colon_signature(declaration))
     return '\n'.join(declarations)
 
 
@@ -83,7 +91,7 @@ def generate():
         code = (ROOT/item['example']).read_text(encoding='utf-8')
         native = mode == 'native'
         declaration = signatures((ROOT/item['binding']).read_text(encoding='utf-8')) if native else (
-            basic[key] if key in basic else signatures(constants[modules[key]]))
+            '\n'.join(colon_signature(line) for line in basic[key].splitlines()) if key in basic else signatures(constants[modules[key]]))
         status = ('ต้อง build/link C stdlib; signature ต่างจาก source runtime ดู [Native stdlib](../stdlib.md)' if native else
                   'ใช้ d run หรือ d FILE.dev ได้โดยไม่ต้องมี C compiler; native build ใช้ API นี้ไม่ได้')
         if key in ('io', 'time', 'strings'):
@@ -95,7 +103,7 @@ def generate():
         text += '## การ import และเรียกใช้งาน\n\n```dev\nuse "' + name + '"\n```\n\n'
         text += 'เรียก function ด้วย alias ของชื่อส่วนท้าย เช่น `' + name.split('/')[-1] + '.FUNCTION(...)` หรือใช้ `as alias` เพื่อกำหนดชื่อเอง Methods เรียกผ่าน instance; ต้องส่ง arguments ครบตาม signature\n\n'
         text += '## ชนิดข้อมูลและ signatures\n\nรายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)\n\n'
-        if re.search(r'\bid i64\b', declaration):
+        if re.search(r'\bid:? i64\b', declaration):
             text += 'Handle fields เช่น id เป็น metadata ของ runtime อย่าสร้างหรือเปลี่ยนเอง ใช้ constructor function และปิด resource ตามสัญญา API\n\n'
         if key in ('json', 'don'):
             text += 'Value เป็น managed data ที่สร้างผ่าน API ไม่ใช่ empty struct ที่ใช้แทน JSON/DON โดยตรง\n\n'

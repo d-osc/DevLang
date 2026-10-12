@@ -17,12 +17,12 @@ use "std/memory"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn alloc(bytes usize) *void
-fn alloc_array(count usize, size usize) *void
-fn resize(data *void, bytes usize) *void
-fn free(data *void) void
-fn copy(dest *void, source *void, bytes usize) void
-fn fill(dest *void, value u8, bytes usize) void
+fn alloc(bytes: usize): *void
+fn alloc_array(count: usize, size: usize): *void
+fn resize(data: *void, bytes: usize): *void
+fn free(data: *void): void
+fn copy(dest: *void, source: *void, bytes: usize): void
+fn fill(dest: *void, value: u8, bytes: usize): void
 ```
 
 ## ตัวอย่างเริ่มต้น

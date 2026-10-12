@@ -19,29 +19,29 @@ use "std/net"
 Handle fields เช่น id เป็น metadata ของ runtime อย่าสร้างหรือเปลี่ยนเอง ใช้ constructor function และปิด resource ตามสัญญา API
 
 ```text
-struct Socket { id i64 }
-struct Server { id i64 }
-struct Address { address str, port i64, family str }
-fn isIP(input str) i64
-fn isIPv4(input str) bool
-fn isIPv6(input str) bool
-fn connect(port i64, host str, timeout_ms i64) Socket
-fn createConnection(port i64, host str, timeout_ms i64) Socket
-fn createServer(handler fn(Socket) void) Server
-fn Server.listen(self Server, port i64) void
-fn Server.listenOn(self Server, port i64, host str) void
-fn Server.address(self Server) Address
-fn Server.close(self Server) void
-fn Server.on(self Server, event str, handler fn(Socket) void) void
-fn Socket.on(self Socket, event str, handler fn(Vec<u8>) void) void
-fn Socket.read(self Socket, size i64) Vec<u8>
-fn Socket.write(self Socket, bytes Vec<u8>) i64
-fn Socket.end(self Socket, bytes Vec<u8>) void
-fn Socket.destroy(self Socket) void
-fn Socket.setTimeout(self Socket, timeout_ms i64) void
-fn Socket.setNoDelay(self Socket, enable bool) void
-fn Socket.address(self Socket) Address
-fn Socket.remoteAddress(self Socket) Address
+struct Socket { id: i64 }
+struct Server { id: i64 }
+struct Address { address: str, port: i64, family: str }
+fn isIP(input: str): i64
+fn isIPv4(input: str): bool
+fn isIPv6(input: str): bool
+fn connect(port: i64, host: str, timeout_ms: i64): Socket
+fn createConnection(port: i64, host: str, timeout_ms: i64): Socket
+fn createServer(handler: fn(Socket): void): Server
+fn Server.listen(self: Server, port: i64): void
+fn Server.listenOn(self: Server, port: i64, host: str): void
+fn Server.address(self: Server): Address
+fn Server.close(self: Server): void
+fn Server.on(self: Server, event: str, handler: fn(Socket): void): void
+fn Socket.on(self: Socket, event: str, handler: fn(Vec<u8>): void): void
+fn Socket.read(self: Socket, size: i64): Vec<u8>
+fn Socket.write(self: Socket, bytes: Vec<u8>): i64
+fn Socket.end(self: Socket, bytes: Vec<u8>): void
+fn Socket.destroy(self: Socket): void
+fn Socket.setTimeout(self: Socket, timeout_ms: i64): void
+fn Socket.setNoDelay(self: Socket, enable: bool): void
+fn Socket.address(self: Socket): Address
+fn Socket.remoteAddress(self: Socket): Address
 ```
 
 ## ตัวอย่างเริ่มต้น

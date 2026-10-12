@@ -17,11 +17,11 @@ use "std/uuid"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn v4() str
-fn parse(text str) str
-fn isValid(text str) bool
-fn version(text str) i64
-fn nil() str
+fn v4(): str
+fn parse(text: str): str
+fn isValid(text: str): bool
+fn version(text: str): i64
+fn nil(): str
 ```
 
 ## ตัวอย่างเริ่มต้น

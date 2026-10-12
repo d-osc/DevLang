@@ -17,15 +17,15 @@ use "std/strings"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn new(text str) *void
-fn clone(handle *void) *void
-fn len(handle *void) usize
-fn view(handle *void) str
-fn append(handle *void, text str) bool
-fn append_bytes(handle *void, data *u8, bytes usize) bool
-fn equal(a *void, b *void) bool
-fn clear(handle *void) void
-fn free(handle *void) void
+fn new(text: str): *void
+fn clone(handle: *void): *void
+fn len(handle: *void): usize
+fn view(handle: *void): str
+fn append(handle: *void, text: str): bool
+fn append_bytes(handle: *void, data: *u8, bytes: usize): bool
+fn equal(a: *void, b: *void): bool
+fn clear(handle: *void): void
+fn free(handle: *void): void
 ```
 
 ## ตัวอย่างเริ่มต้น

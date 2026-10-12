@@ -19,18 +19,18 @@ use "std/regex"
 Handle fields เช่น id เป็น metadata ของ runtime อย่าสร้างหรือเปลี่ยนเอง ใช้ constructor function และปิด resource ตามสัญญา API
 
 ```text
-struct Regex { id i64 }
-struct Match { matched bool, text str, start i64, end i64 }
-fn compile(pattern str, flags str) Regex
-fn escape(text str) str
-fn Regex.test(self Regex, text str) bool
-fn Regex.find(self Regex, text str) Match
-fn Regex.findAll(self Regex, text str) Vec<str>
-fn Regex.captures(self Regex, text str) Vec<str>
-fn Regex.split(self Regex, text str) Vec<str>
-fn Regex.replace(self Regex, text str, replacement str) str
-fn Regex.replaceAll(self Regex, text str, replacement str) str
-fn Regex.close(self Regex) void
+struct Regex { id: i64 }
+struct Match { matched: bool, text: str, start: i64, end: i64 }
+fn compile(pattern: str, flags: str): Regex
+fn escape(text: str): str
+fn Regex.test(self: Regex, text: str): bool
+fn Regex.find(self: Regex, text: str): Match
+fn Regex.findAll(self: Regex, text: str): Vec<str>
+fn Regex.captures(self: Regex, text: str): Vec<str>
+fn Regex.split(self: Regex, text: str): Vec<str>
+fn Regex.replace(self: Regex, text: str, replacement: str): str
+fn Regex.replaceAll(self: Regex, text: str, replacement: str): str
+fn Regex.close(self: Regex): void
 ```
 
 ## ตัวอย่างเริ่มต้น

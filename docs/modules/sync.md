@@ -19,30 +19,30 @@ use "std/sync"
 ```text
 struct Channel<T> {}
 enum Receive<T> { Item(T), Empty, Closed }
-fn channel<T>(capacity i64) Channel<T>
-fn Channel.send<T>(self Channel<T>, value T) bool
-fn Channel.sendTimeout<T>(self Channel<T>, value T, timeoutMs i64) bool
-fn Channel.trySend<T>(self Channel<T>, value T) bool
-fn Channel.receive<T>(self Channel<T>) Receive<T>
-fn Channel.receiveTimeout<T>(self Channel<T>, timeoutMs i64) Receive<T>
-fn Channel.tryReceive<T>(self Channel<T>) Receive<T>
-fn Channel.close<T>(self Channel<T>) bool
-fn Channel.isClosed<T>(self Channel<T>) bool
-fn Channel.len<T>(self Channel<T>) i64
-fn Channel.capacity<T>(self Channel<T>) i64
+fn channel<T>(capacity: i64): Channel<T>
+fn Channel.send<T>(self: Channel<T>, value: T): bool
+fn Channel.sendTimeout<T>(self: Channel<T>, value: T, timeoutMs: i64): bool
+fn Channel.trySend<T>(self: Channel<T>, value: T): bool
+fn Channel.receive<T>(self: Channel<T>): Receive<T>
+fn Channel.receiveTimeout<T>(self: Channel<T>, timeoutMs: i64): Receive<T>
+fn Channel.tryReceive<T>(self: Channel<T>): Receive<T>
+fn Channel.close<T>(self: Channel<T>): bool
+fn Channel.isClosed<T>(self: Channel<T>): bool
+fn Channel.len<T>(self: Channel<T>): i64
+fn Channel.capacity<T>(self: Channel<T>): i64
 struct Mutex<T> {}
-fn mutex<T>(value T) Mutex<T>
-fn Mutex.get<T>(self Mutex<T>) T
-fn Mutex.set<T>(self Mutex<T>, value T) void
-fn Mutex.update<T>(self Mutex<T>, callback fn(T) T) T
-fn Mutex.updateTimeout<T>(self Mutex<T>, callback fn(T) T, timeoutMs i64) T
-fn Mutex.close<T>(self Mutex<T>) bool
+fn mutex<T>(value: T): Mutex<T>
+fn Mutex.get<T>(self: Mutex<T>): T
+fn Mutex.set<T>(self: Mutex<T>, value: T): void
+fn Mutex.update<T>(self: Mutex<T>, callback: fn(T): T): T
+fn Mutex.updateTimeout<T>(self: Mutex<T>, callback: fn(T): T, timeoutMs: i64): T
+fn Mutex.close<T>(self: Mutex<T>): bool
 struct CancelToken {}
-fn token() CancelToken
-fn CancelToken.cancel(self CancelToken) bool
-fn CancelToken.isCancelled(self CancelToken) bool
-fn CancelToken.check(self CancelToken) void
-fn CancelToken.wait(self CancelToken, timeoutMs i64) bool
+fn token(): CancelToken
+fn CancelToken.cancel(self: CancelToken): bool
+fn CancelToken.isCancelled(self: CancelToken): bool
+fn CancelToken.check(self: CancelToken): void
+fn CancelToken.wait(self: CancelToken, timeoutMs: i64): bool
 ```
 
 ## ตัวอย่างเริ่มต้น

@@ -19,16 +19,16 @@ use "std/child_process"
 Handle fields เช่น id เป็น metadata ของ runtime อย่าสร้างหรือเปลี่ยนเอง ใช้ constructor function และปิด resource ตามสัญญา API
 
 ```text
-struct Options { cwd str, timeoutMs i64, maxBuffer i64, input Vec<u8> }
-struct Output { pid i64, code i64, success bool, timedOut bool, killed bool, stdout Vec<u8>, stderr Vec<u8> }
-struct Child { id i64 }
-fn options() Options
-fn spawn(file str, args Vec<str>, options Options) Child
-fn execFileSync(file str, args Vec<str>, options Options) Output
-fn Child.pid(self Child) i64
-fn Child.ready(self Child) bool
-fn Child.kill(self Child) bool
-fn Child.wait(self Child) Output
+struct Options { cwd: str, timeoutMs: i64, maxBuffer: i64, input: Vec<u8> }
+struct Output { pid: i64, code: i64, success: bool, timedOut: bool, killed: bool, stdout: Vec<u8>, stderr: Vec<u8> }
+struct Child { id: i64 }
+fn options(): Options
+fn spawn(file: str, args: Vec<str>, options: Options): Child
+fn execFileSync(file: str, args: Vec<str>, options: Options): Output
+fn Child.pid(self: Child): i64
+fn Child.ready(self: Child): bool
+fn Child.kill(self: Child): bool
+fn Child.wait(self: Child): Output
 ```
 
 ## ตัวอย่างเริ่มต้น

@@ -17,18 +17,18 @@ use "std/process"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn cwd() str
-fn chdir(path str) bool
-fn pid() i64
-fn argv() Vec<str>
-fn execPath() str
-fn env() Map<str,str>
-fn getenv(name str) str
-fn hasEnv(name str) bool
-fn platform() str
-fn arch() str
-fn uptime() f64
-fn hrtime() i64
+fn cwd(): str
+fn chdir(path: str): bool
+fn pid(): i64
+fn argv(): Vec<str>
+fn execPath(): str
+fn env(): Map<str,str>
+fn getenv(name: str): str
+fn hasEnv(name: str): bool
+fn platform(): str
+fn arch(): str
+fn uptime(): f64
+fn hrtime(): i64
 ```
 
 ## ตัวอย่างเริ่มต้น

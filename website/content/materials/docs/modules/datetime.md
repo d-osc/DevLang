@@ -17,17 +17,17 @@ use "std/datetime"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-struct Parts { year i64, month i64, day i64, hour i64, minute i64, second i64, millisecond i64, weekday i64, offsetMinutes i64 }
-fn now() i64
-fn parse(text str) i64
-fn iso(timestamp i64) str
-fn format(timestamp i64, pattern str) str
-fn formatOffset(timestamp i64, offsetMinutes i64, pattern str) str
-fn parts(timestamp i64, offsetMinutes i64) Parts
-fn utc(year i64, month i64, day i64, hour i64, minute i64, second i64, millisecond i64) i64
-fn addMilliseconds(timestamp i64, duration i64) i64
-fn isLeapYear(year i64) bool
-fn daysInMonth(year i64, month i64) i64
+struct Parts { year: i64, month: i64, day: i64, hour: i64, minute: i64, second: i64, millisecond: i64, weekday: i64, offsetMinutes: i64 }
+fn now(): i64
+fn parse(text: str): i64
+fn iso(timestamp: i64): str
+fn format(timestamp: i64, pattern: str): str
+fn formatOffset(timestamp: i64, offsetMinutes: i64, pattern: str): str
+fn parts(timestamp: i64, offsetMinutes: i64): Parts
+fn utc(year: i64, month: i64, day: i64, hour: i64, minute: i64, second: i64, millisecond: i64): i64
+fn addMilliseconds(timestamp: i64, duration: i64): i64
+fn isLeapYear(year: i64): bool
+fn daysInMonth(year: i64, month: i64): i64
 ```
 
 ## ตัวอย่างเริ่มต้น

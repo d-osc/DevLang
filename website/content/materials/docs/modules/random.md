@@ -17,11 +17,11 @@ use "std/random"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn seed(value i64) void
-fn float() f64
-fn int(min i64, max i64) i64
-fn bool() bool
-fn bytes(size i64) Vec<u8>
+fn seed(value: i64): void
+fn float(): f64
+fn int(min: i64, max: i64): i64
+fn bool(): bool
+fn bytes(size: i64): Vec<u8>
 ```
 
 ## ตัวอย่างเริ่มต้น

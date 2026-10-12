@@ -17,14 +17,14 @@ use "std/crypto"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn hash(algorithm str, data Vec<u8>) Vec<u8>
-fn hashText(algorithm str, text str) str
-fn hmac(algorithm str, key Vec<u8>, data Vec<u8>) Vec<u8>
-fn verifyHmac(algorithm str, key Vec<u8>, data Vec<u8>, tag Vec<u8>) bool
-fn secureBytes(size i64) Vec<u8>
-fn timingSafeEqual(a Vec<u8>, b Vec<u8>) bool
-fn encrypt(key Vec<u8>, data Vec<u8>, associatedData Vec<u8>) Vec<u8>
-fn decrypt(key Vec<u8>, packet Vec<u8>, associatedData Vec<u8>) Vec<u8>
+fn hash(algorithm: str, data: Vec<u8>): Vec<u8>
+fn hashText(algorithm: str, text: str): str
+fn hmac(algorithm: str, key: Vec<u8>, data: Vec<u8>): Vec<u8>
+fn verifyHmac(algorithm: str, key: Vec<u8>, data: Vec<u8>, tag: Vec<u8>): bool
+fn secureBytes(size: i64): Vec<u8>
+fn timingSafeEqual(a: Vec<u8>, b: Vec<u8>): bool
+fn encrypt(key: Vec<u8>, data: Vec<u8>, associatedData: Vec<u8>): Vec<u8>
+fn decrypt(key: Vec<u8>, packet: Vec<u8>, associatedData: Vec<u8>): Vec<u8>
 ```
 
 ## ตัวอย่างเริ่มต้น

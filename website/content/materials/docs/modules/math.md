@@ -17,34 +17,34 @@ use "std/math"
 รายการนี้แสดงชื่อ, parameter และ return type โดยไม่มี function bodies ใช้เป็น API reference; methods ที่มี self รับ instance ผ่านการเรียก instance.method(...)
 
 ```text
-fn pi() f64
-fn e() f64
-fn tau() f64
-fn abs(x f64) f64
-fn sqrt(x f64) f64
-fn cbrt(x f64) f64
-fn pow(x f64, y f64) f64
-fn exp(x f64) f64
-fn log(x f64) f64
-fn log2(x f64) f64
-fn log10(x f64) f64
-fn sin(x f64) f64
-fn cos(x f64) f64
-fn tan(x f64) f64
-fn asin(x f64) f64
-fn acos(x f64) f64
-fn atan(x f64) f64
-fn atan2(y f64, x f64) f64
-fn floor(x f64) f64
-fn ceil(x f64) f64
-fn round(x f64) f64
-fn trunc(x f64) f64
-fn min(x f64, y f64) f64
-fn max(x f64, y f64) f64
-fn clamp(x f64, low f64, high f64) f64
-fn hypot(x f64, y f64) f64
-fn isFinite(x f64) bool
-fn isNaN(x f64) bool
+fn pi(): f64
+fn e(): f64
+fn tau(): f64
+fn abs(x: f64): f64
+fn sqrt(x: f64): f64
+fn cbrt(x: f64): f64
+fn pow(x: f64, y: f64): f64
+fn exp(x: f64): f64
+fn log(x: f64): f64
+fn log2(x: f64): f64
+fn log10(x: f64): f64
+fn sin(x: f64): f64
+fn cos(x: f64): f64
+fn tan(x: f64): f64
+fn asin(x: f64): f64
+fn acos(x: f64): f64
+fn atan(x: f64): f64
+fn atan2(y: f64, x: f64): f64
+fn floor(x: f64): f64
+fn ceil(x: f64): f64
+fn round(x: f64): f64
+fn trunc(x: f64): f64
+fn min(x: f64, y: f64): f64
+fn max(x: f64, y: f64): f64
+fn clamp(x: f64, low: f64, high: f64): f64
+fn hypot(x: f64, y: f64): f64
+fn isFinite(x: f64): bool
+fn isNaN(x: f64): bool
 ```
 
 ## ตัวอย่างเริ่มต้น
