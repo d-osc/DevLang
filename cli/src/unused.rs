@@ -199,6 +199,11 @@ mod tests {
         assert!(unused("fn main() {\nlet x = 1\nlet y = x\nprint(y)\n}\nmain()").is_empty());
     }
     #[test]
+    fn interpolation_reads_but_escaped_placeholders_do_not() {
+        assert!(unused(r#"let name = "Dev"; print("Hello ${name}")"#).is_empty());
+        assert_eq!(unused(r#"let name = "Dev"; print("Hello \${name}")"#), ["name"]);
+    }
+    #[test]
     fn resolves_parameters_and_global_reads() {
         assert_eq!(
             unused("let x = 1\nfn use_x(x i64) {\nprint(x)\n}\nuse_x(2)"),

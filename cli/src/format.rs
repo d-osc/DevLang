@@ -246,3 +246,16 @@ mod nested_regression {
         );
     }
 }
+
+#[cfg(test)]
+mod interpolation_tests {
+    #[test]
+    fn formatting_preserves_expressions_escapes_and_nested_quotes() {
+        let code = r#"let name="Dev"
+print("${name}: ${"quoted"} \${literal} ${1+2}")
+"#;
+        let result = super::source(code).unwrap();
+        assert!(result.contains(r#"print("${name}: ${"quoted"} \${literal} ${1+2}")"#));
+        assert_eq!(super::source(&result).unwrap(), result);
+    }
+}

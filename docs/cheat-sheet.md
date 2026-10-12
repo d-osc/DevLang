@@ -28,6 +28,18 @@ main()
 
 Pure Dev runtime ไม่ต้อง build โปรแกรมก่อน Native build ต้องมี C backend ส่วน API เฉพาะ runtime อาจไม่ผ่าน `d check` อ่าน [CLI](#/docs/cli) และ [เครื่องมือพัฒนา](#/docs/tooling)
 
+## String interpolation
+
+```dev
+let name: str = "Dev"
+let count: i64 = 41
+print("Hello ${name}!")
+print("answer = ${count + 1}, ready = ${true}")
+print("literal: \${name}")
+```
+
+ใช้ source build ล่าสุดหลัง v0.5.1; `${...}` แทรกค่า ส่วน `\${...}` เป็นข้อความตามตัวอักษร
+
 ## ตัวแปร ชนิดข้อมูล และ comments
 
 ```dev

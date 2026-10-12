@@ -13,6 +13,34 @@
         {
           "name": "constant.character.escape.devlang",
           "match": "\\\\."
+        },
+        {
+          "name": "meta.interpolation.devlang",
+          "begin": "\\$\\{",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.section.interpolation.begin.devlang"
+            }
+          },
+          "end": "\\}",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.section.interpolation.end.devlang"
+            }
+          },
+          "contentName": "source.devlang",
+          "patterns": [
+            {
+              "include": "#interpolation-braces"
+            },
+            {
+              "include": "$self"
+            },
+            {
+              "name": "variable.other.readwrite.devlang",
+              "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b"
+            }
+          ]
         }
       ]
     },
@@ -48,5 +76,19 @@
       "name": "keyword.operator.devlang",
       "match": "&&|\\|\\||==|!=|<=|>=|[+*\\/%=<>!&|\\-]"
     }
-  ]
+  ],
+  "repository": {
+    "interpolation-braces": {
+      "begin": "\\{",
+      "end": "\\}",
+      "patterns": [
+        {
+          "include": "#interpolation-braces"
+        },
+        {
+          "include": "$self"
+        }
+      ]
+    }
+  }
 }

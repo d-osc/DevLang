@@ -1,0 +1,8 @@
+fn main() {
+    let name: str = "Dev"
+    let count: i64 = 41
+    print("Hello ${name}!")
+    print("answer = ${count + 1}, ready = ${true}")
+    print("literal: \${name}")
+}
+main()

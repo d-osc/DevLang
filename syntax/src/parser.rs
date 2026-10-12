@@ -789,6 +789,44 @@ impl Parser {
                 kind: ExprKind::Number(s),
                 span,
             },
+            Kind::Template(parts) => {
+                let mut arguments = Vec::new();
+                for (expression, text, offset) in parts {
+                    if !expression {
+                        arguments.push(Expr {
+                            kind: ExprKind::String(text),
+                            span,
+                        });
+                        continue;
+                    }
+                    let mut tokens = lex(&text).map_err(|(mut p, msg)| {
+                        p.line = span.line;
+                        p.col += span.col + offset - 1;
+                        error(&self.path, p, msg)
+                    })?;
+                    for token in &mut tokens {
+                        token.span.line = span.line;
+                        token.span.col += span.col + offset - 1;
+                    }
+                    let mut inner = Parser {
+                        tokens,
+                        at: 0,
+                        path: self.path.clone(),
+                        constraints: vec![],
+                        object_literals: false,
+                        annotations: vec![],
+                    };
+                    arguments.push(inner.expr(0)?);
+                    if inner.token().kind != Kind::Eof {
+                        return inner.fail("expected end of interpolation expression");
+                    }
+                    self.object_literals |= inner.object_literals;
+                }
+                Expr {
+                    kind: ExprKind::Call(vec!["$interpolate".into()], arguments),
+                    span,
+                }
+            }
             Kind::String(s) => Expr {
                 kind: ExprKind::String(s),
                 span,

@@ -34,6 +34,11 @@
     "validation_sha256": "c94efdf64443debfa0b25108eb5c5b890e92b7ff7c37108742d27b68870e1c94",
     "output": "3\n42\n255\ntrue\nDevLang\n99\n3\n"
   },
+  "interpolation": {
+    "source_sha256": "722da8a45a537282488d296b04517fe19769679512a46ff477d1d7319f852446",
+    "validation_sha256": "cc3f807b1d30096d1247ee0cfbbca35da6afaed739fa215555118961bb146d73",
+    "output": "Hello Dev!\nanswer = 42, ready = true\nliteral: ${name}\n"
+  },
   "conditions": {
     "source_sha256": "570ca0a62024bd6262e226e08f1f1a9e9926a1a56e7c3113da37790116a89960",
     "validation_sha256": "7a1dc817d23028ea5ca1821348a2634bcd4e0c79d5320bd7bd98f855531f9fb9",
@@ -232,7 +237,7 @@
   "basic-libs": {
     "source_sha256": "7bea9b8369a55f03518dbf71fe3611920175f56bcc7ff88786b4a4b580cc312a",
     "validation_sha256": "ecadeb9581aef10e93056e858c0ca797ce500e15772bcfbbd973f7348db4181c",
-    "output": "3\nDEVLANG\ntrue\n2024-02-29T12:30:00.000Z\n2024-02-29 19:30:00 +07:00\nPASS math\nFAIL unicode: \\\\?\\C:\\Users\\ondev\\Projects\\dev-lang\\out\\type-syntax-site\\examples\\basic-libs\\main.dev:22:13: std/test.g_equal_8ee5e9315bcacf54: assertion failed: characters\nfalse\n"
+    "output": "3\nDEVLANG\ntrue\n2024-02-29T12:30:00.000Z\n2024-02-29 19:30:00 +07:00\nPASS math\nFAIL unicode: \\\\?\\C:\\Users\\ondev\\Projects\\dev-lang\\out\\interpolation-site\\examples\\basic-libs\\main.dev:22:13: std/test.g_equal_8ee5e9315bcacf54: assertion failed: characters\nfalse\n"
   },
   "data-libs": {
     "source_sha256": "177b7cb427fee372984106e0485bfe42a6381ed96129171af7d329928bbd98b1",

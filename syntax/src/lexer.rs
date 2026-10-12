@@ -5,6 +5,7 @@ pub enum Kind {
     Word(String),
     Number(String),
     String(String),
+    Template(Vec<(bool, String, usize)>),
     Symbol(String),
     Newline,
     Eof,
@@ -111,12 +112,58 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
             continue;
         }
         if c == '"' {
+            let string_start = i;
+            let mut parts = Vec::new();
             i += 1;
             col += 1;
             let mut value = String::new();
             while i < chars.len() && chars[i] != '"' {
                 if chars[i] == '\n' {
                     return Err((span, "newline in string; use \\n".into()));
+                }
+                if chars[i] == '$' && chars.get(i + 1) == Some(&'{') {
+                    parts.push((false, std::mem::take(&mut value), 0));
+                    let start = i + 2;
+                    let mut end = start;
+                    let mut depth = 1usize;
+                    let mut quoted = false;
+                    let mut escaped = false;
+                    while end < chars.len() {
+                        let ch = chars[end];
+                        if ch == '\n' {
+                            return Err((span, "newline in string interpolation".into()));
+                        }
+                        if quoted {
+                            if escaped {
+                                escaped = false;
+                            } else if ch == '\\' {
+                                escaped = true;
+                            } else if ch == '"' {
+                                quoted = false;
+                            }
+                        } else if ch == '"' {
+                            quoted = true;
+                        } else if ch == '{' {
+                            depth += 1;
+                        } else if ch == '}' {
+                            depth -= 1;
+                            if depth == 0 {
+                                break;
+                            }
+                        }
+                        end += 1;
+                    }
+                    if end == chars.len() {
+                        return Err((span, "unterminated string interpolation".into()));
+                    }
+                    parts.push((
+                        true,
+                        chars[start..end].iter().collect(),
+                        start - string_start,
+                    ));
+                    col += end + 1 - i;
+                    i = end + 1;
+                    continue;
                 }
                 if chars[i] == '\\' {
                     i += 1;
@@ -126,6 +173,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
                         Some('r') => '\r',
                         Some('t') => '\t',
                         Some('0') => '\0',
+                        Some('$') => '$',
                         Some('"') => '"',
                         Some('\\') => '\\',
                         _ => return Err((Span { line, col }, "invalid string escape".into())),
@@ -142,7 +190,12 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
             i += 1;
             col += 1;
             tokens.push(Token {
-                kind: Kind::String(value),
+                kind: if parts.is_empty() {
+                    Kind::String(value)
+                } else {
+                    parts.push((false, value, 0));
+                    Kind::Template(parts)
+                },
                 span,
             });
             continue;

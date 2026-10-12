@@ -32,6 +32,8 @@ jobs:
         run: cargo build --workspace --release --locked
       - name: Rust tests
         run: cargo test --workspace --locked
+      - name: String interpolation parity
+        run: python scripts/smoke_interpolation.py --bin-dir target/release
       - name: Canonical type annotation parity
         run: python scripts/smoke_type_annotations.py --bin-dir target/release
       - name: Numeric cast parity and safety

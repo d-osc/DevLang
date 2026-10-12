@@ -35,6 +35,7 @@ impl Expand {
             }),
             ExprKind::Bool(_) => Type::Bool,
             ExprKind::String(_) => Type::Str,
+            ExprKind::Call(n, _) if n.as_slice() == ["$interpolate"] => Type::Str,
             ExprKind::Name(n) if n.len() == 1 => {
                 let Some(t) = self.locals.iter().rev().find_map(|s| s.get(&n[0])).cloned() else {
                     return Ok(None);
@@ -311,7 +312,9 @@ impl Expand {
         }
         match (pattern, actual) {
             (Type::Function(ps, pr), Type::Function(ts, tr))
-            | (Type::Callback(ps, pr), Type::Callback(ts, tr)) if ps.len() == ts.len() => {
+            | (Type::Callback(ps, pr), Type::Callback(ts, tr))
+                if ps.len() == ts.len() =>
+            {
                 for (p, t) in ps.iter().zip(ts) {
                     self.unify(owner, p, t, generics, bindings)?;
                 }

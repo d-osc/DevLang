@@ -562,6 +562,16 @@ impl Engine {
         args: Vec<Value>,
         span: Span,
     ) -> Result<Value, String> {
+        if name == ["$interpolate"] {
+            let mut text = String::new();
+            for value in args {
+                if !matches!(value, Value::Str(_) | Value::Int(..) | Value::Float(..) | Value::Bool(_)) {
+                    return Err(self.located(key, span, "interpolation supports str, numbers and bool"));
+                }
+                text.push_str(&value.display());
+            }
+            return Ok(Value::Str(text));
+        }
         let (target, n) = self
             .resolve(key, name)
             .map_err(|e| self.located(key, span, e))?;

@@ -98,6 +98,19 @@
     ]
   },
   {
+    "id": "interpolation",
+    "title": "String interpolation",
+    "category": "พื้นฐาน",
+    "path": "examples/howto/interpolation.dev",
+    "description": "แทรกค่าและ expression ใน string ด้วย ${...} และ escape placeholder",
+    "doc": "strings-arrays",
+    "commands": [
+      "d examples/howto/interpolation.dev",
+      "d examples/howto/interpolation.dev --engine ast",
+      "d build examples/howto/interpolation.dev --release -o out/interpolation.exe"
+    ]
+  },
+  {
     "id": "conditions",
     "title": "if / else if / else",
     "category": "พื้นฐาน",

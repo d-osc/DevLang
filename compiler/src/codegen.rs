@@ -275,6 +275,7 @@ fn generate_inner(
             ret: Type::Void,
             loop_depth: 0,
             uses_print: false,
+            uses_templates: false,
             uses_refs: false,
             unsafe_depth: 0,
             uses_checks: false,
@@ -348,6 +349,7 @@ fn generate_inner(
         } else if !module.statements.is_empty() {
             return Err(error(&module.path,Span{line:1,col:1},"imported modules contain declarations only; call their functions from the entry file"));
         }
+        if emitter.uses_templates { source.push_str(INTERPOLATION_HELPERS); }
         if emitter.uses_print {
             source.push_str("#include <stdio.h>\n");
         }
@@ -418,6 +420,7 @@ pub(crate) struct Emitter<'a> {
     pub(crate) ret: Type,
     pub(crate) loop_depth: usize,
     pub(crate) uses_print: bool,
+    uses_templates: bool,
     pub(crate) uses_refs: bool,
     pub(crate) unsafe_depth: usize,
     pub(crate) uses_checks: bool,
@@ -1723,6 +1726,31 @@ impl Emitter<'_> {
         Ok(format!("((uint32_t)({}))", value.code))
     }
     fn call(&mut self, names: &[String], args: &[Expr], span: Span) -> Result<Value, String> {
+        if names == ["$interpolate"] {
+            if !self.hosted { return self.fail(span, "string interpolation requires hosted allocation and formatting"); }
+            self.uses_templates = true;
+            let mut format = String::new();
+            let mut values = Vec::new();
+            for arg in args {
+                if let ExprKind::String(text) = &arg.kind { format.push_str(&text.replace('%', "%%")); continue; }
+                let value = self.expr(arg, None)?;
+                let temporary = format!("dev_template_arg_{}", self.next_var);
+                self.next_var += 1;
+                self.prelude.push_str(&format!("{} = {};\n", declaration(&value.ty, &temporary), value.code));
+                let (spec, code) = match value.ty {
+                    Type::Str => ("%s", temporary),
+                    Type::Bool => ("%s", format!("({temporary} ? \"true\" : \"false\")")),
+                    Type::Int { signed: true, .. } | Type::Size { signed: true } => ("%lld", format!("(long long){temporary}")),
+                    Type::Int { signed: false, .. } | Type::Size { signed: false } => ("%llu", format!("(unsigned long long){temporary}")),
+                    Type::Float(_) => ("%.17g", format!("(double){temporary}")),
+                    _ => return self.fail(arg.span, "interpolation supports str, numbers and bool"),
+                };
+                format.push_str(spec); values.push(code);
+            }
+            let arguments = if values.is_empty() { String::new() } else { format!(", {}", values.join(", ")) };
+            return Ok(Value { code: format!("dev_interpolate({}{arguments})", c_string(&format)), ty: Type::Str, lvalue: false });
+        }
+
         if names.len() == 1 {
             match names[0].as_str() {
                 "print" => {
@@ -2126,3 +2154,27 @@ fn pattern_c(
         }
     }
 }
+
+const INTERPOLATION_HELPERS: &str = r#"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <stdatomic.h>
+struct dev_template_block { struct dev_template_block *next; char text[1]; };
+static struct dev_template_block *dev_template_blocks;
+static atomic_flag dev_template_lock = ATOMIC_FLAG_INIT;
+static const char *dev_interpolate(const char *format, ...) {
+    va_list args, copy;
+    va_start(args,format); va_copy(copy,args);
+    int n=vsnprintf(NULL,0,format,copy); va_end(copy);
+    if(n<0 || (size_t)n>SIZE_MAX-sizeof(struct dev_template_block)) abort();
+    struct dev_template_block *b=(struct dev_template_block *)malloc(sizeof(*b)+(size_t)n);
+    if(!b) abort();
+    if(vsnprintf(b->text,(size_t)n+1,format,args)!=n) abort();
+    va_end(args);
+    while(atomic_flag_test_and_set(&dev_template_lock)) {}
+    b->next=dev_template_blocks; dev_template_blocks=b;
+    atomic_flag_clear(&dev_template_lock);
+    return b->text;
+}
+"#;

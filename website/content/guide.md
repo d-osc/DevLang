@@ -290,6 +290,22 @@ print(sizeof(values))
 
 Runtime เป็นเจ้าของ string bytes ส่วน native `str` ยืม C storage ต้องรักษา lifetime ถ้าใช้ค่าจาก library โดยเฉพาะ pointer ที่คืนจาก buffer ชั่วคราว `\0` ทำให้การพิมพ์แบบ C หยุดก่อนข้อความท้าย
 
+## String interpolation
+
+ใช้ `${expression}` ภายใน string ที่ครอบด้วย double quotes เพื่อแทรก `str`, จำนวนเต็ม, float หรือ bool แต่ละ expression ประเมินหนึ่งครั้งจากซ้ายไปขวา ใช้ `\${...}` เมื่อต้องการข้อความ placeholder ตามตัวอักษร
+
+```dev
+let name: str = "Dev"
+let count: i64 = 41
+print("Hello ${name}!")
+print("answer = ${count + 1}, ready = ${true}")
+print("literal: \${name}")
+```
+
+ใช้ได้ใน runtime และ hosted native build จาก source ล่าสุดหลัง v0.5.1 Native เก็บข้อความที่สร้างจนโปรแกรมจบเพื่อให้คืนค่าจาก function ได้อย่างปลอดภัย; งานที่สร้างข้อความต่อเนื่องควรคำนึงถึง RAM ที่เพิ่มขึ้น Native ต้องมี C11 backend และ float ใช้รูปแบบ `%.17g` เหมือน native print ส่วน runtime ใช้รูปแบบการพิมพ์ของ Rust
+
+[ตัวอย่างและไฟล์ดาวน์โหลด](#/examples/interpolation)
+
 ## ข้อจำกัดของ array
 
 Fixed array ใช้ literal initializer; native ไม่รองรับ array ทั้งก้อนเป็น parameter/return/value copy ไม่รองรับ nested local arrays ถ้าต้องส่งเป็นค่าให้ห่อด้วย struct หรือใช้ `Vec<T>` ถ้าจะใช้ pointer + length ต้องมี unsafe และรักษา bounds/lifetime เอง

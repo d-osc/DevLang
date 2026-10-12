@@ -80,6 +80,28 @@ main()
 
 `str[index]` reads a UTF-8 **byte** as `u8`, not a Unicode character. String bytes cannot be assigned. String equality is deliberately undefined; call C `strcmp` for content comparison. Strings and `null` follow C lifetime and NUL-termination rules; embedded `\0` truncates ordinary C string output.
 
+### String interpolation
+
+Use `${expression}` inside a double-quoted string to insert strings, integers,
+floats or booleans. Expressions are evaluated once, from left to right.
+Escape the dollar with `\${...}` to keep a literal placeholder. Empty,
+unclosed and invalid expressions are diagnosed at the source location.
+
+```dev
+let name: str = "Dev"
+let count: i64 = 41
+print("Hello ${name}!")
+print("answer = ${count + 1}, ready = ${true}")
+print("literal: \${name}")
+```
+
+Available in source after v0.5.1, in the runtime and hosted native builds.
+Native interpolation uses a C11 backend and retains allocated strings until
+process exit, when the OS reclaims their storage; repeated interpolation can
+increase RAM usage. Native floats use `%.17g`, as native print does, whereas
+runtime floats use Rust display. Structs, collections and pointers are not
+implicitly converted to text. Freestanding interpolation is rejected.
+
 ## Expressions and control flow
 
 Operators, from low to high precedence:

@@ -179,6 +179,13 @@ mod tests {
         assert!(errors(source).is_empty(), "{:?}", errors(source));
     }
     #[test]
+    fn interpolation_diagnostics_check_embedded_expressions() {
+        assert!(errors(r#"let name="Dev"; print("Hello ${name}")"#).is_empty());
+        assert!(errors(r#"print("Hello ${missing}")"#).iter().any(|e| e.contains("missing")));
+        assert!(errors(r#"print("${[1,2]}")"#).iter().any(|e| e.contains("interpolation supports")));
+        assert!(errors(r#"print("${}")"#).iter().any(|e| e.contains("expected an expression")));
+    }
+    #[test]
     fn valid_code_has_no_diagnostics() {
         for source in [
             "fn add(a i64, b i64) i64 { return a + b }\nprint(add(1, 2))",
