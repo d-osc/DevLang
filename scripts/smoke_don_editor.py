@@ -36,7 +36,7 @@ def main():
             params=dict(textDocument=dict(uri=target))
             if position is not None:params['position']=position
             return dict(id=id,method='textDocument/'+method,params=params)
-        text="// keep\nversion='v1.0.0'\nserver:{host:'localhost';port:8080}\nrev:@version\nraw:\"\"\"Hello\n  Dev\"\"\"\n"
+        text="// keep\nversion='v1.0.0'\nserver:{host:'localhost';port:8080}\nrev:version\nraw:\"\"\"Hello\n  Dev\"\"\"\n"
         replies=session(binary,[opened(text),request(10,'documentSymbol'),request(11,'formatting'),
                                 request(12,'hover',dict(line=3,character=5)),request(13,'definition',dict(line=3,character=5))])
         byid={r['id']:r for r in replies if 'id' in r}
@@ -46,8 +46,8 @@ def main():
         server=byid[10]['result'][1]
         assert [s['name'] for s in server['children']]==['host','port']
         formatted=byid[11]['result'][0]['newText']
-        assert '// keep' in formatted and 'rev: @version' in formatted and '"""Hello\n  Dev"""' in formatted
-        assert '@version: string' in byid[12]['result']['contents']['value']
+        assert '// keep' in formatted and 'rev: version' in formatted and '"""Hello\n  Dev"""' in formatted
+        assert 'version: string' in byid[12]['result']['contents']['value']
         assert byid[13]['result']['uri']==uri
         assert byid[13]['result']['range']['start']==dict(line=1,character=0)
         assert file.read_text(encoding='utf-8')==disk
@@ -59,8 +59,8 @@ def main():
         second=subprocess.run([binary,'don','fmt-source',str(file)],capture_output=True,text=True,encoding='utf-8',check=True)
         assert second.stdout==formatted
         count += 2
-        for bad,part in [("a:1\na:2",'duplicate object key'),('a:@missing','missing reference target'),
-                         ('a:@b\nb:@a','cyclic reference'),('a:[1,2','expected'),('a:"broken','unterminated'),
+        for bad,part in [("a:1\na:2",'duplicate object key'),('a:missing','missing reference target'),
+                         ('a:b\nb:a','cyclic reference'),('a:[1,2','expected'),('a:"broken','unterminated'),
                          ("a:'\\q'",'invalid string escape'),('a:1 b:2','expected comma' )]:
             replies=session(binary,[opened(bad),dict(method='textDocument/didChange',params=dict(textDocument=dict(uri=uri,version=2),contentChanges=[dict(text='a: 1')])),
                                     dict(method='textDocument/didClose',params=dict(textDocument=dict(uri=uri)))])
@@ -70,12 +70,12 @@ def main():
             assert diagnostics[1]['version']==2 and diagnostics[1]['diagnostics']==[]
             assert diagnostics[2]['diagnostics']==[]
             count += 3
-        completion="version: 'v1'\nrev: @ve"
-        replies=session(binary,[opened(completion),request(20,'completion',dict(line=1,character=8))])
+        completion="version: 'v1'\nrev: ve"
+        replies=session(binary,[opened(completion),request(20,'completion',dict(line=1,character=7))])
         items=next(r['result']['items'] for r in replies if r.get('id')==20)
-        item=next(i for i in items if i['label']=='@version')
+        item=next(i for i in items if i['label']=='version')
         assert item['textEdit']['newText']=='version'
-        assert item['textEdit']['range']['start']==dict(line=1,character=6)
+        assert item['textEdit']['range']['start']==dict(line=1,character=5)
         count += 1
         # Untitled documents are selected by languageId rather than extension.
         replies=session(binary,[opened('x: true',target='untitled:Untitled-1'),request(21,'documentSymbol',target='untitled:Untitled-1')])
@@ -83,12 +83,12 @@ def main():
         count += 1
         # Parser columns count scalars; LSP must report UTF-16 and tolerate CRLF/CR.
         for newline in ['\n','\r\n','\r']:
-            text='emoji: "🚀"'+newline+'bad: @missing'
+            text='emoji: "🚀"'+newline+'bad: missing'
             replies=session(binary,[opened(text)])
             err=next(r['params']['diagnostics'][0] for r in replies if r.get('method')=='textDocument/publishDiagnostics')
             assert err['range']['start']==dict(line=1,character=5),err
             count += 1
-        replies=session(binary,[opened('emoji: "🚀"; bad: @missing')])
+        replies=session(binary,[opened('emoji: "🚀"; bad: missing')])
         err=next(r['params']['diagnostics'][0] for r in replies if r.get('method')=='textDocument/publishDiagnostics')
         assert err['range']['start']['character']==18,err
         count += 1

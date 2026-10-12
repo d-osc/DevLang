@@ -1113,7 +1113,7 @@ main()
 
 ใช้ `don.stringify(data)` แปลงกลับเป็น DON และ `don.fromJSON(text)` อ่าน JSON แบบเข้มงวด
 
-อ้างอิงค่าจาก root ได้ด้วย `@version` หรือ `@server.port` รองรับ forward references และคงชนิดข้อมูลเดิม
+อ้างอิงค่าจาก root ได้ด้วย `version` หรือ `server.port` รองรับ forward references และคงชนิดข้อมูลเดิม
 
 ```don
 version: 'v1.0.0'
@@ -1121,12 +1121,12 @@ package: { name: 'my_app', entry: 'src/main.dev', modules: 'src' }
 dependencies: {
   utils: {
     git: 'https://github.com/example/utils.git'
-    tag: @version
+    tag: version
   }
 }
 ```
 
-`'@version'` เป็นข้อความธรรมดา ส่วน `tag: version` ยังใช้ไม่ได้ ต้องมี `@`
+`'@version'` เป็นข้อความธรรมดา ใช้ `tag: version` เพื่ออ้างอิงค่า
 key ที่ไม่มีอยู่และ reference วนกันจะเกิด error เมื่อ serialize หรือแก้ dependencies จะเขียนค่าที่ resolve แล้ว
 field `version` ชั้นนอกเป็น metadata ของ package และจะตรวจเมื่อ dependency ระบุ SemVer requirement ดู [Workspace และ versions](#/docs/packages)
 
@@ -1142,8 +1142,7 @@ summary: "${name}: ${age}"
 literal: "\${name}"
 ```
 
-`+` concatenates strings only. References may be bare (`name`) or explicit
-(`@name`). Double-quoted interpolation accepts root-relative paths such as
+`+` concatenates strings only. References use bare names (`name`); the old `@name` syntax is rejected. Double-quoted interpolation accepts root-relative paths such as
 `${user.name}` and converts scalar values to text. Single quotes and triple
 quotes remain literal. `\${...}` escapes a placeholder. Forward references
 work; missing names, cycles, non-string concatenation and expansion over 8 MiB
@@ -1565,7 +1564,7 @@ Extension `n-devs.devlang-language` รุ่น 0.2.0 รองรับไฟ�
 // เวอร์ชันเดียวกัน
 version: 'v1.0.0'
 dependencies: {
-    utils: { git: 'https://github.com/example/utils.git', tag: @version }
+    utils: { git: 'https://github.com/example/utils.git', tag: version }
 }
 ```
 

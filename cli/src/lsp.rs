@@ -303,7 +303,7 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             if let Some(id) = id {
                 send(
                     &mut out,
-                    &json!({"jsonrpc":"2.0","id":id,"result":{"capabilities":{"positionEncoding":"utf-16","textDocumentSync":{"openClose":true,"change":1},"completionProvider":{"triggerCharacters":[".","@"]},"hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"documentFormattingProvider":true},"serverInfo":{"name":"DevLang + DON LSP","version":env!("CARGO_PKG_VERSION")}}}),
+                    &json!({"jsonrpc":"2.0","id":id,"result":{"capabilities":{"positionEncoding":"utf-16","textDocumentSync":{"openClose":true,"change":1},"completionProvider":{"triggerCharacters":["."]},"hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"documentFormattingProvider":true},"serverInfo":{"name":"DevLang + DON LSP","version":env!("CARGO_PKG_VERSION")}}}),
                 )?;
             }
             continue;

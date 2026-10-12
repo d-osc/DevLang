@@ -106,7 +106,7 @@ mod manifest_tests {
     }
     #[test]
     fn don_version_and_dependency_reference() {
-        let text = "version:'v1.0.0'\npackage:{name:'app'}\ndependencies:{utils:{git:'https://github.com/example/utils.git'\nrev:@version}}";
+        let text = "version:'v1.0.0'\npackage:{name:'app'}\ndependencies:{utils:{git:'https://github.com/example/utils.git'\nrev:version}}";
         let manifest: Manifest =
             serde_json::from_value(dev_syntax::don::parse(text).unwrap()).unwrap();
         assert_eq!(manifest.version.as_deref(), Some("v1.0.0"));

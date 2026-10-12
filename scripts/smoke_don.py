@@ -55,7 +55,7 @@ print(don.valid("x:'\\\\uD800'"))
 print(don.fromJSON(don.toJSON(data)).port)
 print(json.parse(don.toJSON(data)).name)
 print(don.toJSON({message: "hello", numbers: [1, 2]}))
-let refs = don.parse("version:'v1.0.0'\\nutils:{rev:@version}\\nport:3000\\ncopy:@port")
+let refs = don.parse("version:'v1.0.0'\\nutils:{rev:version}\\nport:3000\\ncopy:port")
 print(refs.utils.rev)
 print(refs.copy)
 ''',encoding='utf-8')
@@ -63,7 +63,7 @@ print(refs.copy)
             assert lines[:10] == ['Dev','2','8080','8080','false','true','false','false','8080','Dev'], lines
             assert json.loads(lines[10]) == {'message':'hello','numbers':[1,2]}
             assert lines[11:] == ['v1.0.0','3000'], lines
-            for text,error in [("a:1\\na:2","duplicate"),("a:'unterminated","unterminated"),("a:word","quoted"),("[1 2]","separator"),("x:1__0","numeric")]:
+            for text,error in [("a:1\\na:2","duplicate"),("a:'unterminated","unterminated"),("a:word","missing reference target"),("[1 2]","separator"),("x:1__0","numeric")]:
                 source.write_text('use "std/don"\ndon.parse("'+text+'")\n',encoding='utf-8')
                 run(source,'--engine',engine,error=error if error!='separator' else 'between entries')
         run('new','app'); run('new','lib')

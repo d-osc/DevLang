@@ -104,7 +104,7 @@ fn resolve(root: &Value, refs: &References) -> Result<Value, String> {
                 Value::Array(array) => part.parse::<usize>().ok().and_then(|i| array.get(i)),
                 _ => None,
             }
-            .ok_or_else(|| format!("DON missing reference target @{}", path.join(".")))?;
+            .ok_or_else(|| format!("DON missing reference target {}", path.join(".")))?;
         }
         let cost = match value {
             Value::String(s) => s.len(),
@@ -395,6 +395,8 @@ impl Parser<'_> {
         Ok(Value::Object(map))
     }
     fn value(&mut self, depth: usize) -> Result<Value, String> {
+        self.space()?;
+        let location = self.fail::<Value>("reference expression").unwrap_err();
         let first = self.atom(depth)?;
         let mut parts = self
             .refs
@@ -423,7 +425,6 @@ impl Parser<'_> {
             if joined {
                 parts.insert(0, Part::Literal(Value::String(String::new())));
             }
-            let location = self.fail::<Value>("string expression").unwrap_err();
             self.refs.insert(self.path.clone(), (parts, location));
             Ok(Value::Null)
         } else {
@@ -436,27 +437,6 @@ impl Parser<'_> {
         }
         self.space()?;
         match self.peek() {
-            Some('@') => {
-                let location = self.fail::<Value>("reference").unwrap_err();
-                self.bump();
-                let mut target = Vec::new();
-                loop {
-                    if !self
-                        .peek()
-                        .is_some_and(|c| c.is_alphabetic() || c == '_' || c == '$')
-                    {
-                        return self.fail("expected reference identifier after '@' or '.'");
-                    }
-                    target.push(self.key()?);
-                    if self.peek() != Some('.') {
-                        break;
-                    }
-                    self.bump();
-                }
-                self.refs
-                    .insert(self.path.clone(), (vec![Part::Reference(target)], location));
-                Ok(Value::Null)
-            }
             Some('{') => self.object(true, depth),
             Some('[') => {
                 self.bump();
@@ -496,7 +476,7 @@ impl Parser<'_> {
                         return self.fail("unterminated string interpolation");
                     };
                     let end = begin + 2 + end;
-                    let name = text[begin + 2..end].trim().trim_start_matches('@');
+                    let name = text[begin + 2..end].trim();
                     let path = name.split('.').map(str::to_owned).collect::<Vec<_>>();
                     if path.iter().any(|p| {
                         p.is_empty() || !p.chars().all(|c| c.is_alphanumeric() || "_-$".contains(c))
@@ -593,24 +573,24 @@ mod tests {
     use super::*;
     #[test]
     fn references_are_root_relative_typed_and_checked() {
-        let value = parse("copy:@config\nversion:'v1.0.0'\nconfig:{rev:@version\nport:3000}\nports:[@config.port, @config.port]\nliteral:'@version'").unwrap();
+        let value = parse("copy:config\nversion:'v1.0.0'\nconfig:{rev:version\nport:3000}\nports:[config.port, config.port]\nliteral:'@version'").unwrap();
         assert_eq!(value["copy"]["rev"], "v1.0.0");
         assert_eq!(value["ports"], serde_json::json!([3000, 3000]));
         assert_eq!(value["literal"], "@version");
         assert_eq!(parse(&stringify(&value).unwrap()).unwrap(), value);
         for source in [
-            "a:@a",
-            "a:@b\nb:@a",
-            "a:{child:@a}",
-            "a:@missing",
+            "a:a",
+            "a:b\nb:a",
+            "a:{child:a}",
+            "a:missing",
             "a:@",
-            "a:@config.missing\nconfig:{}",
+            "a:config.missing\nconfig:{}",
         ] {
             assert!(parse(source).is_err(), "accepted {source}");
         }
         let mut bomb = "a0:'abcdefghijklmnopqrstuvwxyz'\n".to_string();
         for i in 1..23 {
-            bomb.push_str(&format!("a{i}:[@a{},@a{}]\n", i - 1, i - 1));
+            bomb.push_str(&format!("a{i}:[a{},a{}]\n", i - 1, i - 1));
         }
         assert!(parse(&bomb).unwrap_err().contains("budget"));
     }

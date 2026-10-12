@@ -23,7 +23,7 @@ test('DON grammar colors keys, references, comments, escapes and multiline strin
     assert.ok(tokens(line).some(t => t.text === 'name' && t.scopes.includes('support.type.property-name.don')));
     assert.ok(tokens(line).some(t => t.text.includes('Dev') && t.scopes.includes('string.quoted.single.don')));
     assert.ok(tokens(line).some(t => t.text.includes('# comment') && t.scopes.includes('comment.line.don')));
-    assert.ok(tokens('rev: @version').some(t => t.text === '@version' && t.scopes.includes('variable.other.reference.don')));
+    assert.ok(tokens('rev: version').some(t => t.text === 'version' && t.scopes.includes('variable.other.reference.don')));
     assert.ok(tokens('rev: "@version"').every(t => !t.scopes.includes('variable.other.reference.don')));
     assert.ok(tokens('count: 1_000').some(t => t.scopes.includes('constant.numeric.don')));
     assert.ok(tokens('ready: true').some(t => t.scopes.includes('constant.language.don')));

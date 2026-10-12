@@ -85,7 +85,9 @@ pub fn tokens(text: &str) -> Vec<Token> {
                 }
                 at += next.len_utf8();
             }
-            kind = if ch == '@' {
+            kind = if (ch.is_alphabetic() || ch == '_' || ch == '$')
+                && !matches!(&text[start..at], "true" | "false" | "null")
+                && !text[at..].trim_start().starts_with([':', '=']) {
                 Kind::Reference
             } else {
                 Kind::Atom
@@ -187,9 +189,9 @@ mod tests {
     use super::*;
     #[test]
     fn preserves_comments_references_and_multiline_bytes() {
-        let text = "// config\nversion='v1'\nobj:{rev:@version; list:[1,2]} # tail\nraw:\"\"\"a\n  b\n\"\"\"\nquoted: \"@version\"\n";
+        let text = "// config\nversion='v1'\nobj:{rev:version; list:[1,2]} # tail\nraw:\"\"\"a\n  b\n\"\"\"\nquoted: \"@version\"\n";
         let result = format(text).unwrap();
-        assert!(result.contains("rev: @version"));
+        assert!(result.contains("rev: version"));
         assert!(result.contains("\"\"\"a\n  b\n\"\"\""));
         let significant = |s: &str| {
             tokens(s)

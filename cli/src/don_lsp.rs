@@ -221,7 +221,7 @@ pub fn hover_or_definition(text: &str, position: &Value, uri: &str, definition: 
         .into_iter()
         .find(|t| t.kind == Kind::Reference && t.start <= at && at <= t.end)
     {
-        let target: Vec<_> = text[token.start + 1..token.end]
+        let target: Vec<_> = text[token.start..token.end]
             .split('.')
             .map(str::to_owned)
             .collect();
@@ -229,7 +229,7 @@ pub fn hover_or_definition(text: &str, position: &Value, uri: &str, definition: 
             return if definition {
                 json!({"uri":uri,"range":span(text,entry.start,entry.end)})
             } else {
-                json!({"contents":{"kind":"plaintext","value":format!("@{}: {}",target.join("."),entry.symbol["detail"].as_str().unwrap_or(""))}})
+                json!({"contents":{"kind":"plaintext","value":format!("{}: {}",target.join("."),entry.symbol["detail"].as_str().unwrap_or(""))}})
             };
         }
     }
@@ -250,9 +250,9 @@ pub fn completion(text: &str, position: &Value) -> Value {
         .rsplit(|c: char| c.is_whitespace() || "{}[]:=,;\"'".contains(c))
         .next()
         .unwrap_or("");
-    if fragment.starts_with('@') {
+    if !fragment.is_empty() {
         if let Some((_, entries)) = outline(text) {
-            let typed = &fragment[1..];
+            let typed = fragment;
             let start = at - typed.len();
             let items: Vec<_> = entries.iter().filter(|e| e.path.iter().all(|p| {
                 let mut chars = p.chars();
@@ -260,7 +260,7 @@ pub fn completion(text: &str, position: &Value) -> Value {
                     && chars.all(|c| c.is_alphanumeric() || "_-$".contains(c))
             }) && e.path.join(".").starts_with(typed)).map(|entry| {
                 let label = entry.path.join(".");
-                json!({"label":format!("@{label}"),"kind":10,"textEdit":{"range":span(text,start,at),"newText":label}})
+                json!({"label":label,"kind":10,"textEdit":{"range":span(text,start,at),"newText":label}})
             }).collect();
             return json!({"isIncomplete":false,"items":items});
         }

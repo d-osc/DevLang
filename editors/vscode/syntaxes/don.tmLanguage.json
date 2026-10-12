@@ -12,10 +12,6 @@
       "include": "#strings"
     },
     {
-      "name": "variable.other.reference.don",
-      "match": "@[\\p{L}_$][\\p{L}\\p{N}_$-]*(?:\\.[\\p{L}_$][\\p{L}\\p{N}_$-]*)*"
-    },
-    {
       "name": "constant.language.don",
       "match": "\\b(?:true|false|null)\\b"
     },
@@ -99,7 +95,7 @@
             },
             {
               "name": "variable.other.reference.don",
-              "match": "\\$\\{\\s*@?[\\p{L}_$][\\p{L}\\p{N}_$-]*(?:\\.[\\p{L}\\p{N}_$-]+)*\\s*\\}"
+              "match": "\\$\\{\\s*[\\p{L}_$][\\p{L}\\p{N}_$-]*(?:\\.[\\p{L}\\p{N}_$-]+)*\\s*\\}"
             }
           ]
         },

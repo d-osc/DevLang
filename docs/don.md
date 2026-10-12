@@ -3,7 +3,7 @@
 DON is a data format for DevLang, with the `.don` extension. It stores JSON-compatible
 objects, arrays, strings, booleans, null and decimal numbers. It does not execute
 DevLang, expand environment variables, fetch imports or evaluate expressions.
-It supports explicit `@key` references to values in the same document.
+It supports bare `key` references to values in the same document.
 
 ```don
 # package.don
@@ -60,16 +60,16 @@ package: { name: 'my_app', entry: 'src/main.dev', modules: 'src' }
 dependencies: {
   utils: {
     git: 'https://github.com/example/utils.git'
-    tag: @version
+    tag: version
   }
 }
 ```
 
-`@version` references a root key. `@server.port` follows object fields from the
+`version` references a root key. `server.port` follows object fields from the
 root. Each path segment must be a bare identifier; quoted keys/array indices are
 not supported in reference paths. Forward references are supported. Values retain
 their types, including numbers, booleans, arrays and objects, and are copied into
-the result. `'@version'` remains a literal string; `tag: version` is invalid.
+the result. `'@version'` remains a literal string; `tag: version` copies the value.
 Missing targets and direct/indirect cycles are errors. Reference expansion has
 an 8 MiB data budget and a 128-level traversal limit to reject expansion bombs.
 Serialization and `d pkg add/remove` write resolved values, not original references.
@@ -193,8 +193,7 @@ summary: "${name}: ${age}"
 literal: "\${name}"
 ```
 
-`+` concatenates strings only. References may be bare (`name`) or explicit
-(`@name`). Double-quoted interpolation accepts root-relative paths such as
+`+` concatenates strings only. References use bare names (`name`); the old `@name` syntax is rejected. Double-quoted interpolation accepts root-relative paths such as
 `${user.name}` and converts scalar values to text. Single quotes and triple
 quotes remain literal. `\${...}` escapes a placeholder. Forward references
 work; missing names, cycles, non-string concatenation and expansion over 8 MiB
