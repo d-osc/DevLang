@@ -354,7 +354,8 @@
     "sections": [
       "DON-style object literals and member access",
       "API",
-      "Data and ownership"
+      "Data and ownership",
+      "Native builds"
     ],
     "name": "std/json",
     "description": "JSON values, object literals และ typed accessors",

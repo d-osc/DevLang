@@ -3,6 +3,7 @@ use dev_syntax::{ast, parser};
 mod callbacks;
 pub mod codegen;
 mod collections;
+mod dynamic;
 pub mod program;
 mod tasks;
 

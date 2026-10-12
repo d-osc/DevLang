@@ -136,9 +136,6 @@ fn diagnostics_with_documents(uri: &str, doc: &Document, documents: &HashMap<Str
 }
 
 fn semantic_diagnostics(uri: &str, doc: &Document, module: &Module, documents: &HashMap<String, Document>) -> Vec<Value> {
-    // JSON is currently runtime-only: the native frontend cannot resolve it.
-    // Do not mislabel valid runtime code as a native compiler error.
-    if module.imports.iter().any(|i| matches!(i.path.as_str(), "std/json" | "std/don")) { return vec![]; }
     let entry = path(uri);
     let entry = entry.canonicalize().unwrap_or(entry);
     let mut sources: HashMap<PathBuf, String> = documents.iter().filter(|(uri, doc)| !is_don(uri,doc)).map(|(uri, document)| {
@@ -226,6 +223,12 @@ mod unused_tests {
         assert!(items.iter().any(|d| d["code"] == "semantic-error" && d["severity"] == 1 && d["range"]["start"]["line"] == 1));
         let fixed = Document {text: doc.text.replace("\"wrong\"", "18"), version: 2, language: "devlang".into()};
         assert_eq!(diagnostics("file:///test.dev", &fixed)["params"]["diagnostics"], json!([]));
+    }
+    #[test]
+    fn objects_do_not_hide_unrelated_semantic_errors() {
+        let doc=Document {text:"let user={name:'Dev'}\nlet wrong:i64=\"text\"\nprint(user.name)".into(),version:1,language:"devlang".into()};
+        let result=diagnostics("file:///objects.dev",&doc);
+        assert!(result["params"]["diagnostics"].as_array().unwrap().iter().any(|d| d["code"]=="semantic-error" && d["message"].as_str().unwrap().contains("expected i64")));
     }
     #[test]
     fn valid_runtime_json_is_not_flagged_as_native_error() {

@@ -2,7 +2,7 @@
 
 Dev Object Notation พร้อม references และ object access
 
-[กลับหน้ารวม module](index.md) · **โหมด:** ใช้ d run หรือ d FILE.dev ได้โดยไม่ต้องมี C compiler; native build ใช้ API นี้ไม่ได้
+[กลับหน้ารวม module](index.md) · **โหมด:** Source runtime builtin; native รองรับ stringify/toJSON/fromJSON และ object access แต่ parse/valid ยังต้องใช้ runtime
 
 ## การ import และเรียกใช้งาน
 

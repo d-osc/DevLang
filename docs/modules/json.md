@@ -2,7 +2,7 @@
 
 JSON values, object literals และ typed accessors
 
-[กลับหน้ารวม module](index.md) · **โหมด:** ใช้ d run หรือ d FILE.dev ได้โดยไม่ต้องมี C compiler; native build ใช้ API นี้ไม่ได้
+[กลับหน้ารวม module](index.md) · **โหมด:** Source runtime และ hosted native builtin (C11); ข้อจำกัดด้าน strings/ownership ดู Native builds ด้านล่าง
 
 ## การ import และเรียกใช้งาน
 
@@ -56,10 +56,10 @@ d examples/modules-api/json/main.dev --engine ast
 
 ## พฤติกรรม, errors และข้อจำกัด
 
-`use "std/json"` provides managed JSON values without a C library or compiler.
-This is a new source-runtime API, available after building the current repository.
-The existing v0.4.0 installers do not include it. Native `d check`/`d build` do not
-implement this module; native JSON bindings remain separate future work.
+`use "std/json"` provides JSON values in the source runtime and hosted native
+compiler. Native data support is available in source builds after v0.5.1;
+existing v0.5.1 release installers predate it. Source execution requires no C
+compiler. Native builds require a C11 backend such as Clang/GCC.
 
 ```dev
 use "std/json"
@@ -108,11 +108,12 @@ These reads also work on parsed JSON. Missing keys and invalid indices are error
 Member assignment can insert keys or change their type; compound assignment
 requires an existing compatible scalar. Nested parents must already exist and
 array indices must be in bounds. Index expressions run once per assignment.
-Updates preserve other copies of the original object and clone the JSON tree;
+Updates preserve other copies of the original object. Source execution clones
+the JSON tree; native execution shares immutable nodes and copies the update path;
 this is not an in-place shared mutable object or a constant-time update.
 Assignment currently requires a local JSON root (for example `user.address.city`);
 extract JSON held inside a struct/Vec, update it, then assign it back.
-Object syntax currently runs in the source runtime; native compilation is unsupported.
+The same notation and member operations now work in hosted native builds.
 See `examples/json/literals.dev` for a complete program.
 
 ## API
@@ -179,6 +180,35 @@ appropriate. These APIs do not provide application schema validation.
 Validation: `python scripts/smoke_json.py --runtime target/release/devrun.exe`
 exercises both engines with no compiler in PATH, including malformed input,
 Unicode, exact large numbers, copies, typed values, tasks and bounds/type errors.
+
+## Native builds
+
+```sh
+cargo build --workspace --release --locked
+./target/release/d run examples/json/literals.dev
+./target/release/d build examples/json/literals.dev --release -o out/objects
+./out/objects
+```
+
+On Windows use `d.exe` and `out/objects.exe`. `std/json` is a compiler builtin
+for hosted native builds; no external C library or module mapping is required.
+The documented constructors, parse/valid, accessors, queries, keys, persistent
+updates, value/stringify/pretty are supported. Structs, fixed arrays, Vec, Slice,
+str-keyed Map and nonrecursive Ref values can be encoded. Dynamic scalar reads
+retain the language's numeric type rules: use an explicit `as i32` to narrow an
+i64 field; `json.get`/`json.at` remain boxed and require typed accessors.
+
+Native nodes and generated strings are retained until process exit. Repeated
+construction/updates can grow memory; this backend currently has no garbage
+collector. Native strings follow the C null-terminated representation; embedded
+NUL data requires the source runtime (native JSON parse reports an error rather
+than truncating it). Float serialization uses `%.17g`, so text can differ from
+Rust's shortest-number formatting. Native DON encoding quotes non-ASCII keys
+conservatively. Recursive Ref encoding and runtime intrinsic function values
+require source execution; native calls can be wrapped in ordinary Dev functions.
+`don.stringify` and `don.toJSON` work natively, but `don.parse`/`don.valid` still
+require the source runtime. `.dev` literals use lexical variables rather than
+DON document-root/forward references.
 
 ## แหล่งอ้างอิงและการตรวจ
 

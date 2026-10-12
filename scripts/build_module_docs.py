@@ -96,6 +96,10 @@ def generate():
                   'ใช้ d run หรือ d FILE.dev ได้โดยไม่ต้องมี C compiler; native build ใช้ API นี้ไม่ได้')
         if key in ('io', 'time', 'strings'):
             status = 'Source runtime builtin; native stdlib มีชื่อเดียวกันแต่ API/ownership ต่างกัน ดู [native counterpart](native-' + key + '.md)'
+        if key == 'json':
+            status = 'Source runtime และ hosted native builtin (C11); ข้อจำกัดด้าน strings/ownership ดู Native builds ด้านล่าง'
+        if key == 'don':
+            status = 'Source runtime builtin; native รองรับ stringify/toJSON/fromJSON และ object access แต่ parse/valid ยังต้องใช้ runtime'
         if key == 'args':
             status = 'Source runtime builtin; ไม่มี native stdlib binding สำหรับ std/args'
         text = f'# {name}' + (' — Native' if native else '') + f'\n\n{item["description"]}\n\n'

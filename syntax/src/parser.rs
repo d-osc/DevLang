@@ -10,6 +10,7 @@ pub fn parse(path: PathBuf, source: &str) -> Result<Module, String> {
         path,
         constraints: vec![],
         object_literals: false,
+        array_newline_end: false,
         annotations: vec![],
     }
     .module()
@@ -24,6 +25,7 @@ pub fn type_annotations(path: PathBuf, source: &str) -> Result<Vec<(Span, Span)>
         path,
         constraints: vec![],
         object_literals: false,
+        array_newline_end: false,
         annotations: vec![],
     };
     parser.module()?;
@@ -33,6 +35,7 @@ pub fn type_annotations(path: PathBuf, source: &str) -> Result<Vec<(Span, Span)>
 struct Parser {
     annotations: Vec<(Span, Span)>,
     object_literals: bool,
+    array_newline_end: bool,
     constraints: Vec<(String, Vec<String>)>,
     tokens: Vec<Token>,
     at: usize,
@@ -102,6 +105,7 @@ impl Parser {
             Token {
                 kind: Kind::Word(s),
                 span,
+                ..
             } => {
                 if [
                     "fn", "let", "return", "if", "else", "while", "break", "continue", "use", "as",
@@ -781,6 +785,17 @@ impl Parser {
             Ok(Stmt::Expr(target))
         }
     }
+    fn expression_arguments(&mut self) -> Result<Vec<Expr>,String> {
+        let saved = self.array_newline_end;
+        self.array_newline_end = false;
+        let mut args = vec![];
+        while !self.eat(")") {
+            args.push(self.expr(0)?);
+            if !self.eat(",") { self.expect(")")?;break; }
+        }
+        self.array_newline_end = saved;
+        Ok(args)
+    }
     fn expr(&mut self, min: u8) -> Result<Expr, String> {
         let token = self.bump();
         let span = token.span;
@@ -806,6 +821,7 @@ impl Parser {
                     })?;
                     for token in &mut tokens {
                         token.span.line = span.line;
+                        token.end_line = span.line;
                         token.span.col += span.col + offset - 1;
                     }
                     let mut inner = Parser {
@@ -814,6 +830,7 @@ impl Parser {
                         path: self.path.clone(),
                         constraints: vec![],
                         object_literals: false,
+                        array_newline_end: false,
                         annotations: vec![],
                     };
                     arguments.push(inner.expr(0)?);
@@ -874,12 +891,14 @@ impl Parser {
                 span,
             },
             Kind::Symbol(s) if s == "(" => {
+                let saved = self.array_newline_end; self.array_newline_end = false;
                 let e = self.expr(0)?;
-                self.expect(")")?;
+                self.expect(")")?; self.array_newline_end = saved;
                 e
             }
             Kind::Symbol(s) if s == "{" => {
                 self.object_literals = true;
+                let saved = self.array_newline_end; self.array_newline_end = false;
                 self.separators();
                 let mut fields = vec![];
                 while !self.eat("}") {
@@ -897,10 +916,11 @@ impl Parser {
                     self.separators();
                     if self.eat(",") { self.separators(); }
                     else if self.eat("}") { break; }
-                    else if !separated && self.token().span.line <= self.tokens[self.at-1].span.line {
+                    else if !separated && self.token().span.line <= self.tokens[self.at-1].end_line {
                         return self.fail("expected comma, semicolon or newline between object fields");
                     }
                 }
+                self.array_newline_end = saved;
                 Expr {
                     kind: ExprKind::Object(
                         Type::Named(vec!["$json".into(), "Value".into()], vec![]),
@@ -910,14 +930,16 @@ impl Parser {
                 }
             }
             Kind::Symbol(s) if s == "[" => {
+                let saved = self.array_newline_end; self.array_newline_end = true;
                 let mut values = Vec::new();
                 while !self.eat("]") {
                     values.push(self.expr(0)?);
-                    let previous_line = self.tokens[self.at-1].span.line;
+                    let previous_line = self.tokens[self.at-1].end_line;
                     if self.eat(",") || self.eat(";") { self.separators(); }
                     else if self.eat("]") { break; }
                     else if self.token().span.line <= previous_line { return self.fail("expected comma, semicolon or newline between array elements"); }
                 }
+                self.array_newline_end = saved;
                 Expr {
                     kind: ExprKind::Array(values),
                     span,
@@ -926,6 +948,7 @@ impl Parser {
             _ => return Err(error(&self.path, span, "expected an expression")),
         };
         loop {
+            if self.array_newline_end && self.token().span.line > self.tokens[self.at-1].end_line { break; }
             if min <= 12
                 && self.is("<")
                 && matches!(left.kind, ExprKind::Name(_))
@@ -940,14 +963,7 @@ impl Parser {
                         variant = Some(self.ident()?);
                     }
                     if self.eat("(") {
-                        let mut args = vec![];
-                        while !self.eat(")") {
-                            args.push(self.expr(0)?);
-                            if !self.eat(",") {
-                                self.expect(")")?;
-                                break;
-                            }
-                        }
+                        let args = self.expression_arguments()?;
                         let ExprKind::Name(mut names) = left.kind else {
                             unreachable!()
                         };
@@ -968,14 +984,7 @@ impl Parser {
             if min <= 12 && self.eat(".") {
                 let field = self.ident()?;
                 if self.eat("(") {
-                    let mut args = vec![];
-                    while !self.eat(")") {
-                        args.push(self.expr(0)?);
-                        if !self.eat(",") {
-                            self.expect(")")?;
-                            break;
-                        }
-                    }
+                    let args = self.expression_arguments()?;
                     left = Expr {
                         kind: ExprKind::Collection(Box::new(left), field, args),
                         span,
@@ -989,14 +998,7 @@ impl Parser {
                 continue;
             }
             if min <= 12 && self.eat("(") {
-                let mut args = Vec::new();
-                while !self.eat(")") {
-                    args.push(self.expr(0)?);
-                    if !self.eat(",") {
-                        self.expect(")")?;
-                        break;
-                    }
-                }
+                let args = self.expression_arguments()?;
                 left = Expr {
                     kind: match left.kind {
                         ExprKind::Name(names) => ExprKind::Call(names, args),
@@ -1007,8 +1009,9 @@ impl Parser {
                 continue;
             }
             if min <= 12 && self.eat("[") {
+                let saved=self.array_newline_end;self.array_newline_end=false;
                 let index = self.expr(0)?;
-                self.expect("]")?;
+                self.expect("]")?;self.array_newline_end=saved;
                 left = Expr {
                     kind: ExprKind::Index(Box::new(left), Box::new(index)),
                     span,

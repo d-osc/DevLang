@@ -542,23 +542,23 @@
       "./target/release/d.exe examples/json/main.dev",
       "# Linux: ./target/release/d examples/json/main.dev"
     ],
-    "notes": "API ใหม่ของ runtime จาก source ล่าสุด ตัวติดตั้ง v0.4.0 เดิมยังไม่มี JSON; ZIP มีเฉพาะตัวอย่าง ต้อง build runtime จาก repository เต็มก่อน สร้างหรือเขียนทับ devlang-json-example.json ใน cwd; native compiler ยังไม่รองรับ std/json"
+    "notes": "API ใหม่ของ runtime จาก source ล่าสุด ตัวติดตั้ง v0.4.0 เดิมยังไม่มี JSON; ZIP มีเฉพาะตัวอย่าง ต้อง build runtime จาก repository เต็มก่อน สร้างหรือเขียนทับ devlang-json-example.json ใน cwd; ตัวอย่างนี้ใช้ runtime I/O; std/json native มีขอบเขตตามคู่มือ"
   },
   {
     "id": "json-literals",
     "title": "DON object literal: user.name และ nested objects",
     "category": "Runtime APIs",
     "path": "examples/json/literals.dev",
-    "description": "Object แบบ DON: single quotes, : หรือ = และ newline; อ่าน/แก้ผ่าน dot/bracket และแปลงเป็น JSON ได้",
+    "description": "DON objects ใช้ได้ทั้ง runtime และ native: single quotes, : หรือ =, newline, nested arrays และ dot/bracket mutation",
     "doc": "json",
-    "mode": "runtime",
+    "mode": "both",
     "commands": [
-      "# จาก repository DevLang เต็มชุด:",
-      "cargo build --release -p dev-runtime -p dev-cli",
+      "cargo build --workspace --release --locked",
       "./target/release/d.exe examples/json/literals.dev",
-      "# Linux: ./target/release/d examples/json/literals.dev"
+      "./target/release/d.exe build examples/json/literals.dev --release -o out/objects.exe",
+      "./out/objects.exe"
     ],
-    "notes": "ใช้ source build ล่าสุดหลัง v0.5.1; dynamic object literals ยังเป็น runtime API"
+    "notes": "ใช้ source build หลัง v0.5.1; native ต้องใช้ C11 backend และเก็บ allocations จนโปรแกรมจบ; DON document parse ยังใช้ runtime"
   },
   {
     "id": "filesystem",

@@ -871,9 +871,15 @@ semicolon separators, single-quoted literal strings, double-quoted interpolation
 triple-quoted multiline strings and block comments. Braces remain required.
 Values are ordinary DevLang expressions referencing lexical variables; they are
 not document-root/forward references as in a `.don` file. Existing JSON-style
-objects and `json.stringify` remain supported for data exchange. Dynamic objects
-still require the source runtime; native builds use structs. Available in source
-after v0.5.1.
+objects and `json.stringify` remain supported for data exchange. These object
+forms now run in both source engines and the hosted native compiler, including
+nested objects, empty/heterogeneous arrays, dot/bracket reads, insertion, member
+assignment, compound assignment, snapshots and passing objects across files.
+Native builds require a C11 backend and retain data allocations until process
+exit; freestanding builds cannot use this allocation-backed representation.
+This change does not embed the DON document parser in native executables:
+`don.parse`/`don.valid`, document-root references and forward references remain
+source-runtime facilities. Available in source builds after v0.5.1.
 
 ## Object literal และ user.name
 

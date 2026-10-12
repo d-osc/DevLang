@@ -404,7 +404,7 @@ impl Expand {
                 }
                 self.constraints(owner, &d.generics, &d.constraints, &args, span)?;
                 let identity = format!("{}:{name}:{args:?}", self.paths[owner].display());
-                let key = format!("dev_t_{:016x}", hash(&identity));
+                let key = if name == "Value" && self.paths[owner].parent().is_some_and(|p| p.ends_with("__devlang_intrinsics__")) && self.paths[owner].file_stem().is_some_and(|n| n == "std_json" || n == "std_don") { if self.paths[owner].file_stem().is_some_and(|n| n=="std_don") { "dev_dynamic_don_value".into() } else { "dev_dynamic_value".into() } } else { format!("dev_t_{:016x}", hash(&identity)) };
                 self.nominals
                     .insert(key.clone(), (owner, name.clone(), args.clone()));
                 if indirect {

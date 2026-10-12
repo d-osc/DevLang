@@ -14,6 +14,7 @@ pub enum Kind {
 pub struct Token {
     pub kind: Kind,
     pub span: Span,
+    pub end_line: usize,
 }
 
 pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
@@ -29,6 +30,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
                 tokens.push(Token {
                     kind: Kind::Newline,
                     span,
+                    end_line: line,
                 });
             }
             i += 1;
@@ -67,6 +69,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
             tokens.push(Token {
                 kind: Kind::Word(chars[start..i].iter().collect()),
                 span,
+                end_line: line,
             });
             continue;
         }
@@ -118,6 +121,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
             tokens.push(Token {
                 kind: Kind::Number(chars[start..i].iter().filter(|c| **c != '_').collect()),
                 span,
+                end_line: line,
             });
             continue;
         }
@@ -132,7 +136,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
                 if i == chars.len() { return Err((span,"unterminated multiline string".into())); }
                 let value = chars[start..i].iter().collect();
                 i += 3; col += 3;
-                tokens.push(Token { kind: Kind::String(value), span });
+                tokens.push(Token { kind: Kind::String(value), span, end_line: line });
                 continue;
             }
             let quote = c;
@@ -224,6 +228,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
                     Kind::Template(parts)
                 },
                 span,
+                end_line: line,
             });
             continue;
         }
@@ -233,6 +238,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
             tokens.push(Token {
                 kind: Kind::Symbol("...".into()),
                 span,
+                end_line: line,
             });
             continue;
         }
@@ -248,6 +254,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
             tokens.push(Token {
                 kind: Kind::Symbol(pair),
                 span,
+                end_line: line,
             });
             continue;
         }
@@ -267,6 +274,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
             tokens.push(Token {
                 kind: Kind::Symbol(c.to_string()),
                 span,
+                end_line: line,
             });
             i += 1;
             col += 1;
@@ -277,6 +285,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
     tokens.push(Token {
         kind: Kind::Eof,
         span: Span { line, col },
+        end_line: line,
     });
     Ok(tokens)
 }

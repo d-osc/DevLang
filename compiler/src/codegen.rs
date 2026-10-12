@@ -3,7 +3,7 @@ use crate::program::{module_name, valid_type, Program};
 use crate::tasks::THREADS;
 use std::collections::HashMap;
 
-pub const TYPES_HEADER: &str = "#ifndef DEV_TYPES_H\n#define DEV_TYPES_H\n#include <stdint.h>\n#include <stddef.h>\n#include <stdbool.h>\n#if defined(__SSE4_1__)\n#define DEV_LOW32_SELECT(narrow, wide) (narrow)\n#else\n#define DEV_LOW32_SELECT(narrow, wide) (wide)\n#endif\n#endif\n";
+pub const TYPES_HEADER: &str = "#ifndef DEV_TYPES_H\n#define DEV_TYPES_H\ntypedef struct dev_dynamic_value { const void *node; unsigned char boxed; unsigned char scalar_type; } dev_dynamic_value;\ntypedef dev_dynamic_value dev_dynamic_don_value;\n#include <stdint.h>\n#include <stddef.h>\n#include <stdbool.h>\n#if defined(__SSE4_1__)\n#define DEV_LOW32_SELECT(narrow, wide) (narrow)\n#else\n#define DEV_LOW32_SELECT(narrow, wide) (wide)\n#endif\n#endif\n";
 pub struct Generated {
     pub name: String,
     pub header: String,
@@ -152,6 +152,7 @@ fn generate_inner(
                     definitions(t, seen, out, registry);
                 }
             }
+            Type::Record(name, _) if name == "dev_dynamic_value" || name == "dev_dynamic_don_value" => {},
             Type::Record(name, fields) => {
                 if !seen.insert(name.clone()) {
                     return;
@@ -226,6 +227,7 @@ fn generate_inner(
     let mut nominal = String::new();
     for module in &program.modules {
         for t in &module.concrete_types {
+            if crate::dynamic::is_dynamic(t) { continue; }
             if matches!(t, Type::Record(..))
                 || matches!(t, Type::Enum(_,v) if v.iter().any(|(_,ts)| !ts.is_empty()))
             {
@@ -276,6 +278,7 @@ fn generate_inner(
             loop_depth: 0,
             uses_print: false,
             uses_templates: false,
+            uses_dynamic: false,
             uses_refs: false,
             unsafe_depth: 0,
             uses_checks: false,
@@ -295,6 +298,7 @@ fn generate_inner(
         };
         let mut functions = String::new();
         for f in &module.functions {
+            if crate::dynamic::native_module(&module.path) { continue; }
             let Some(body) = &f.body else {
                 continue;
             };
@@ -349,6 +353,7 @@ fn generate_inner(
         } else if !module.statements.is_empty() {
             return Err(error(&module.path,Span{line:1,col:1},"imported modules contain declarations only; call their functions from the entry file"));
         }
+        if emitter.uses_dynamic { source.push_str(include_str!("dynamic.c")); }
         if emitter.uses_templates { source.push_str(INTERPOLATION_HELPERS); }
         if emitter.uses_print {
             source.push_str("#include <stdio.h>\n");
@@ -404,8 +409,8 @@ fn returns(body: &[Stmt]) -> bool {
 }
 #[derive(Clone)]
 pub(crate) struct Variable {
-    name: String,
-    ty: Type,
+    pub(crate) name: String,
+    pub(crate) ty: Type,
 }
 pub(crate) struct Value {
     pub(crate) code: String,
@@ -421,6 +426,7 @@ pub(crate) struct Emitter<'a> {
     pub(crate) loop_depth: usize,
     pub(crate) uses_print: bool,
     uses_templates: bool,
+    pub(crate) uses_dynamic: bool,
     pub(crate) uses_refs: bool,
     pub(crate) unsafe_depth: usize,
     pub(crate) uses_checks: bool,
@@ -436,7 +442,7 @@ pub(crate) struct Emitter<'a> {
     pub(crate) context_callback_types: HashMap<String, Type>,
     pub(crate) writing: bool,
     pub(crate) hosted: bool,
-    diagnostics: Option<&'a mut Vec<String>>,
+    pub(crate) diagnostics: Option<&'a mut Vec<String>>,
 }
 impl Emitter<'_> {
     pub(crate) fn location(&self, span: Span) -> String {
@@ -474,7 +480,7 @@ impl Emitter<'_> {
             )
         }
     }
-    fn variable(&self, name: &str) -> Option<&Variable> {
+    pub(crate) fn variable(&self, name: &str) -> Option<&Variable> {
         self.scopes.iter().rev().find_map(|scope| scope.get(name))
     }
     pub(crate) fn helper(&mut self, t: &Type, retain: bool) -> String {
@@ -809,6 +815,7 @@ impl Emitter<'_> {
                 Ok(format!("{decl} = {};\n{retain}", v.code))
             }
             Stmt::Assign { target, op, value } => {
+                if let Some(result) = self.dynamic_assignment(target, op, value)? { return Ok(result); }
                 self.writing = true;
                 let t_result = self.expr(target, None);
                 self.writing = false;
@@ -942,6 +949,14 @@ impl Emitter<'_> {
         }
     }
     pub(crate) fn expr(&mut self, expr: &Expr, expected: Option<&Type>) -> Result<Value, String> {
+        let value = self.expr_inner(expr, expected.filter(|t| !crate::dynamic::is_dynamic(t)))?;
+        if let Some(t) = expected {
+            if crate::dynamic::is_dynamic(t) && crate::dynamic::is_dynamic(&value.ty) { self.uses_dynamic = true; return Ok(Value {code:format!("dev_dynamic_require_boxed({}, {})",value.code,self.location(expr.span)), ..value}); }
+            if crate::dynamic::is_dynamic(&value.ty) { return self.dynamic_coerce(value, t, expr.span); }
+        }
+        Ok(value)
+    }
+    fn expr_inner(&mut self, expr: &Expr, expected: Option<&Type>) -> Result<Value, String> {
         let mut lvalue = false;
         let (code, ty) = match &expr.kind {
             ExprKind::SizeOf(t) => {
@@ -957,6 +972,8 @@ impl Emitter<'_> {
             }
             ExprKind::Closure(..) => unreachable!("unexpanded closure"),
             ExprKind::Callable(names, context, ty) => {
+                let owner=if names.len()==1 {self.module} else {*self.program.aliases[self.module].get(&names[0]).unwrap_or(&self.module)};
+                if self.diagnostics.is_none() && crate::dynamic::native_module(&self.program.modules[owner].path) { return self.fail(expr.span,"wrap native data intrinsics in an ordinary Dev function before taking a function value"); }
                 let signature = self.program.resolve(self.module, names, expr.span)?.clone();
                 let Type::Function(ps, r) = ty else {
                     unreachable!()
@@ -1037,9 +1054,7 @@ impl Emitter<'_> {
                     lvalue: false,
                 }));
             }
-            ExprKind::Object(..) => {
-                return Err("DON object literals currently require the source runtime".into())
-            }
+            ExprKind::Object(ty, fields) => return self.dynamic_object(ty, fields, expr.span),
             ExprKind::Map(t) => return self.map_constructor(t, expr.span),
             ExprKind::Vector(t, args) => return self.vector(t, args, expr.span),
             ExprKind::Collection(base, op, args) => {
@@ -1082,6 +1097,7 @@ impl Emitter<'_> {
             }
             ExprKind::GenericCall(..) => return self.fail(expr.span, "unresolved generic call"),
             ExprKind::Record(ty, args) => {
+                if crate::dynamic::is_dynamic(ty) { return self.fail(expr.span,"use json.object/array/null_value instead of constructing the opaque Value type"); }
                 let Type::Record(_, fields) = ty else {
                     unreachable!()
                 };
@@ -1177,6 +1193,7 @@ impl Emitter<'_> {
             }
             ExprKind::Field(base, name) => {
                 let v = self.expr(base, None)?;
+                if crate::dynamic::is_dynamic(&v.ty) { return self.dynamic_field(v, name, expr.span); }
                 let Type::Record(_, fields) = &v.ty else {
                     return self.fail(expr.span, "field access requires a struct");
                 };
@@ -1317,6 +1334,7 @@ impl Emitter<'_> {
                         expected
                     },
                 )?;
+                if crate::dynamic::is_dynamic(&v.ty) && ["!", "-", "+", "~"].contains(&op.as_str()) { return self.dynamic_unary(op, v, expr.span); }
                 match op.as_str() {
                     "&" if v.lvalue && !matches!(v.ty, Type::Array(..)) => (
                         format!("(&{})", v.code),
@@ -1414,12 +1432,13 @@ impl Emitter<'_> {
                 } else {
                     let a = self.expr(left, context)?;
                     left_prefix = std::mem::take(&mut self.prelude);
-                    let right_type = if matches!(a.ty, Type::Ptr(_)) && (op == "+" || op == "-") {
+                    let right_type = if crate::dynamic::is_dynamic(&a.ty) || matches!(a.ty, Type::Ptr(_)) && (op == "+" || op == "-") {
                         None
                     } else {
                         Some(&a.ty)
                     };
-                    let b = self.expr(right, right_type)?;
+                    let wide=if crate::dynamic::is_dynamic(&a.ty) {crate::dynamic::wide_literal(right)} else {None};
+                    let b = self.expr(right, wide.as_ref().or(right_type))?;
                     (a, b)
                 };
                 let right_prefix = std::mem::take(&mut self.prelude);
@@ -1436,6 +1455,10 @@ impl Emitter<'_> {
                     self.prelude.push_str(&right_prefix);
                     self.prelude.push_str(&format!("const char *{second} = {};\n", b.code));
                     return Ok(Value { code: format!("dev_interpolate(\"%s%s\", {first}, {second})"), ty: Type::Str, lvalue: false });
+                }
+                if crate::dynamic::is_dynamic(&a.ty) || crate::dynamic::is_dynamic(&b.ty) {
+                    self.prelude.push_str(&left_prefix); let a = self.dynamic_save(a);
+                    self.prelude.push_str(&right_prefix); return self.dynamic_binary(op, a, b, literal(right), expr.span);
                 }
                 self.prelude.push_str(&left_prefix);
                 self.prelude.push_str(&right_prefix);
@@ -1538,6 +1561,7 @@ impl Emitter<'_> {
                 valid_type(ty, false)
                     .map_err(|e| error(&self.program.modules[self.module].path, expr.span, e))?;
                 let v = self.expr(inner, None)?;
+                if crate::dynamic::is_dynamic(&v.ty) { return self.dynamic_cast(v, ty, expr.span); }
                 if matches!(&v.ty, Type::Enum(_,vs) if vs.iter().any(|(_,ts)| !ts.is_empty())) {
                     return self.fail(expr.span, "payload enums cannot be cast to integers");
                 }
@@ -1603,6 +1627,7 @@ impl Emitter<'_> {
             }
             ExprKind::Index(inner, index) => {
                 let v = self.expr(inner, None)?;
+                if crate::dynamic::is_dynamic(&v.ty) { let v = self.dynamic_save(v); let i = self.expr(index, None)?; return self.dynamic_index(v, i, expr.span); }
                 let i = self.expr(index, None)?;
                 if let Type::Vector(t) | Type::Slice(t) = &v.ty {
                     if !i.ty.integer() {
@@ -1756,6 +1781,7 @@ impl Emitter<'_> {
         Ok(format!("((uint32_t)({}))", value.code))
     }
     fn call(&mut self, names: &[String], args: &[Expr], span: Span) -> Result<Value, String> {
+        if let Some(value) = self.dynamic_call(names, args, span)? { return Ok(value); }
         if names == ["$interpolate"] {
             if !self.hosted { return self.fail(span, "string interpolation requires hosted allocation and formatting"); }
             self.uses_templates = true;
@@ -1768,6 +1794,7 @@ impl Emitter<'_> {
                 self.next_var += 1;
                 self.prelude.push_str(&format!("{} = {};\n", declaration(&value.ty, &temporary), value.code));
                 let (spec, code) = match value.ty {
+                    ref t if crate::dynamic::is_dynamic(t) => { self.uses_dynamic = true; ("%s", format!("dev_dynamic_text({temporary}, false, {})",self.location(arg.span))) },
                     Type::Str => ("%s", temporary),
                     Type::Bool => ("%s", format!("({temporary} ? \"true\" : \"false\")")),
                     Type::Int { signed: true, .. } | Type::Size { signed: true } => ("%lld", format!("(long long){temporary}")),
@@ -1793,6 +1820,7 @@ impl Emitter<'_> {
                     let v = self.expr(&args[0], None)?;
                     self.uses_print = true;
                     let code = match v.ty {
+                        ref t if crate::dynamic::is_dynamic(t) => { self.uses_dynamic = true; format!("((void)puts(dev_dynamic_text({}, true, {})))", v.code,self.location(span)) },
                         Type::Str => format!("((void)printf(\"%s\\n\", {}))", v.code),
                         Type::Bool => format!("((void)puts({} ? \"true\" : \"false\"))", v.code),
                         Type::Enum(ref n, _) => format!("((void)puts({n}_name({})))", v.code),

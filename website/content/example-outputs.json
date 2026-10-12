@@ -186,12 +186,12 @@
   },
   "json": {
     "source_sha256": "0776017c66f76b4b231cfe7b5554caf77d5ddc44d138f47c46b9622d46620d3a",
-    "validation_sha256": "45aece56f81680460cfbb157f27be24ba32dc5c1e751ccd30f3b02afad4d8ef3",
+    "validation_sha256": "1787ca1818e39c9ef9264eae05f1663fb0fcf5e58138a2abe1a9fe23eda07756",
     "output": "true\nDev\n18\ntrue\n19\n23\ntrue\nfalse\n18\n21\n{\"empty\":null,\"items\":[42],\"user\":{\"age\":21,\"name\":\"Dev\"}}\nobject\nempty\nitems\nuser\n2\n1.5\n18446744073709551615\n{\"items\":[42],\"user\":{\"age\":21,\"name\":\"Dev\"}}\n"
   },
   "json-literals": {
     "source_sha256": "cacf3874b1d817b9a5c95461e467446979a8f41892e8671b8392c8bbd14dcf9a",
-    "validation_sha256": "95a14d02b5f174ed8b1cde07d65cd47d8cbf98f9a1954d5904e84a6a70bb374c",
+    "validation_sha256": "1ad6f4612a40e2e0b257b447a6b4adfff4274d0a7a819fb210a9c28eab9c5067",
     "output": "Dev\n19\nChiang Mai\nDevLang user\n18\n{\"active\":true,\"address\":{\"city\":\"Chiang Mai\"},\"age\":19,\"display-name\":\"DevLang user\",\"name\":\"Dev\",\"tags\":[\"developer\",100,true,null]}\n"
   },
   "filesystem": {

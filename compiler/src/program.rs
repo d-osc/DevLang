@@ -189,9 +189,10 @@ impl Program {
                 return Err(error(&path, import.span, "duplicate module alias"));
             }
             // Editor overlays may check runtime intrinsics using shared signatures.
-            // Native builds have no overlays and still require real native modules.
-            if !sources.is_empty() {
-                if let Some(source) = dev_syntax::intrinsics::editor_module(&import.path) {
+            // JSON/DON values use the hosted native data backend. Other runtime
+            // modules are virtual only for editor checks.
+            if !sources.is_empty() || matches!(import.path.as_str(), "std/json" | "std/don") {
+                if let Some(source) = if matches!(import.path.as_str(), "std/json" | "std/don") { Some(crate::dynamic::NATIVE_SIGNATURES) } else { dev_syntax::intrinsics::editor_module(&import.path) } {
                     let virtual_path = PathBuf::from("__devlang_intrinsics__").join(format!("{}.dev", import.path.replace('/', "_")));
                     let mut overlays = sources.clone();
                     overlays.insert(virtual_path.clone(), source.into());
