@@ -11,6 +11,7 @@ pub fn parse(text: &str) -> Result<Value, String> {
         at: 0,
         path: Vec::new(),
         refs: HashMap::new(),
+        escaped_dollars: Vec::new(),
     };
     p.space()?;
     if p.peek().is_none() {
@@ -32,7 +33,13 @@ pub fn parse(text: &str) -> Result<Value, String> {
     }
 }
 
-type References = HashMap<Vec<String>, (Vec<String>, String)>;
+#[derive(Clone)]
+enum Part {
+    Literal(Value),
+    Reference(Vec<String>),
+    Interpolation(Vec<String>),
+}
+type References = HashMap<Vec<String>, (Vec<Part>, String)>;
 fn resolve(root: &Value, refs: &References) -> Result<Value, String> {
     fn visit(
         root: &Value,
@@ -49,9 +56,44 @@ fn resolve(root: &Value, refs: &References) -> Result<Value, String> {
             return Err(format!("DON cyclic reference at {}", path.join(".")));
         }
         active.push(path.clone());
-        if let Some((target, location)) = refs.get(path) {
-            let result = visit(root, refs, &mut target.clone(), active, depth + 1, budget)
-                .map_err(|e| format!("{location}: {e}"));
+        if let Some((parts, location)) = refs.get(path) {
+            let result = (|| {
+                let mut values = Vec::new();
+                for part in parts {
+                    values.push(match part {
+                        Part::Literal(value) => value.clone(),
+                        Part::Reference(target) => {
+                            visit(root, refs, &mut target.clone(), active, depth + 1, budget)?
+                        }
+                        Part::Interpolation(target) => {
+                            let value =
+                                visit(root, refs, &mut target.clone(), active, depth + 1, budget)?;
+                            Value::String(match value {
+                                Value::String(s) => s,
+                                Value::Number(n) => n.to_string(),
+                                Value::Bool(b) => b.to_string(),
+                                Value::Null => "null".into(),
+                                _ => return Err("DON interpolation requires a scalar value".into()),
+                            })
+                        }
+                    });
+                }
+                if values.len() == 1 {
+                    return Ok(values.remove(0));
+                }
+                let mut text = String::new();
+                for value in values {
+                    let Value::String(piece) = value else {
+                        return Err("DON string concatenation requires string operands".into());
+                    };
+                    *budget = budget
+                        .checked_sub(piece.len())
+                        .ok_or("DON resolved data exceeds 8 MiB expansion budget")?;
+                    text.push_str(&piece);
+                }
+                Ok(Value::String(text))
+            })()
+            .map_err(|e: String| format!("{location}: {e}"));
             active.pop();
             return result;
         }
@@ -145,6 +187,9 @@ pub fn stringify(value: &Value) -> Result<String, String> {
                     .collect::<Result<Vec<_>, String>>()?;
                 format!("[\n{}\n{closing}]", rows.join("\n"))
             }
+            Value::String(text) => serde_json::to_string(text)
+                .map_err(|e| e.to_string())?
+                .replace("${", "\\${"),
             _ => serde_json::to_string(value).map_err(|e| e.to_string())?,
         })
     }
@@ -156,6 +201,7 @@ struct Parser<'a> {
     at: usize,
     path: Vec<String>,
     refs: References,
+    escaped_dollars: Vec<usize>,
 }
 impl Parser<'_> {
     fn peek(&self) -> Option<char> {
@@ -238,6 +284,7 @@ impl Parser<'_> {
         Ok(result)
     }
     fn string(&mut self) -> Result<String, String> {
+        self.escaped_dollars.clear();
         let quote = self.bump().unwrap();
         let start = self.at;
         if quote == '"' && self.text[start..].starts_with("\"\"") {
@@ -254,6 +301,10 @@ impl Parser<'_> {
             match self.bump() {
                 Some(c) if c == quote => return Ok(result),
                 Some('\\') => match self.bump() {
+                    Some('$') => {
+                        self.escaped_dollars.push(result.len());
+                        result.push('$');
+                    }
                     Some('n') => result.push('\n'),
                     Some('r') => result.push('\r'),
                     Some('t') => result.push('\t'),
@@ -344,6 +395,42 @@ impl Parser<'_> {
         Ok(Value::Object(map))
     }
     fn value(&mut self, depth: usize) -> Result<Value, String> {
+        let first = self.atom(depth)?;
+        let mut parts = self
+            .refs
+            .remove(&self.path)
+            .map(|(p, _)| p)
+            .unwrap_or_else(|| vec![Part::Literal(first.clone())]);
+        let mut joined = false;
+        loop {
+            let saved = self.at;
+            self.space()?;
+            if self.peek() != Some('+') {
+                self.at = saved;
+                break;
+            }
+            joined = true;
+            self.bump();
+            let next = self.atom(depth)?;
+            parts.extend(
+                self.refs
+                    .remove(&self.path)
+                    .map(|(p, _)| p)
+                    .unwrap_or_else(|| vec![Part::Literal(next)]),
+            );
+        }
+        if joined || parts.iter().any(|p| !matches!(p, Part::Literal(_))) {
+            if joined {
+                parts.insert(0, Part::Literal(Value::String(String::new())));
+            }
+            let location = self.fail::<Value>("string expression").unwrap_err();
+            self.refs.insert(self.path.clone(), (parts, location));
+            Ok(Value::Null)
+        } else {
+            Ok(first)
+        }
+    }
+    fn atom(&mut self, depth: usize) -> Result<Value, String> {
         if depth > 128 {
             return self.fail("nesting exceeds 128 levels");
         }
@@ -366,7 +453,8 @@ impl Parser<'_> {
                     }
                     self.bump();
                 }
-                self.refs.insert(self.path.clone(), (target, location));
+                self.refs
+                    .insert(self.path.clone(), (vec![Part::Reference(target)], location));
                 Ok(Value::Null)
             }
             Some('{') => self.object(true, depth),
@@ -387,7 +475,46 @@ impl Parser<'_> {
                 }
                 Ok(Value::Array(values))
             }
-            Some('"' | '\'') => Ok(Value::String(self.string()?)),
+            Some('"' | '\'') => {
+                let interpolate =
+                    self.peek() == Some('"') && !self.text[self.at..].starts_with("\"\"\"");
+                let text = self.string()?;
+                if !interpolate {
+                    return Ok(Value::String(text));
+                }
+                let mut parts = Vec::new();
+                let mut at = 0;
+                let mut tail = 0;
+                while let Some(offset) = text[at..].find("${") {
+                    let begin = at + offset;
+                    if self.escaped_dollars.contains(&begin) {
+                        at = begin + 2;
+                        continue;
+                    }
+                    parts.push(Part::Literal(Value::String(text[tail..begin].into())));
+                    let Some(end) = text[begin + 2..].find('}') else {
+                        return self.fail("unterminated string interpolation");
+                    };
+                    let end = begin + 2 + end;
+                    let name = text[begin + 2..end].trim().trim_start_matches('@');
+                    let path = name.split('.').map(str::to_owned).collect::<Vec<_>>();
+                    if path.iter().any(|p| {
+                        p.is_empty() || !p.chars().all(|c| c.is_alphanumeric() || "_-$".contains(c))
+                    }) {
+                        return self.fail("interpolation expects a reference path");
+                    }
+                    parts.push(Part::Interpolation(path));
+                    at = end + 1;
+                    tail = at;
+                }
+                if parts.is_empty() {
+                    return Ok(Value::String(text));
+                }
+                parts.push(Part::Literal(Value::String(text[tail..].into())));
+                let location = self.fail::<Value>("string interpolation").unwrap_err();
+                self.refs.insert(self.path.clone(), (parts, location));
+                Ok(Value::Null)
+            }
             _ => {
                 let start = self.at;
                 while self
@@ -398,6 +525,15 @@ impl Parser<'_> {
                         || self.text[self.at..].starts_with("/*")
                     {
                         break;
+                    }
+                    if self.peek() == Some('+') {
+                        let numeric = self.text[start..]
+                            .chars()
+                            .next()
+                            .is_some_and(|c| c.is_ascii_digit() || c == '-');
+                        if !numeric || !self.text[..self.at].ends_with(['e', 'E']) {
+                            break;
+                        }
                     }
                     self.bump();
                 }
@@ -415,7 +551,17 @@ impl Parser<'_> {
                             .next()
                             .is_some_and(|c| c.is_ascii_digit() || c == '-')
                         {
-                            return self.fail("strings must be quoted");
+                            let path = token.split('.').map(str::to_owned).collect::<Vec<_>>();
+                            if path.iter().any(|p| {
+                                p.is_empty()
+                                    || !p.chars().all(|c| c.is_alphanumeric() || "_-$".contains(c))
+                            }) {
+                                return self.fail("strings must be quoted");
+                            }
+                            let location = self.fail::<Value>("reference").unwrap_err();
+                            self.refs
+                                .insert(self.path.clone(), (vec![Part::Reference(path)], location));
+                            return Ok(Value::Null);
                         }
                         // Digit separators may only appear between decimal digits.
                         let bytes = token.as_bytes();
@@ -510,5 +656,46 @@ mod tests {
         assert!(parse(&format!("{}0{}", "[".repeat(130), "]".repeat(130))).is_err());
         assert!(parse(&" ".repeat(8 * 1024 * 1024 + 1)).is_err());
         assert!(parse("a:1\nb:").unwrap_err().contains("2:"));
+    }
+}
+
+#[cfg(test)]
+mod string_expression_tests {
+    use super::*;
+    #[test]
+    fn concatenation_interpolation_and_forward_references() {
+        let value = parse(
+            r#"greeting: "Hello " + name + "!"
+message: "${greeting} ${age} ${ready}"
+name: 'Dev'
+age: 18
+ready: true
+literal: "\${name}"
+raw: '${name}'
+"#,
+        )
+        .unwrap();
+        assert_eq!(value["greeting"], "Hello Dev!");
+        assert_eq!(value["message"], "Hello Dev! 18 true");
+        assert_eq!(value["literal"], "${name}");
+        assert_eq!(value["raw"], "${name}");
+        assert_eq!(parse(&stringify(&value).unwrap()).unwrap(), value);
+    }
+    #[test]
+    fn expressions_preserve_error_boundaries() {
+        for text in [
+            r#"a: "${missing}""#,
+            r#"a: "${a}""#,
+            r#"a: 'x'+1"#,
+            r#"a: "${}""#,
+            r#"a: "${name""#,
+            r#"a: "${x}"; x: {}"#,
+        ] {
+            assert!(parse(text).is_err(), "accepted {text}");
+        }
+        assert_eq!(
+            parse(r#"x: {name:'Dev'}; a: "Hi ${x.name}""#).unwrap()["a"],
+            "Hi Dev"
+        );
     }
 }

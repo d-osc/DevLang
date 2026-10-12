@@ -1,0 +1,7 @@
+name: 'Dev'
+prefix: 'Hello '
+message: prefix + name + '!'
+message2: "Hello ${name}!"
+age: 18
+summary: "${name}: ${age}"
+literal: "\${name}"

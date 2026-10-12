@@ -180,3 +180,23 @@ cycles, duplicate keys and invalid escapes are errors, including in untitled
 DON documents. Positions use UTF-16. No generic schema validation, external-file
 references, expression evaluation or rename is provided; the parser reports its
 first error. See [extension instructions](../editors/vscode/README.md).
+
+## String expressions
+
+```don
+name: 'Dev'
+prefix: 'Hello '
+message: prefix + name + '!'
+message2: "Hello ${name}!"
+age: 18
+summary: "${name}: ${age}"
+literal: "\${name}"
+```
+
+`+` concatenates strings only. References may be bare (`name`) or explicit
+(`@name`). Double-quoted interpolation accepts root-relative paths such as
+`${user.name}` and converts scalar values to text. Single quotes and triple
+quotes remain literal. `\${...}` escapes a placeholder. Forward references
+work; missing names, cycles, non-string concatenation and expansion over 8 MiB
+are rejected. DON does not execute DevLang expressions or function calls.
+Available in source builds after v0.5.1.

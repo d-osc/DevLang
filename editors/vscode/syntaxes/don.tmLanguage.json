@@ -30,6 +30,14 @@
     {
       "name": "punctuation.definition.container.don",
       "match": "[{}\\[\\],;]"
+    },
+    {
+      "name": "keyword.operator.don",
+      "match": "\\+"
+    },
+    {
+      "name": "variable.other.reference.don",
+      "match": "[\\p{L}_$][\\p{L}\\p{N}_$-]*(?:\\.[\\p{L}\\p{N}_$-]+)*"
     }
   ],
   "repository": {
@@ -88,6 +96,10 @@
           "patterns": [
             {
               "include": "#escape"
+            },
+            {
+              "name": "variable.other.reference.don",
+              "match": "\\$\\{\\s*@?[\\p{L}_$][\\p{L}\\p{N}_$-]*(?:\\.[\\p{L}\\p{N}_$-]+)*\\s*\\}"
             }
           ]
         },
@@ -105,7 +117,7 @@
     },
     "escape": {
       "name": "constant.character.escape.don",
-      "match": "\\\\(?:[\"\\'\\\\/bfnrt]|u[0-9a-fA-F]{4})"
+      "match": "\\\\(?:[\"\\'\\\\/bfnrt$]|u[0-9a-fA-F]{4})"
     }
   }
 }

@@ -1130,6 +1130,26 @@ dependencies: {
 key ที่ไม่มีอยู่และ reference วนกันจะเกิด error เมื่อ serialize หรือแก้ dependencies จะเขียนค่าที่ resolve แล้ว
 field `version` ชั้นนอกเป็น metadata ของ package และจะตรวจเมื่อ dependency ระบุ SemVer requirement ดู [Workspace และ versions](#/docs/packages)
 
+## String expressions
+
+```don
+name: 'Dev'
+prefix: 'Hello '
+message: prefix + name + '!'
+message2: "Hello ${name}!"
+age: 18
+summary: "${name}: ${age}"
+literal: "\${name}"
+```
+
+`+` concatenates strings only. References may be bare (`name`) or explicit
+(`@name`). Double-quoted interpolation accepts root-relative paths such as
+`${user.name}` and converts scalar values to text. Single quotes and triple
+quotes remain literal. `\${...}` escapes a placeholder. Forward references
+work; missing names, cycles, non-string concatenation and expansion over 8 MiB
+are rejected. DON does not execute DevLang expressions or function calls.
+Available in source builds after v0.5.1.
+
 # [basic-libs] ไลบรารีพื้นฐาน: Math, Random, Strings, Datetime, Test และ Log
 
 ชุดนี้ใช้ผ่าน source runtime และมี signatures ให้ Language Server ตรวจชนิดข้อมูล

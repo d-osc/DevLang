@@ -32,5 +32,8 @@ test('DON grammar colors keys, references, comments, escapes and multiline strin
     const multiline = grammar.tokenizeLine('text: """hello');
     const continuation = grammar.tokenizeLine('@notAReference', multiline.ruleStack);
     assert.ok(continuation.tokens.every(t => t.scopes.includes('string.quoted.triple.don')));
+    assert.ok(tokens('message: "Hello ${name}"').some(t => t.scopes.includes('variable.other.reference.don')));
+    assert.ok(tokens(String.raw`message: "Hello \${name}"`).every(t => !t.scopes.includes('variable.other.reference.don')));
+    assert.ok(tokens("message: 'Hello '+name").some(t => t.text==='+' && t.scopes.includes('keyword.operator.don')));
     registry.dispose();
 });

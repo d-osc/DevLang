@@ -62,15 +62,22 @@ pub fn tokens(text: &str) -> Vec<Token> {
                 }
             }
             kind = Kind::String;
-        } else if "{}[]:=,;".contains(ch) {
+        } else if "{}[]:=,;+".contains(ch) {
             at += 1;
             kind = Kind::Punctuation(ch);
         } else {
             at += ch.len_utf8();
             while at < text.len() {
                 let next = text[at..].chars().next().unwrap();
+                if next == '+'
+                    && (ch.is_ascii_digit() || ch == '-')
+                    && text[..at].ends_with(['e', 'E'])
+                {
+                    at += 1;
+                    continue;
+                }
                 if next.is_whitespace()
-                    || "{}[]:=,;#\"'".contains(next)
+                    || "{}[]:=,;+ #\"'".contains(next)
                     || text[at..].starts_with("//")
                     || text[at..].starts_with("/*")
                 {
@@ -143,6 +150,9 @@ pub fn format(text: &str) -> Result<String, String> {
             Kind::Punctuation(':') => {
                 out.push_str(": ");
             }
+            Kind::Punctuation('+') => {
+                out.push_str(" + ");
+            }
             Kind::Punctuation('=') => {
                 out.push_str(" = ");
             }
@@ -209,5 +219,20 @@ mod tests {
             );
             assert_eq!(format(&result).unwrap(), result);
         }
+    }
+}
+
+#[cfg(test)]
+mod expression_tests {
+    #[test]
+    fn expressions_and_exponents_format_losslessly() {
+        let text = "name:'Dev'\nmessage:'Hi '+name+\"! ${name}\"\nnumber:1e+2\n";
+        let formatted = super::format(text).unwrap();
+        assert!(formatted.contains(" + "));
+        assert_eq!(super::format(&formatted).unwrap(), formatted);
+        assert_eq!(
+            crate::don::parse(text).unwrap(),
+            crate::don::parse(&formatted).unwrap()
+        );
     }
 }
