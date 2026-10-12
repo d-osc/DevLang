@@ -890,15 +890,16 @@ impl Parser {
                     if fields.iter().any(|(name, _)| name == &key) {
                         return self.fail("duplicate object literal key");
                     }
-                    self.expect(":")?;
+                    if !self.eat(":") && !self.eat("=") { return self.fail("expected : or = after object key"); }
                     self.separators();
                     fields.push((key, self.expr(0)?));
+                    let separated = matches!(self.token().kind, Kind::Newline) || self.is(";");
                     self.separators();
-                    if !self.eat(",") {
-                        self.expect("}")?;
-                        break;
+                    if self.eat(",") { self.separators(); }
+                    else if self.eat("}") { break; }
+                    else if !separated && self.token().span.line <= self.tokens[self.at-1].span.line {
+                        return self.fail("expected comma, semicolon or newline between object fields");
                     }
-                    self.separators();
                 }
                 Expr {
                     kind: ExprKind::Object(
@@ -912,10 +913,10 @@ impl Parser {
                 let mut values = Vec::new();
                 while !self.eat("]") {
                     values.push(self.expr(0)?);
-                    if !self.eat(",") {
-                        self.expect("]")?;
-                        break;
-                    }
+                    let previous_line = self.tokens[self.at-1].span.line;
+                    if self.eat(",") || self.eat(";") { self.separators(); }
+                    else if self.eat("]") { break; }
+                    else if self.token().span.line <= previous_line { return self.fail("expected comma, semicolon or newline between array elements"); }
                 }
                 Expr {
                     kind: ExprKind::Array(values),

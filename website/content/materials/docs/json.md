@@ -22,7 +22,7 @@ Run `target/release/d.exe examples/json/main.dev` after
 built sibling `devrun`; older installed copies cannot supply the new module.
 The complete example creates/overwrites `devlang-json-example.json` in cwd.
 
-## Object literals and member access
+## DON-style object literals and member access
 
 ```dev
 use "std/json"
@@ -123,3 +123,26 @@ appropriate. These APIs do not provide application schema validation.
 Validation: `python scripts/smoke_json.py --runtime target/release/devrun.exe`
 exercises both engines with no compiler in PATH, including malformed input,
 Unicode, exact large numbers, copies, typed values, tasks and bounds/type errors.
+
+## DON-style object literals in DevLang
+
+```dev-runtime
+let name: str = 'Dev'
+let user = {
+    name = name
+    age: 18
+    greeting: "Hello ${name}"
+    address: { city = 'Bangkok' }
+}
+print(user.name)
+print(user.greeting)
+```
+
+Inside `.dev`, object literals use DON-style notation: `:` or `=`, newline/comma/
+semicolon separators, single-quoted literal strings, double-quoted interpolation,
+triple-quoted multiline strings and block comments. Braces remain required.
+Values are ordinary DevLang expressions referencing lexical variables; they are
+not document-root/forward references as in a `.don` file. Existing JSON-style
+objects and `json.stringify` remain supported for data exchange. Dynamic objects
+still require the source runtime; native builds use structs. Available in source
+after v0.5.1.

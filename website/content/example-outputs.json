@@ -186,12 +186,12 @@
   },
   "json": {
     "source_sha256": "0776017c66f76b4b231cfe7b5554caf77d5ddc44d138f47c46b9622d46620d3a",
-    "validation_sha256": "b059df457a5e0d00ac9376b2572e366bcc260189446faac2d9b69c12962a7029",
+    "validation_sha256": "45aece56f81680460cfbb157f27be24ba32dc5c1e751ccd30f3b02afad4d8ef3",
     "output": "true\nDev\n18\ntrue\n19\n23\ntrue\nfalse\n18\n21\n{\"empty\":null,\"items\":[42],\"user\":{\"age\":21,\"name\":\"Dev\"}}\nobject\nempty\nitems\nuser\n2\n1.5\n18446744073709551615\n{\"items\":[42],\"user\":{\"age\":21,\"name\":\"Dev\"}}\n"
   },
   "json-literals": {
-    "source_sha256": "88c12206ff07f927ffbf406292df7bc7b5281bc52e1454c0017d9c194cfe6634",
-    "validation_sha256": "1bb330ff507683d424efa762267e3bfb3cd9e85f972c9a54ab659aeefe7576b4",
+    "source_sha256": "cacf3874b1d817b9a5c95461e467446979a8f41892e8671b8392c8bbd14dcf9a",
+    "validation_sha256": "95a14d02b5f174ed8b1cde07d65cd47d8cbf98f9a1954d5904e84a6a70bb374c",
     "output": "Dev\n19\nChiang Mai\nDevLang user\n18\n{\"active\":true,\"address\":{\"city\":\"Chiang Mai\"},\"age\":19,\"display-name\":\"DevLang user\",\"name\":\"Dev\",\"tags\":[\"developer\",100,true,null]}\n"
   },
   "filesystem": {
@@ -237,7 +237,7 @@
   "basic-libs": {
     "source_sha256": "7bea9b8369a55f03518dbf71fe3611920175f56bcc7ff88786b4a4b580cc312a",
     "validation_sha256": "ecadeb9581aef10e93056e858c0ca797ce500e15772bcfbbd973f7348db4181c",
-    "output": "3\nDEVLANG\ntrue\n2024-02-29T12:30:00.000Z\n2024-02-29 19:30:00 +07:00\nPASS math\nFAIL unicode: \\\\?\\C:\\Users\\ondev\\Projects\\dev-lang\\out\\don-bare-site\\examples\\basic-libs\\main.dev:22:13: std/test.g_equal_8ee5e9315bcacf54: assertion failed: characters\nfalse\n"
+    "output": "3\nDEVLANG\ntrue\n2024-02-29T12:30:00.000Z\n2024-02-29 19:30:00 +07:00\nPASS math\nFAIL unicode: \\\\?\\C:\\Users\\ondev\\Projects\\dev-lang\\out\\don-objects-site\\examples\\basic-libs\\main.dev:22:13: std/test.g_equal_8ee5e9315bcacf54: assertion failed: characters\nfalse\n"
   },
   "data-libs": {
     "source_sha256": "177b7cb427fee372984106e0485bfe42a6381ed96129171af7d329928bbd98b1",

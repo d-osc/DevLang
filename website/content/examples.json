@@ -546,10 +546,10 @@
   },
   {
     "id": "json-literals",
-    "title": "JSON object literal: user.name และ nested objects",
+    "title": "DON object literal: user.name และ nested objects",
     "category": "Runtime APIs",
     "path": "examples/json/literals.dev",
-    "description": "สร้าง object โดยตรง อ่านและแก้ผ่าน dot/bracket, array ชนิดผสม และสำเนาที่ไม่เปลี่ยนตาม",
+    "description": "Object แบบ DON: single quotes, : หรือ = และ newline; อ่าน/แก้ผ่าน dot/bracket และแปลงเป็น JSON ได้",
     "doc": "json",
     "mode": "runtime",
     "commands": [
@@ -558,7 +558,7 @@
       "./target/release/d.exe examples/json/literals.dev",
       "# Linux: ./target/release/d examples/json/literals.dev"
     ],
-    "notes": "ใช้ source runtime ล่าสุดเท่านั้น ตัวติดตั้ง v0.4.0 เดิมยังไม่รองรับ; native compiler ยังไม่รองรับ JSON object literals"
+    "notes": "ใช้ source build ล่าสุดหลัง v0.5.1; dynamic object literals ยังเป็น runtime API"
   },
   {
     "id": "filesystem",

@@ -352,7 +352,7 @@
   "json": {
     "source": "json.md",
     "sections": [
-      "Object literals and member access",
+      "DON-style object literals and member access",
       "API",
       "Data and ownership"
     ],

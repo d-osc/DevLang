@@ -158,7 +158,7 @@ fn semantic_diagnostics(uri: &str, doc: &Document, module: &Module, documents: &
     }
     let tokens = lex(&doc.text).unwrap_or_default();
     dev_lang::check_sources(&entry, &directories, &sources).into_iter()
-    .filter(|error| !error.contains("cannot import 'std/json'") && !error.contains("JSON object literals currently require the source runtime"))
+    .filter(|error| !error.contains("cannot import 'std/json'") && !error.contains("DON object literals currently require the source runtime"))
     .map(|error| {
         // Preserve contextual import messages and put their marker at the root import.
         let mut pieces = error.splitn(2, ": ");

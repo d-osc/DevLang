@@ -32,6 +32,8 @@ jobs:
         run: cargo build --workspace --release --locked
       - name: Rust tests
         run: cargo test --workspace --locked
+      - name: DON-style object literals
+        run: python scripts/smoke_don_objects.py --bin-dir target/release
       - name: String interpolation parity
         run: python scripts/smoke_interpolation.py --bin-dir target/release
       - name: Canonical type annotation parity

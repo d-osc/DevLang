@@ -2,6 +2,27 @@
   "scopeName": "source.devlang",
   "patterns": [
     {
+      "name": "comment.block.devlang",
+      "begin": "/\\*",
+      "end": "\\*/"
+    },
+    {
+      "name": "string.quoted.triple.devlang",
+      "begin": "\"\"\"",
+      "end": "\"\"\""
+    },
+    {
+      "name": "string.quoted.single.devlang",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "name": "constant.character.escape.devlang",
+          "match": "\\\\."
+        }
+      ]
+    },
+    {
       "name": "comment.line.devlang",
       "match": "(#|\\/\\/).*$"
     },

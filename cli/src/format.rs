@@ -60,9 +60,10 @@ pub fn source(text: &str) -> Result<String, String> {
     let tokens = lex(text).map_err(|(_, e)| e)?;
     let mut depth = 0usize;
     let mut quoted = false;
+    let mut quote = '"';
     let mut escaped = false;
     let mut output = String::new();
-    for (line_index, raw) in text.lines().enumerate() {
+    for (line_index, raw) in text.split_terminator('\n').enumerate() {
         let line = raw.trim_end_matches('\r');
         let in_string = quoted;
         let mut chars = line.chars().peekable();
@@ -72,12 +73,13 @@ pub fn source(text: &str) -> Result<String, String> {
                     escaped = false;
                 } else if ch == '\\' {
                     escaped = true;
-                } else if ch == '"' {
+                } else if ch == quote {
                     quoted = false;
                 }
             } else if ch == '#' || (ch == '/' && chars.peek() == Some(&'/')) {
                 break;
-            } else if ch == '"' {
+            } else if ch == '"' || ch == '\'' {
+                quote = ch;
                 quoted = true;
             }
         }
@@ -92,7 +94,7 @@ pub fn source(text: &str) -> Result<String, String> {
             )
             .count();
         if in_string || quoted {
-            output.push_str(line);
+            output.push_str(raw);
         } else if !line.trim().is_empty() {
             output.push_str(&"    ".repeat(depth.saturating_sub(leading)));
             output.push_str(line.trim());
@@ -226,7 +228,7 @@ mod tests {
     #[test]
     fn separator_comments_and_unicode_are_preserved() {
         let code = "fn t(a /* unsupported */ i32) i32 { return a }";
-        assert!(source(code).is_err());
+        assert!(source(code).unwrap().contains("/* unsupported */"));
         let code = "let text str=\"ไทย\" // keep : =\n";
         assert_eq!(
             source(code).unwrap(),
@@ -257,5 +259,16 @@ print("${name}: ${"quoted"} \${literal} ${1+2}")
         let result = super::source(code).unwrap();
         assert!(result.contains(r#"print("${name}: ${"quoted"} \${literal} ${1+2}")"#));
         assert_eq!(super::source(&result).unwrap(), result);
+    }
+}
+
+#[cfg(test)]
+mod don_object_tests {
+    #[test]
+    fn formatter_preserves_multiline_string_crlf() {
+        let text = "let user = {\r\nname = 'Dev'\r\nnote: \"\"\"one\r\n two\r\n\"\"\"\r\n}\r\n";
+        let formatted = super::source(text).unwrap();
+        assert!(formatted.contains("one\r\n two\r\n"));
+        assert_eq!(super::source(&formatted).unwrap(),formatted);
     }
 }

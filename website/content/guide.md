@@ -851,6 +851,30 @@ Skill เน้น syntax จริง, explicit main invocation, การแ�
 
 ใช้ชุดติดตั้ง v0.5.1 หรือ build ด้วย `cargo build --release -p dev-runtime -p dev-cli` Native compiler ยังไม่รองรับ module นี้
 
+
+## DON-style object literals in DevLang
+
+```dev-runtime
+let name: str = 'Dev'
+let user = {
+    name = name
+    age: 18
+    greeting: "Hello ${name}"
+    address: { city = 'Bangkok' }
+}
+print(user.name)
+print(user.greeting)
+```
+
+Inside `.dev`, object literals use DON-style notation: `:` or `=`, newline/comma/
+semicolon separators, single-quoted literal strings, double-quoted interpolation,
+triple-quoted multiline strings and block comments. Braces remain required.
+Values are ordinary DevLang expressions referencing lexical variables; they are
+not document-root/forward references as in a `.don` file. Existing JSON-style
+objects and `json.stringify` remain supported for data exchange. Dynamic objects
+still require the source runtime; native builds use structs. Available in source
+after v0.5.1.
+
 ## Object literal และ user.name
 
 ```dev-runtime

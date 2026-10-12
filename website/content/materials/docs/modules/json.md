@@ -78,7 +78,7 @@ Run `target/release/d.exe examples/json/main.dev` after
 built sibling `devrun`; older installed copies cannot supply the new module.
 The complete example creates/overwrites `devlang-json-example.json` in cwd.
 
-## Object literals and member access
+## DON-style object literals and member access
 
 ```dev
 use "std/json"

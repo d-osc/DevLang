@@ -41,6 +41,16 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
             col += 1;
             continue;
         }
+        if c == '/' && chars.get(i + 1) == Some(&'*') {
+            i += 2; col += 2;
+            while i < chars.len() && !(chars[i] == '*' && chars.get(i+1) == Some(&'/')) {
+                if chars[i] == '\n' { line += 1; col = 1; } else { col += 1; }
+                i += 1;
+            }
+            if i == chars.len() { return Err((span, "unterminated block comment".into())); }
+            i += 2; col += 2;
+            continue;
+        }
         if c == '#' || (c == '/' && chars.get(i + 1) == Some(&'/')) {
             while i < chars.len() && chars[i] != '\n' {
                 i += 1;
@@ -111,22 +121,37 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
             });
             continue;
         }
-        if c == '"' {
+        if c == '"' || c == '\'' {
+            if c == '"' && chars[i..].starts_with(&['"','"','"']) {
+                i += 3; col += 3;
+                let start = i;
+                while i < chars.len() && !chars[i..].starts_with(&['"','"','"']) {
+                    if chars[i] == '\n' { line += 1; col = 1; } else { col += 1; }
+                    i += 1;
+                }
+                if i == chars.len() { return Err((span,"unterminated multiline string".into())); }
+                let value = chars[start..i].iter().collect();
+                i += 3; col += 3;
+                tokens.push(Token { kind: Kind::String(value), span });
+                continue;
+            }
+            let quote = c;
             let string_start = i;
             let mut parts = Vec::new();
             i += 1;
             col += 1;
             let mut value = String::new();
-            while i < chars.len() && chars[i] != '"' {
+            while i < chars.len() && chars[i] != quote {
                 if chars[i] == '\n' {
                     return Err((span, "newline in string; use \\n".into()));
                 }
-                if chars[i] == '$' && chars.get(i + 1) == Some(&'{') {
+                if quote == '"' && chars[i] == '$' && chars.get(i + 1) == Some(&'{') {
                     parts.push((false, std::mem::take(&mut value), 0));
                     let start = i + 2;
                     let mut end = start;
                     let mut depth = 1usize;
                     let mut quoted = false;
+                    let mut expression_quote = '"';
                     let mut escaped = false;
                     while end < chars.len() {
                         let ch = chars[end];
@@ -138,10 +163,11 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
                                 escaped = false;
                             } else if ch == '\\' {
                                 escaped = true;
-                            } else if ch == '"' {
+                            } else if ch == expression_quote {
                                 quoted = false;
                             }
-                        } else if ch == '"' {
+                        } else if ch == '"' || ch == '\'' {
+                            expression_quote = ch;
                             quoted = true;
                         } else if ch == '{' {
                             depth += 1;
@@ -175,6 +201,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
                         Some('0') => '\0',
                         Some('$') => '$',
                         Some('"') => '"',
+                        Some('\'') => '\'',
                         Some('\\') => '\\',
                         _ => return Err((Span { line, col }, "invalid string escape".into())),
                     });
