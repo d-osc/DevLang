@@ -1410,5 +1410,19 @@
       "d build examples/ternary/main.dev --release -o out/ternary.exe"
     ],
     "notes": "Current source build after v0.5.1. Conditions must be bool; both branches must have the same type."
+  },
+  {
+    "id": "switch",
+    "title": "Switch statement: case และ default",
+    "category": "พื้นฐาน",
+    "path": "examples/switch/main.dev",
+    "description": "เลือก case ตามค่า, grouped cases และ default / First matching case without fallthrough",
+    "doc": "operators",
+    "mode": "both",
+    "commands": [
+      "d examples/switch/main.dev",
+      "d build examples/switch/main.dev --release -o out/switch.exe"
+    ],
+    "notes": "Current source build after v0.5.1. Case bodies require braces; default must be last. No break is needed to finish a case."
   }
 ]

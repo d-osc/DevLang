@@ -3,7 +3,7 @@ use crate::program::{module_name, valid_type, Program};
 use crate::tasks::THREADS;
 use std::collections::HashMap;
 
-pub const TYPES_HEADER: &str = "#ifndef DEV_TYPES_H\n#define DEV_TYPES_H\ntypedef struct dev_dynamic_value { const void *node; unsigned char boxed; unsigned char scalar_type; } dev_dynamic_value;\ntypedef dev_dynamic_value dev_dynamic_don_value;\n#include <stdint.h>\n#include <stddef.h>\n#include <stdbool.h>\n#if defined(__SSE4_1__)\n#define DEV_LOW32_SELECT(narrow, wide) (narrow)\n#else\n#define DEV_LOW32_SELECT(narrow, wide) (wide)\n#endif\n#endif\n";
+pub const TYPES_HEADER: &str = "#ifndef DEV_TYPES_H\n#define DEV_TYPES_H\ntypedef struct dev_dynamic_value { const void *node; unsigned char boxed; unsigned char scalar_type; } dev_dynamic_value;\ntypedef dev_dynamic_value dev_dynamic_don_value;\n#include <stdint.h>\n#include <stddef.h>\n#include <stdbool.h>\nstatic bool dev_switch_str_equal(const char *a,const char *b) { while(*a && *a==*b) { ++a; ++b; } return *a==*b; }\n#if defined(__SSE4_1__)\n#define DEV_LOW32_SELECT(narrow, wide) (narrow)\n#else\n#define DEV_LOW32_SELECT(narrow, wide) (wide)\n#endif\n#endif\n";
 pub struct Generated {
     pub name: String,
     pub header: String,
@@ -1413,6 +1413,9 @@ impl Emitter<'_> {
                 return Ok(Value { code: name, ty: a.ty, lvalue: false });
             }
             ExprKind::Binary(op, left, right) => {
+                let switch_comparison = op == "$switch_eq";
+                let mapped = if switch_comparison { "==".to_string() } else { op.clone() };
+                let op = &mapped;
                 if op == "&&" || op == "||" {
                     let a = self.expr(left, Some(&Type::Bool))?;
                     self.compatible(&a, &Type::Bool, left.span)?;
@@ -1513,6 +1516,9 @@ impl Emitter<'_> {
                     if comparison {
                         if !a.ty.scalar() && !matches!(a.ty, Type::Enum(..)) {
                             return self.fail(expr.span, "comparison requires scalar values");
+                        }
+                        if a.ty == Type::Str && switch_comparison {
+                            return Ok(Value { code: format!("dev_switch_str_equal({}, {})", a.code, b.code), ty: Type::Bool, lvalue: false });
                         }
                         if a.ty == Type::Str {
                             return self.fail(expr.span, "compare string contents through C strcmp; str equality is not defined");

@@ -6,6 +6,26 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "switch": """fn value():i64 {print('once');return 2}
+fn main() {
+  switch value() {
+    case 1: {print('one')}
+    case 2, 3: {print('two-or-three')}
+    default: {print('other')}
+  }
+  let selected='D'+'ev'
+  switch selected {
+    case 'Other': {print('wrong')}
+    case 'Dev': {print('name')}
+  }
+  switch 9 {case 1: {print('wrong')} default: {print('fallback')}}
+  for i in 0..3 {
+    switch i {case 1: {continue} default: {print(i)}}
+  }
+}
+main()
+""",
+
     "ternary": """fn side(n:i64):i64 {print(n); return n}
 fn make(n:i64):Vec<i64> {let v=Vec<i64>(); v.push(n); return v}
 fn main() {
@@ -297,6 +317,8 @@ fn read(x:json.Value):str { return x.inner.name }
             'const_capture': 'const x=1\nlet f=fn():void { x=2 }',
         }
         ternary_errors = {
+            'switch_default_order': 'switch 1 { default: {} case 1: {} }',
+            'switch_duplicate_default': 'switch 1 { default: {} default: {} }',
             'ternary_condition': 'print(1 ? 2 : 3)',
             'ternary_type': "print(true ? 1 : 'wrong')",
         }
@@ -306,7 +328,7 @@ fn read(x:json.Value):str { return x.inner.name }
             commands.append([str(folder/('devc'+suffix)),'build',str(source),'-o',str(root/(name+suffix))])
             for command in commands:
                 result=run(command)
-                assert result.returncode != 0 and 'ternary' in result.stderr,(name,result.stderr)
+                assert result.returncode != 0 and ('switch' if name.startswith('switch') else 'ternary') in result.stderr,(name,result.stderr)
             print('PASS:',name)
         for name,code in const_errors.items():
             source=root/(name+'.dev');source.write_text(code,encoding='utf-8')
@@ -329,6 +351,8 @@ fn read(x:json.Value):str { return x.inner.name }
             else:
                 assert all(r.returncode==0 for r in results),(name,[(r.stdout,r.stderr) for r in results])
                 assert len({r.stdout for r in results})==1,(name,[(r.stdout,r.stderr) for r in results])
+                if name == 'switch':
+                    assert results[0].stdout.splitlines() == ['once','two-or-three','name','fallback','0','2'],results[0].stdout
                 if name == 'ternary':
                     assert results[0].stdout.splitlines() == ['adult','2','2','7','9','2','4','8','10','Dev','2','12','yes'],results[0].stdout
             print('PASS:',name)

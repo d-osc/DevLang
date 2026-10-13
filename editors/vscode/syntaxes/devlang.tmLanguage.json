@@ -67,7 +67,7 @@
     },
     {
       "name": "keyword.control.devlang",
-      "match": "\\b(if|else|while|for|in|return|break|continue|match|unsafe|use|export|as|await)\\b"
+      "match": "\\b(if|else|switch|case|default|while|for|in|return|break|continue|match|unsafe|use|export|as|await)\\b"
     },
     {
       "name": "storage.type.devlang",

@@ -612,6 +612,48 @@ impl Parser {
         if self.eat("unsafe") {
             return Ok(Stmt::Unsafe(self.block()?));
         }
+        if self.eat("switch") {
+            let hidden = format!("$switch_{}", self.at);
+            let value = self.expr(0)?;
+            self.separators();
+            self.expect("{")?;
+            self.separators();
+            let mut cases = Vec::new();
+            let mut fallback = Vec::new();
+            let mut has_default = false;
+            while !self.eat("}") {
+                if self.eat("default") {
+                    if has_default { return self.fail("duplicate switch default"); }
+                    has_default = true;
+                    self.expect(":")?;
+                    fallback = self.block()?;
+                } else {
+                    if has_default { return self.fail("switch default must be last"); }
+                    self.expect("case")?;
+                    let mut condition: Option<Expr> = None;
+                    loop {
+                        let item = self.expr(0)?;
+                        let comparison = Expr { span: item.span, kind: ExprKind::Binary(
+                            "$switch_eq".into(), Box::new(Expr { kind: ExprKind::Name(vec![hidden.clone()]), span }), Box::new(item),
+                        ) };
+                        condition = Some(match condition {
+                            Some(previous) => Expr { span, kind: ExprKind::Binary("||".into(), Box::new(previous), Box::new(comparison)) },
+                            None => comparison,
+                        });
+                        if !self.eat(",") { break; }
+                    }
+                    self.expect(":")?;
+                    cases.push((condition.unwrap(), self.block()?));
+                }
+                self.separators();
+            }
+            for (cond, yes) in cases.into_iter().rev() {
+                fallback = vec![Stmt::If { cond, yes, no: fallback }];
+            }
+            let mut body = vec![Stmt::Let { name: hidden, ty: None, value, span }];
+            body.extend(fallback);
+            return Ok(Stmt::Block(body));
+        }
         if self.eat("match") {
             let value = self.expr(0)?;
             self.separators();

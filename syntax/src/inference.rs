@@ -134,7 +134,7 @@ impl Expand {
                 t
             }
             ExprKind::Binary(op, a, _) => {
-                if ["==", "!=", "<", ">", "<=", ">=", "&&", "||"].contains(&op.as_str()) {
+                if ["$switch_eq", "==", "!=", "<", ">", "<=", ">=", "&&", "||"].contains(&op.as_str()) {
                     Type::Bool
                 } else {
                     let Some(t) = self.infer(id, a, hint)? else {

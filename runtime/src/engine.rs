@@ -1787,6 +1787,8 @@ impl Engine {
                     } else { self.eval(f, no, hint)? }
                 }
                 ExprKind::Binary(op, a, b) => {
+                    let mapped = if op == "$switch_eq" { "==".to_string() } else { op.clone() };
+                    let op = &mapped;
                     let left = self.eval(f, a, hint.filter(|t| t.numeric()))?;
                     if op == "&&" && !left.boolean()? {
                         return Ok(Value::Bool(false));

@@ -1,0 +1,21 @@
+fn main() {
+    let status = 200
+    switch status {
+        case 200, 201: {
+            print("success")
+        }
+        case 404: {
+            print("not found")
+        }
+        default: {
+            print("other status")
+        }
+    }
+
+    const name = "Dev"
+    switch name {
+        case "Dev": { print("Hello Dev") }
+        default: { print("Hello guest") }
+    }
+}
+main()

@@ -166,6 +166,35 @@ Supports runtime and hosted native builds from current source after v0.5.1.
 Native branches must produce a value; use Vec instead of returning a fixed array.
 See [ตัวอย่างเต็ม / Full example](#/examples/ternary).
 
+
+## Switch statement / เลือกทำงานตามค่า
+
+```dev
+fn main() {
+    let status = 200
+    switch status {
+        case 200, 201: { print("success") }
+        case 404: { print("not found") }
+        default: { print("other status") }
+    }
+}
+main()
+```
+
+`switch` ประเมินค่าที่เลือกครั้งเดียว แล้วทำงาน case แรกที่ค่าตรงกัน
+ใช้ comma ระบุหลายค่าต่อ case ได้ แต่ละ case ต้องมี `{ ... }`
+`default` ไม่บังคับ และถ้ามีต้องอยู่ท้ายสุด ไม่มี fallthrough จึงไม่ต้องใส่ `break`
+Switch evaluates its subject once and runs the first matching case. Case values
+use ordinary equality rules and are checked in source order. String cases compare
+contents in both engines, including native switch. Standalone native str equality
+remains unchanged. Case bodies require
+braces. Default is optional, may appear once, and must be last. There is no
+fallthrough. `break` and `continue` keep their existing enclosing-loop meaning;
+they are not needed to end a case. Use `match` for enum payload patterns.
+
+Available in current source builds after v0.5.1, in runtime and native modes.
+See [ตัวอย่างเต็ม / Full example](#/examples/switch).
+
 ## Expressions and control flow
 
 Operators, from low to high precedence:
