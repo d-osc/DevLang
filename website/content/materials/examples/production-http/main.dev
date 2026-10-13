@@ -1,0 +1,26 @@
+use "std/http"
+
+fn main() {
+    let server = http.createServer(fn(req: http.IncomingMessage, res: http.ServerResponse) {
+        res.setHeader("Content-Type", "text/plain; charset=utf-8")
+        if req.method != "GET" {
+            res.writeHead(405, Map<str,str>())
+            res.setHeader("Allow", "GET")
+            res.end("Method not allowed")
+            return
+        }
+        if req.url == "/healthz" {
+            res.end("ok")
+            return
+        }
+        if req.url == "/" {
+            res.end("DevLang HTTP service")
+            return
+        }
+        res.writeHead(404, Map<str,str>())
+        res.end("Not found")
+    })
+    server.listenOn(3000, "127.0.0.1")
+}
+
+main()
