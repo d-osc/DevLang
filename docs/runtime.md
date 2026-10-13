@@ -439,3 +439,63 @@ References: [Microsoft Job Objects](https://learn.microsoft.com/en-us/windows/wi
 พร้อมเก็บ process ลูกเมื่อ supervisor ตาย และเตรียม Windows Service แบบ
 LocalService แล้ว แต่ยังไม่ได้ติดตั้ง service ลงเครื่องพัฒนานี้ ต้องตรวจ
 startup/reboot/recovery บนเครื่อง production และตั้ง TLS แยกต่างหาก
+
+## HTTPS ingress profile
+
+`deploy/http/nginx-tls.conf` adds TLS 1.2/1.3 to the same body/header/concurrency
+limits. It binds loopback port 8443 by default; configure the listen address and
+`server_name` for the production host before public use. Keep the backend on
+loopback port 3000. Install a valid certificate for your real hostname as
+`certs/fullchain.pem` and its matching private key as `certs/privkey.pem` relative
+to the NGINX prefix. Do not use the test certificate for public production.
+Restrict private-key access to administrators and the ingress service account.
+
+```powershell
+nginx -t -p C:/ProgramData/DevLangIngress/ -c nginx-tls.conf
+nginx -p C:/ProgramData/DevLangIngress/ -c nginx-tls.conf
+# After replacing certificate files, validate first, then reload:
+nginx -t -p C:/ProgramData/DevLangIngress/ -c nginx-tls.conf
+nginx -p C:/ProgramData/DevLangIngress/ -c nginx-tls.conf -s reload
+```
+
+Check validation's exit status before executing reload. Certificate provisioning,
+renewal and expiry alerts must be configured for the actual domain; they are not
+automated by this template. Do not disable client hostname/certificate checks.
+See [NGINX TLS directives](https://nginx.org/en/docs/http/ngx_http_ssl_module.html).
+
+```sh
+python scripts/smoke_http_ingress.py --bin-dir target/release --nginx nginx --tls --openssl openssl
+```
+
+This starts real HTTPS→NGINX→DevLang with a temporary localhost certificate,
+trusted only by the test client. It verifies successful TLS 1.2 and TLS 1.3
+connections, rejects an untrusted certificate and mismatched hostname, and runs
+the existing body/header, slow-client and overload/recovery checks over TLS.
+The test requires NGINX built with TLS and OpenSSL's CLI. It passed locally on
+Windows; Linux CI also runs it. No certificate is installed in the OS trust store.
+These results qualify this local profile, not public DNS, a production certificate
+chain or business application readiness.
+
+ภาษาไทย: มี profile HTTPS และทดสอบ TLS/certificate/hostname กับ server จริงแล้ว
+แต่ต้องใช้ certificate ของโดเมนจริง พร้อมตั้ง renewal/expiry monitoring และ
+ตรวจ configuration บนเครื่อง production ก่อนเปิดรับผู้ใช้ภายนอก
+
+### Certificate and HTTPS health preflight
+
+```powershell
+python scripts/check_http_certificate.py --url https://your-domain.example/healthz --min-days 14
+```
+
+This verifies the certificate chain and hostname, requires the certificate to be
+valid for at least the configured remaining days, then requires HTTP 200 with a
+response body at most 4096 bytes. It prints JSON and returns 0 for success, 1 for
+certificate/health failure. `expires_soon` signals renewal is needed. Private PKI
+can use `--cafile PATH`; there is no option to disable verification. The timeout
+is a socket I/O timeout, not a total DNS/probe deadline. Connect the exit status
+and JSON to your monitoring system; certificate issuance/renewal is still an
+operator-managed deployment step. The TLS integration regression tests both a
+successful preflight and rejection of a one-day certificate by the 14-day budget.
+
+ภาษาไทย: มีคำสั่งตรวจ certificate chain, hostname, วันหมดอายุ และ health endpoint
+พร้อม JSON/exit code สำหรับ monitoring แล้ว แต่ยังต้องตั้งระบบออกและต่ออายุ
+certificate ของโดเมนจริงบนเครื่อง production
