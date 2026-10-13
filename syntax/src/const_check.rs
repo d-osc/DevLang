@@ -77,7 +77,7 @@ impl Checker<'_> {
     }
     fn expr(&self, expr: &Expr, scope: &HashMap<String, bool>) -> Result<(), String> {
         if let ExprKind::Call(names, _) | ExprKind::GenericCall(names, _, _) = &expr.kind {
-            if names.len() > 1 && matches!(names.last().map(String::as_str), Some("push" | "pop" | "set" | "insert" | "remove" | "clear" | "resize" | "shift" | "unshift" | "reverse" | "sort")) {
+            if names.len() > 1 && matches!(names.last().map(String::as_str), Some("push" | "pop" | "set" | "insert" | "remove" | "clear" | "resize" | "shift" | "unshift" | "reverse" | "sort" | "delete" | "copyWithin" | "splice")) {
                 let receiver = Expr { kind: ExprKind::Name(vec![names[0].clone()]), span: expr.span };
                 self.writable(&receiver, scope)?;
             }
@@ -94,7 +94,7 @@ impl Checker<'_> {
                 self.block(body, &mut local)?;
             }
             ExprKind::Collection(base, method, args) => {
-                if matches!(method.as_str(), "push" | "pop" | "set" | "insert" | "remove" | "clear" | "resize" | "shift" | "unshift" | "reverse" | "sort") { self.writable(base, scope)?; }
+                if matches!(method.as_str(), "push" | "pop" | "set" | "insert" | "remove" | "clear" | "resize" | "shift" | "unshift" | "reverse" | "sort" | "delete" | "copyWithin" | "splice") { self.writable(base, scope)?; }
                 self.expr(base, scope)?;
                 for arg in args { self.expr(arg, scope)?; }
             }

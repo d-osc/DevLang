@@ -563,5 +563,10 @@
     "source_sha256": "ba311b85708ddbc17780dc870629be57a1cf9f6966a655c8263185a1863fcddc",
     "validation_sha256": "0579f5bfb1a3527d6ebc0e238013974a2a5b7030725f461a53b5cfa7bf5ce586",
     "output": "10\n20\n30\n7\n20\n4\n1\n2\n3\n"
+  },
+  "array-basic": {
+    "source_sha256": "bf46defd9e9dd458fa826d0465452fc58be9d8a8c84aa564b6207beadbfba0a6",
+    "validation_sha256": "dce2f3a6a893cac3c128477cd4478b6d851f219ccedf964a34a839df330cf2a0",
+    "output": "4\n4\n1,2,3,4\ntrue\nfalse\n2,3\n1,9,8,7,4\n1,2,3,4\n1,9,8,6,4\n1,9,8,7,4\n4\n1,1,9,8\n1,2,3,4\n2\ntrue,false\nHello,Dev\ntrue\nfalse\nfalse\n"
   }
 }

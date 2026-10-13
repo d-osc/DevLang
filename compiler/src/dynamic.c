@@ -440,3 +440,5 @@ static inline size_t dev_dynamic_array_len(dev_dynamic_value v,const char *file,
     if(!node || node->kind!=6) dev_dynamic_error("collection iteration requires an array",file,line,col);
     return node->data.list.len;
 }
+
+static inline bool dev_dynamic_is_array(dev_dynamic_value v) { return dev_dynamic_tag(v)==6; }

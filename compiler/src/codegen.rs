@@ -1294,6 +1294,10 @@ impl Emitter<'_> {
             }
             ExprKind::Field(base, name) => {
                 let v = self.expr(base, None)?;
+                if name=="length" && matches!(v.ty,Type::Array(..)|Type::Vector(..)|Type::Slice(..)) {
+                    let value=self.sequence_save(v);
+                    return Ok(Value {code:if let Type::Array(_,n)=value.ty {n.to_string()} else {format!("{}.len",value.code)},ty:Type::Size {signed:false},lvalue:false});
+                }
                 if crate::dynamic::is_dynamic(&v.ty) { return self.dynamic_field(v, name, expr.span); }
                 let Type::Record(_, fields) = &v.ty else {
                     return self.fail(expr.span, "field access requires a struct");

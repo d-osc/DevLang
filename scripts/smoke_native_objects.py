@@ -6,6 +6,8 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "array_basic_managed": 'fn main() {\n    let xs=Vec<Ref<i64>>(ref(1),ref(2),ref(3),ref(4))\n    let snapshot=xs.slice(0,4)\n    xs.copyWithin(1,0,3)\n    for n in xs {print(deref(n))}\n    let removed=xs.splice(1,2,xs.at(3))\n    for n in removed {print(deref(n))}\n    print(deref(xs.delete(0)))\n    for n in snapshot {print(deref(n))}\n    let nested=Vec<Vec<Vec<Ref<i64>>>>(Vec<Vec<Ref<i64>>>(xs,removed))\n    let flat=nested.flat(2)\n    for n in flat {print(deref(n))}\n    let changed=[1,2,3].toSpliced(1,1,9)\n    print(changed.toString())\n    print(snapshot[1..3].toSpliced(0,1,ref(9)).map(fn(n:Ref<i64>):i64 {return deref(n)}).toString())\n    let dense=Vec<i64>(1,2,3,4)\n    dense.copyWithin(-2,0,2)\n    print(dense.toString())\n    print(dense.splice(2).toString())\n    print(dense.toString())\n    print(dense.splice(-9223372036854775808,9223372036854775807,8).toString())\n    print(dense.toString())\n    let empty=Vec<i64>()\n    print(empty.toString())\n    print(empty.toSpliced(100,4).length)\n}\nmain()\n',
+    "array_basic": 'fn main() {\n    const values = [1, 2, 3, 4]\n    print(values.length)\n    print(values.length())\n    print(values.toString())\n    print(Array.isArray(values))\n    print(Array.isArray(42))\n    let xs = values.toVec()\n    let snapshot = xs.slice(0, 4)\n    let removed = xs.splice(1, 2, 9, 8, 7)\n    print(removed.toString())\n    print(xs.toString())\n    print(snapshot.toString())\n    let changed = xs.toSpliced(-2, 1, 6)\n    print(changed.toString())\n    print(xs.toString())\n    print(xs.delete(-1))\n    xs.copyWithin(1, 0, 3)\n    print(xs.toString())\n    let nested = Vec<Vec<i64>>(Vec<i64>(1, 2), Vec<i64>(3, 4))\n    print(nested.flat().toString())\n    print(nested.flat(0).length)\n    print([true, false].toString())\n    print(["Hello", "Dev"].toString())\n    let data = { items: [1, "Dev", true, null], missing: null }\n    print(Array.isArray(data.items))\n    print(Array.isArray(data))\n    print(Array.isArray(data.missing))\n}\nmain()\n',
     "array_index": 'fn main() {\n    const numbers = [10, 20, 30]\n    numbers.forEach(fn(value: i64, index: i64) {\n        print("${index}: ${value}")\n    })\n    let mapped = numbers.map(fn(value: i64, index: i64): i64 { return value + index })\n    print(mapped.at(2))\n    let selected = numbers.filter(fn(value: i64, index: i64): bool { return index % 2 == 0 })\n    print(selected.len())\n    print(numbers.some(fn(value: i64, index: i64): bool { return index == 1 }))\n    print(numbers.every(fn(value: i64, index: i64): bool { return value > index }))\n    print(numbers.findIndex(fn(value: i64, index: i64): bool { return index == 1 }))\n    print(numbers.findLastIndex(fn(value: i64, index: i64): bool { return index > 0 }))\n    print(numbers.reduce(fn(total: i64, value: i64, index: i64): i64 { return total + value + index }, 0))\n    numbers[1..3].forEach(fn(value: i64, index: i64) { print("slice ${index}: ${value}") })\n    numbers.forEach(fn(value: i64) { print(value) })\n}\nmain()\n',
     "array_sort_target": 'fn index():i64 {print("index once");return 0}\nfn main() {\n    let nested=Vec<Vec<i64>>(Vec<i64>(3,1,2))\n    nested[index()].sort()\n    print(nested[0].at(0))\n}\nmain()\n',
     "array_sort": 'fn main() {\n    const values = [10, 2, 1, 2, -3]\n    let sorted = values.toSorted()\n    for n in sorted { print(n) }\n    print(values.at(0))\n    let descending = values.toSorted(fn(a: i64, b: i64): i64 {\n        return a < b ? 1 : (a > b ? -1 : 0)\n    })\n    print(descending.at(0))\n    let queue = values.toVec()\n    let snapshot = queue.slice(0, 5)\n    queue.sort()\n    print(queue.at(0))\n    print(snapshot.at(0))\n    let words = ["zebra", "apple", "banana"].toSorted()\n    print(words.join(","))\n    let view = values[1..4].toSorted()\n    print(view.at(0))\n    let empty = Vec<i64>()\n    empty.sort()\n    print(empty.len())\n    print([7].toSorted().at(0))\n}\nmain()\n',
@@ -380,6 +382,9 @@ print(y.inner.name)
 ''',
 }
 FAILURES = {
+    "array_delete_min": "let xs=Vec<i64>(1);xs.delete(-9223372036854775808)",
+    "array_delete_empty": "let xs=Vec<i64>();xs.delete(0)",
+    "array_delete_negative": "let xs=Vec<i64>(1,2);xs.delete(-3)",
     "array_at_negative": "let x=[1,2];print(x.at(-3))",
     "array_at_end": "let x=[1,2];print(x.at(2))",
     "array_at_min": "let x=[1,2];print(x.at(-9223372036854775808))",
@@ -431,6 +436,9 @@ fn copy(x:json.Value):json.Value { return x }
 fn read(x:json.Value):str { return x.inner.name }
 ''',encoding='utf-8',newline='\n')
         const_errors = {
+            'const_splice': 'const xs=Vec<i64>(1);xs.splice(0,1)',
+            'const_delete': 'const xs=Vec<i64>(1);xs.delete(0)',
+            'const_copyWithin': 'const xs=Vec<i64>(1);xs.copyWithin(0,0)',
             'const_method_key': "const p={name:'Dev',get:fn():str {return this.name}}\np['name']='Other'",
             'this_key_mutation': "let p={name:'Dev',change:fn() {this['name']='Other'}}",
             'this_mutation': 'let x={n:1,change:fn() {this.n=2}}',
@@ -455,6 +463,12 @@ fn read(x:json.Value):str { return x.inner.name }
             'ternary_type': "print(true ? 1 : 'wrong')",
         }
         method_errors = {
+            "splice_array": "let xs=[1,2];xs.splice(0,1)",
+            "splice_element": "let xs=Vec<i64>();xs.splice(0,0,true)",
+            "copyWithin_index": "let xs=Vec<i64>();xs.copyWithin(true,0)",
+            "flat_depth": "let xs=[1,2];let depth=1;xs.flat(depth)",
+            "flat_negative": "let xs=[1,2];xs.flat(-1)",
+            "length_write": "let xs=Vec<i64>();xs.length=1",
             "callback_index_type": "let xs=[1];xs.map(fn(value:i64,index:str):i64 {return value})",
             "callback_index_arity": "let xs=[1];xs.forEach(fn(value:i64,index:i64,extra:i64) {})",
             "reduce_index_type": "let xs=[1];xs.reduce(fn(a:i64,b:i64,index:bool):i64 {return a+b},0)",
@@ -513,6 +527,10 @@ fn read(x:json.Value):str { return x.inner.name }
             else:
                 assert all(r.returncode==0 for r in results),(name,[(r.stdout,r.stderr) for r in results])
                 assert len({r.stdout for r in results})==1,(name,[(r.stdout,r.stderr) for r in results])
+                if name == 'array_basic_managed':
+                    assert results[0].stdout.splitlines()==['1','1','2','3','1','2','1','1','2','3','4','3','3','1','2','1,9,3','9,3','1,2,1,2','1,2','1,2','1,2','8','','0'],results[0].stdout
+                if name == 'array_basic':
+                    assert results[0].stdout.splitlines()==['4','4','1,2,3,4','true','false','2,3','1,9,8,7,4','1,2,3,4','1,9,8,6,4','1,9,8,7,4','4','1,1,9,8','1,2,3,4','2','true,false','Hello,Dev','true','false','false'],results[0].stdout
                 if name == 'array_index':
                     assert results[0].stdout.splitlines()==['0: 10','1: 20','2: 30','32','2','true','true','1','2','63','slice 0: 20','slice 1: 30','10','20','30'],results[0].stdout
                 if name == 'array_sort_target':

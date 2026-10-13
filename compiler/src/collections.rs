@@ -1,6 +1,7 @@
 use crate::ast::*;
 use crate::codegen::{c_type, Emitter, Value};
 include!("array_methods.rs");
+include!("array_basic.rs");
 impl Emitter<'_> {
     pub(crate) fn resolve_collection_element(&self, t: &Type) -> Type {
         if let Type::Nominal(n) = t {
@@ -73,8 +74,18 @@ impl Emitter<'_> {
         span: Span,
     ) -> Result<Value, String> {
         let previous = self.writing;
-        self.writing = ["push", "pop", "clear", "set", "remove", "shift", "unshift", "reverse", "sort"].contains(&op);
+        self.writing = ["push", "pop", "clear", "set", "remove", "shift", "unshift", "reverse", "sort", "delete", "copyWithin", "splice"].contains(&op);
         let mut v = self.expr(base, None)?;
+        self.writing=previous;
+        if op=="isArray" {
+            if !args.is_empty() {return self.fail(span,"isArray expects no arguments");}
+            let is_array=matches!(v.ty,Type::Array(..)|Type::Vector(..)|Type::Slice(..));
+            if v.ty==Type::Void {self.prelude.push_str(&format!("{};\n",v.code));return Ok(Value{code:"false".into(),ty:Type::Bool,lvalue:false});}
+            v=self.sequence_save(v);
+            let code=if crate::dynamic::is_dynamic(&v.ty) {self.dynamic_enable(span)?;format!("dev_dynamic_is_array({})",v.code)} else {is_array.to_string()};
+            return Ok(Value{code,ty:Type::Bool,lvalue:false});
+        }
+        let op=if op=="length" {"len"} else {op};
         if crate::dynamic::is_dynamic(&v.ty) && (op == "len" || op == "$iter_len") && args.is_empty() {
             return Ok(Value {code: format!("{}({}, {})", if op == "$iter_len" {"dev_dynamic_array_len"} else {"dev_dynamic_len"}, v.code, self.location(span)), ty: Type::Size {signed:false}, lvalue:false});
         }
@@ -89,7 +100,7 @@ impl Emitter<'_> {
                 self.prelude.push_str(&format!("{};\nmemcpy({temporary}, {}, sizeof({temporary}));\n", crate::codegen::declaration(&v.ty, &temporary), v.code));
             }
             if op == "len" && args.is_empty() {return Ok(Value {code: count.to_string(), ty: Type::Size {signed:false}, lvalue:false});}
-            if !["slice","includes","indexOf","lastIndexOf","at","concat","toVec","toReversed","toSorted","join","map","filter","reduce","forEach","some","every","findIndex","findLastIndex"].contains(&op) {return self.fail(span, "fixed arrays support read-only methods; use Vec for mutation methods");}
+            if !["slice","includes","indexOf","lastIndexOf","at","concat","toVec","toReversed","toSorted","toString","flat","toSpliced","join","map","filter","reduce","forEach","some","every","findIndex","findLastIndex"].contains(&op) {return self.fail(span, "fixed arrays support read-only methods; use Vec for mutation methods");}
             let ty = Type::Vector(inner);
             let name = self.collection(&ty);
             v = self.owned(Value {code: format!("{name}_make({temporary}, {count})"), ty, lvalue:false});
@@ -104,7 +115,8 @@ impl Emitter<'_> {
         };
         let element = self.resolve_collection_element(inner);
         let name = self.collection(&v.ty);
-        if ["at","concat","toVec","toReversed","toSorted","join","shift","unshift","reverse","sort","map","filter","reduce","forEach","some","every","findIndex","findLastIndex"].contains(&op) {
+        if ["toString","flat","delete","copyWithin","splice","toSpliced"].contains(&op) {return self.basic_array_method(v,&element,op,args,span);}
+        if ["at","concat","toVec","toReversed","toSorted","toString","flat","toSpliced","join","shift","unshift","reverse","sort","map","filter","reduce","forEach","some","every","findIndex","findLastIndex"].contains(&op) {
             return self.array_method(v, &element, op, args, span);
         }
         let count = match op {
@@ -195,7 +207,7 @@ impl Emitter<'_> {
         out
     }
     pub(crate) fn collection_definitions(&mut self) -> String {
-        let mut out = String::new();
+        let mut out = String::from("static size_t dev_array_normalize(size_t n,int64_t i) {if(i<0){uint64_t d=(uint64_t)(-(i+1))+1;return d>n?0:n-(size_t)d;}return (uint64_t)i>n?n:(size_t)i;}\n");
         let mut types = self.collection_types.values().cloned().collect::<Vec<_>>();
         types.sort_by_key(c_type);
         for t in types

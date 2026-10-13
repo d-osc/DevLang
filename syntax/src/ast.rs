@@ -420,3 +420,14 @@ pub fn callback_context_type(t: &Type) -> Option<Type> {
         ],
     ))
 }
+
+pub fn array_flat_depth(args: &[Expr]) -> Result<usize, String> {
+    if args.is_empty() {return Ok(1);}
+    if args.len()!=1 {return Err("flat expects zero arguments or a literal depth".into());}
+    let ExprKind::Number(n)=&args[0].kind else {return Err("flat depth must be a decimal integer literal from 0 to 32".into());};
+    let depth=n.replace('_', "").parse::<usize>().map_err(|_|"flat depth must be a decimal integer literal from 0 to 32")?;
+    if depth>32 {return Err("flat depth must be a decimal integer literal from 0 to 32".into());}Ok(depth)
+}
+pub fn array_flat_element(mut element: Type,depth:usize)->Type {
+    for _ in 0..depth {element=match element {Type::Vector(t)|Type::Slice(t)|Type::Array(t,_)=>*t,t=>return t};}element
+}

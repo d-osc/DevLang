@@ -41,6 +41,7 @@ include!("storage_libs.rs");
 include!("secure_network.rs");
 include!("sync_lib.rs");
 include!("array_methods.rs");
+include!("array_basic.rs");
 
 impl Value {
     pub(crate) fn ty(&self) -> Type {
@@ -1392,11 +1393,17 @@ impl Engine {
         args: &[Expr],
     ) -> Result<Value, String> {
         let resolved;
-        let base=if op=="sort" {resolved=self.sort_target(f,base)?; &resolved} else {base};
+        let base=if ["sort","delete","copyWithin","splice"].contains(&op) {resolved=self.sort_target(f,base)?; &resolved} else {base};
         let iteration=op=="$iter_len";
         let op=if iteration {"len"} else {op};
         let mut value = self.eval(f, base, None)?;
         let fixed_array=matches!(value,Value::Array(..));
+        if op=="isArray" {
+            if !args.is_empty() {return Err("isArray expects no arguments".into());}
+            return Ok(Value::Bool(matches!(&value,Value::Array(..)|Value::Vector(..)|Value::Slice(..)) || matches!(&value,Value::Json(node,_) if node.is_array())));
+        }
+        let op=if op=="length" {"len"} else {op};
+
         if let Value::Json(node, _) = &value {
             if (op == "len" || op == "$iter_len") && args.is_empty() {
                 let array = node.as_array().ok_or("collection iteration requires an array")?;
@@ -1415,6 +1422,10 @@ impl Engine {
             return Err("collection method requires Vec or Slice".into());
         };
         let element = self.resolve_collection_element(inner)?;
+        if ["toString","flat","delete","copyWithin","splice","toSpliced"].contains(&op) {
+            if ["delete","copyWithin","splice"].contains(&op) && (fixed_array || !matches!(ty,Type::Vector(_))) {return Err("mutable array method requires a writable Vec".into());}
+            return self.basic_array_method(f,base,value,&element,op,args);
+        }
         if op=="sort" || op=="toSorted" {
             if op=="sort" && (fixed_array || !matches!(ty,Type::Vector(_))) {return Err("sort requires a writable Vec; use toSorted for Array or Slice".into());}
             let sorted=self.array_sort(f,value,&element,args,base.span)?;
@@ -1741,6 +1752,9 @@ impl Engine {
                                 .clone(),
                                 ty,
                             ),
+                            Value::Array(items,_) if name=="length" => Value::Int(items.len() as i128,Type::Size {signed:false}),
+                            Value::Vector(items,_) if name=="length" => Value::Int(items.len() as i128,Type::Size {signed:false}),
+                            Value::Slice(_,_,len,_) if name=="length" => Value::Int(len as i128,Type::Size {signed:false}),
                             Value::Record(fields, _) => fields
                                 .into_iter()
                                 .find(|(n, _)| n == name)

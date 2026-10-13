@@ -67,6 +67,7 @@ impl Expand {
                 let Some(t) = self.infer(id, a, None)? else {
                     return Ok(None);
                 };
+                if n=="length" && matches!(t,Type::Array(..)|Type::Vector(..)|Type::Slice(..)) {return Ok(Some(Type::Size {signed:false}));}
                 let Type::Record(_, fs) = self.concrete(&t) else {
                     return Ok(None);
                 };
@@ -160,20 +161,27 @@ impl Expand {
                 }
             }
             ExprKind::Collection(a, op, args) => {
+                if op=="isArray" {return Ok(Some(Type::Bool));}
                 let Some(t) = self.infer(id, a, None)? else {
                     return Ok(None);
                 };
                 match op.as_str() {
-                    "len" | "$iter_len" => Type::Size { signed: false },
-                    "clear" | "push" | "set" | "unshift" | "reverse" | "sort" | "forEach" => Type::Void,
-                    "contains" | "remove" | "includes" | "some" | "every" => Type::Bool,
+                    "len" | "length" | "$iter_len" => Type::Size { signed: false },
+                    "clear" | "push" | "set" | "unshift" | "reverse" | "sort" | "copyWithin" | "forEach" => Type::Void,
+                    "contains" | "remove" | "includes" | "isArray" | "some" | "every" => Type::Bool,
                     "indexOf" | "lastIndexOf" | "findIndex" | "findLastIndex" => Type::i64(),
-                    "join" => Type::Str,
-                    "at" | "shift" => {
+                    "join" | "toString" => Type::Str,
+                    "at" | "shift" | "delete" => {
                         if let Type::Vector(t) | Type::Slice(t) | Type::Array(t, _) = t {self.concrete(&t)} else {return Ok(None);}
                     }
-                    "concat" | "toVec" | "toReversed" | "toSorted" | "filter" => {
+                    "concat" | "toVec" | "toReversed" | "toSorted" | "filter" | "splice" | "toSpliced" => {
                         if let Type::Vector(t) | Type::Slice(t) | Type::Array(t, _) = t {Type::Vector(t)} else {return Ok(None);}
+                    }
+                    "flat" => {
+                        if let Type::Vector(t)|Type::Slice(t)|Type::Array(t,_)=t {
+                            let depth=array_flat_depth(args).map_err(|message|error(&self.paths[id],e.span,message))?;
+                            Type::Vector(Box::new(array_flat_element(*t,depth)))
+                        } else {return Ok(None);}
                     }
                     "map" | "reduce" => {
                         let Some(arg) = args.first() else {return Ok(None);};

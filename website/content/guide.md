@@ -548,7 +548,7 @@ remain allocated until process exit, as with string interpolation.
 unique Vec push/pop are amortized O(1). Fixed-array receivers currently convert
 through a temporary Vec, including at; do not assume zero-allocation access.
 
-ยังไม่มี splice, flat/flatMap, callback array arguments, หรือ find ที่คืน
+ยังไม่มี flatMap, callback array arguments, หรือ find ที่คืน
 optional value; ใช้ findIndex แล้วตรวจ -1 ก่อนเข้าถึงสมาชิก ไม่มี JavaScript coercion
 หรือ undefined และไม่ใช่ API ของไฟล์ .don โดยตรง
 
@@ -631,6 +631,74 @@ main()
 findLastIndex เรียก callback จากท้าย แต่ index ยังเป็นตำแหน่งเดิมของสมาชิก
 
 [Full runnable example / ตัวอย่างเต็ม](#/examples/array-index)
+
+
+## Basic Array Methods / เมธอดพื้นฐาน
+
+| Method | Available receiver | Parameters and return |
+| --- | --- | --- |
+| `length` / `length()` / `len()` | Array, Vec, Slice | Read-only usize element count |
+| `toString()` | Array, Vec, Slice | Comma-separated str; numeric/bool/str elements |
+| `at(index)` | Array, Vec, Slice | i64 index, negative from end; T or bounds error |
+| `join(separator)` | str Array, Vec, Slice | Explicit str separator; str result |
+| `pop()` / `shift()` | Writable Vec | Remove last/first; return T; empty is an error |
+| `push(value)` / `unshift(value)` | Writable Vec | Add last/first; return void |
+| `Array.isArray(value)` / `xs.isArray()` | Any value | bool; true for Array, Vec, Slice and DON arrays |
+| `delete(index)` | Writable Vec | Remove one element, shift following elements; return T |
+| `concat(other)` | Array, Vec, Slice | Compatible typed collection; return new Vec |
+| `copyWithin(target, start, end?)` | Writable Vec | i64 indices; overwrite from snapshot, preserve length; void |
+| `flat(depth?)` | Array, Vec, Slice | Literal depth 0..32 (default 1); return new Vec |
+| `slice(start, end)` | Array, Vec, Slice | Checked nonnegative bounds; end-exclusive Slice |
+| `splice(start, deleteCount?, ...items)` | Writable Vec | i64 start/count, same-type items; return removed Vec |
+| `toSpliced(start, deleteCount?, ...items)` | Array, Vec, Slice | Return edited copy as Vec; preserve input |
+
+```dev
+fn main() {
+    const values = [1, 2, 3, 4]
+    print(values.length) // 4
+    print(values.toString()) // 1,2,3,4
+    print(Array.isArray(values)) // true
+    let xs = values.toVec()
+    let removed = xs.splice(1, 2, 9, 8)
+    print(removed.toString()) // 2,3
+    print(xs.toString()) // 1,9,8,4
+    print(xs.delete(-1)) // 4
+    xs.copyWithin(1, 0, 2)
+    print(xs.toString()) // 1,1,9
+    print(values.toSpliced(1, 1, 99).toString()) // 1,99,3,4
+    let nested = Vec<Vec<i64>>(Vec<i64>(1, 2), Vec<i64>(3, 4))
+    print(nested.flat().toString()) // 1,2,3,4
+}
+main()
+```
+
+For splice/toSpliced, a negative start counts from the end and is clamped to the
+collection bounds. Negative deleteCount becomes zero; counts beyond the end are
+clamped. Omitted deleteCount removes the remaining suffix. Each replacement must
+match the element type. The removed Vec is a separate snapshot.
+copyWithin also normalizes negative indices and clips ranges; omitted end means
+length, end is exclusive, and end before start copies nothing. Overlap reads the
+original input, preserving existing Vec/Slice aliases. These operations take O(n)
+time and O(n) extra storage in the current implementation.
+
+DevLang uses dense typed collections: delete removes and shifts, it does not leave
+an undefined hole. Mutating methods require writable Vec, including copyWithin.
+Use toVec for a writable copy of Array/Slice. length is read-only; assign elements
+or use Vec methods to change contents. splice/toSpliced require at least start.
+flat's depth is a compile-time decimal integer literal so its result type is known;
+use Vec<Vec<T>> for nested native collections. flat(0) copies without flattening,
+and depth beyond the nesting level is harmless. Nested local fixed arrays remain
+unsupported in native. toString supports numeric, bool and str elements, without
+aggregate coercion; floating output follows each backend's scalar formatting.
+Native generated strings remain allocated until exit, as with interpolation.
+
+รองรับครบตามรายการนี้ โดย length อ่านได้อย่างเดียวและคืน usize, delete ลบแล้วเลื่อน
+สมาชิกโดยไม่สร้างช่องว่าง, splice คืนสมาชิกที่ลบ, toSpliced คืนสำเนาที่แก้แล้ว และ
+copyWithin คัดลอกจากข้อมูลเดิมแม้ช่วงทับกัน เมธอดที่แก้ข้อมูลใช้กับ Vec ที่เขียนได้
+flat ใช้กับชุดข้อมูลชนิดเดียวกันและระบุ depth เป็นตัวเลขคงที่ 0 ถึง 32 เท่านั้น
+Array.isArray ตรวจ DON array ได้ แต่เมธอดแก้ข้อมูลชุดนี้ยังไม่รองรับ DON array หลายชนิด
+
+[Full example / ตัวอย่างเต็ม](#/examples/array-basic)
 
 
 # [modules] Modules และ export

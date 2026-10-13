@@ -849,6 +849,11 @@ impl Expand {
                 }
                 let names = names.clone();
                 let args = args.clone();
+                if names.as_slice()==["Array", "isArray"] && !self.module_aliases[id].contains(&names[0]) {
+                    if args.len()!=1 {return Err(error(&self.paths[id],span,"Array.isArray expects one argument"));}
+                    e.kind=ExprKind::Collection(Box::new(args[0].clone()),"isArray".into(),vec![]);return Ok(());
+                }
+
                 if names.as_slice() == ["sizeof"] {
                     if args.len() != 1 {
                         return Err(error(
@@ -951,7 +956,7 @@ impl Expand {
                 if names.len() >= 2
                     && [
                         "set", "get", "contains", "remove", "push", "pop", "len", "slice", "clear", "includes", "indexOf", "lastIndexOf",
-                        "at", "concat", "toVec", "toReversed", "sort", "toSorted", "join", "shift", "unshift", "reverse",
+                        "at", "concat", "toVec", "toReversed", "sort", "toSorted", "join", "length", "toString", "isArray", "delete", "copyWithin", "flat", "splice", "toSpliced", "shift", "unshift", "reverse",
                         "map", "filter", "reduce", "forEach", "some", "every", "findIndex", "findLastIndex",
                     ]
                     .contains(&names.last().unwrap().as_str())

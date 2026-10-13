@@ -1536,5 +1536,19 @@
       "d build examples/array-reference/main.dev --release -o out/array-reference.exe"
     ],
     "notes": "Current source build. Full typed collection reference is available on the Array Reference page."
+  },
+  {
+    "id": "array-basic",
+    "title": "Basic Array Methods / เมธอดพื้นฐาน",
+    "category": "พื้นฐาน",
+    "path": "examples/array-basic/main.dev",
+    "description": "length, toString, isArray, delete, copyWithin, flat, splice and toSpliced.",
+    "doc": "array-reference",
+    "mode": "both",
+    "commands": [
+      "d examples/array-basic/main.dev",
+      "d build examples/array-basic/main.dev --release -o out/array-basic.exe"
+    ],
+    "notes": "Current source after v0.5.1. Dense typed collections; mutators require writable Vec. flat depth is a literal 0..32. Native nested collections use Vec<Vec<T>>."
   }
 ]
