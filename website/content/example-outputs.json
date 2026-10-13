@@ -553,5 +553,10 @@
     "source_sha256": "e408d89bb56ec35e1bb86ec18cf3f018d6dc99637a289b47c8f6f67a67e89f4b",
     "validation_sha256": "c3095d24f133984582d86ccf6815e8ddd3942fb0df0b06008ac7aca9c2b98870",
     "output": "-3\n1\n2\n2\n10\n10\n10\n-3\n10\napple,banana,zebra\n1\n0\n7\n"
+  },
+  "array-index": {
+    "source_sha256": "ae6fb6cffc9a1c312562654ce6704b22313a227c09e1c46d36e3464c306aeef6",
+    "validation_sha256": "d402949aeab4fc01c65c40e80abdf25b644f4eb4cf36ac4a0cd674a009cdfcee",
+    "output": "0: 10\n1: 20\n2: 30\n32\n2\ntrue\ntrue\n1\n2\n63\nslice 0: 20\nslice 1: 30\n10\n20\n30\n"
   }
 }

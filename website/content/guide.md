@@ -521,9 +521,9 @@ fn main() {
 main()
 ```
 
-Callbacks are Dev functions or closures with exactly one typed element parameter.
+Callbacks are Dev functions or closures with one typed element parameter and an optional index: i64.
 `map` returns a non-void value; `filter`, `some`, `every` and index predicates return
-bool; `forEach` returns void. `reduce` takes a callback with two parameters:
+bool; `forEach` returns void. `reduce` takes a callback with two parameters and an optional third index: i64:
 `fn(acc: A, item: T): A`, and an explicit initial value of A. Mapping or reducing
 cannot produce fixed arrays; use Vec for collection results. Captures follow the
 ordinary Dev snapshot rules. Array methods evaluate receiver, callback and initial
@@ -545,7 +545,7 @@ remain allocated until process exit, as with string interpolation.
 unique Vec push/pop are amortized O(1). Fixed-array receivers currently convert
 through a temporary Vec, including at; do not assume zero-allocation access.
 
-ยังไม่มี splice, flat/flatMap, callback index/array arguments, หรือ find ที่คืน
+ยังไม่มี splice, flat/flatMap, callback array arguments, หรือ find ที่คืน
 optional value; ใช้ findIndex แล้วตรวจ -1 ก่อนเข้าถึงสมาชิก ไม่มี JavaScript coercion
 หรือ undefined และไม่ใช่ API ของไฟล์ .don โดยตรง
 
@@ -599,6 +599,35 @@ UTF-8 แบบแยกตัวพิมพ์ใหญ่เล็ก ถ้�
 ใช้ได้ทั้ง runtime/native แต่ยังไม่รองรับ DON array ที่มีหลายชนิด
 
 [Full runnable example / ตัวอย่างเต็ม](#/examples/array-sort)
+
+
+## Callback index / ตำแหน่งสมาชิกใน callback
+
+Array, Vec and Slice iteration callbacks accept an optional final `index: i64`.
+Indices start at zero, relative to the receiver (including Slice), and refer to
+original input positions, not the filtered output. Existing one-parameter
+callbacks remain valid. `reduce` accepts index as its optional third parameter;
+sort comparators retain two parameters and do not receive an index.
+
+```dev
+fn main() {
+    const values = [10, 20, 30]
+    values.forEach(fn(value: i64, index: i64) { print("${index}: ${value}") })
+    let mapped = values.map(fn(value: i64, index: i64): i64 { return value + index })
+    print(mapped.at(2)) // 32
+    print(values.reduce(fn(acc: i64, value: i64, index: i64): i64 {
+        return acc + value + index
+    }, 0)) // 63
+}
+main()
+```
+
+ใช้ index ได้ใน map, filter, forEach, some, every, findIndex และ findLastIndex
+โดยเป็น parameter ตัวที่สอง ส่วน reduce เป็นตัวที่สาม ชนิดต้องเป็น i64 และเริ่มที่ 0
+เมื่อใช้ Slice จะนับจากจุดเริ่มของ Slice นั้น ไม่จำเป็นต้องใส่ index หากไม่ได้ใช้
+findLastIndex เรียก callback จากท้าย แต่ index ยังเป็นตำแหน่งเดิมของสมาชิก
+
+[Full runnable example / ตัวอย่างเต็ม](#/examples/array-index)
 
 
 # [modules] Modules และ export

@@ -135,23 +135,27 @@ impl Emitter<'_> {
         let params = params.clone();
         let ret = self.resolve_collection_element(ret);
         if op == "reduce" {
-            if params.len() != 2
+            if !(params.len() == 2 || params.len() == 3)
                 || self.resolve_collection_element(&params[0]) != ret
                 || self.resolve_collection_element(&params[1]) != *element
+                || (params.len() == 3 && params[2] != Type::i64())
             {
                 return self.fail(
                     span,
-                    "reduce callback requires fn(accumulator, element): accumulator",
+                    "reduce callback requires fn(accumulator, element[, index: i64]): accumulator",
                 );
             }
             if matches!(ret, Type::Void | Type::Array(..)) {
                 return self.fail(span, "reduce accumulator cannot be void or fixed array");
             }
         } else {
-            if params.len() != 1 || self.resolve_collection_element(&params[0]) != *element {
+            if !(params.len() == 1 || params.len() == 2)
+                || self.resolve_collection_element(&params[0]) != *element
+                || (params.len() == 2 && params[1] != Type::i64())
+            {
                 return self.fail(
                     span,
-                    "array callback requires one parameter matching the element type",
+                    "array callback requires an element parameter and optional index: i64",
                 );
             }
             if op == "map" && matches!(ret, Type::Void | Type::Array(..)) {
@@ -213,11 +217,14 @@ impl Emitter<'_> {
         let id = self.next_var;
         self.next_var += 1;
         let item = format!("{r}.data[{r}.offset + dev_array_i_{id}]");
-        let callback_args = if op == "reduce" {
+        let mut callback_args = if op == "reduce" {
             format!("{}, {item}", output.code)
         } else {
             item.clone()
         };
+        if params.len() == if op == "reduce" { 3 } else { 2 } {
+            callback_args.push_str(&format!(", (int64_t)dev_array_i_{id}"));
+        }
         let call = format!(
             "{}.call({}.context, {callback_args})",
             callback.code, callback.code

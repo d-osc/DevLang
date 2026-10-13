@@ -82,21 +82,26 @@ impl Engine {
         };
         let ret = self.resolve_collection_element(&ret)?;
         if op == "reduce" {
-            if params.len() != 2
+            if !(params.len() == 2 || params.len() == 3)
                 || self.resolve_collection_element(&params[0])? != ret
                 || self.resolve_collection_element(&params[1])? != *element
+                || (params.len() == 3 && params[2] != Type::i64())
             {
                 return Err(
-                    "reduce callback requires fn(accumulator, element): accumulator".into(),
+                    "reduce callback requires fn(accumulator, element[, index: i64]): accumulator"
+                        .into(),
                 );
             }
             if matches!(ret, Type::Void | Type::Array(..)) {
                 return Err("reduce accumulator cannot be void or fixed array".into());
             }
         } else {
-            if params.len() != 1 || self.resolve_collection_element(&params[0])? != *element {
+            if !(params.len() == 1 || params.len() == 2)
+                || self.resolve_collection_element(&params[0])? != *element
+                || (params.len() == 2 && params[1] != Type::i64())
+            {
                 return Err(
-                    "array callback requires one parameter matching the element type".into(),
+                    "array callback requires an element parameter and optional index: i64".into(),
                 );
             }
             if op == "map" && matches!(ret, Type::Void | Type::Array(..)) {
@@ -141,6 +146,9 @@ impl Engine {
                 values.push(accumulator.clone());
             }
             values.push(item.clone());
+            if params.len() == if op == "reduce" { 3 } else { 2 } {
+                values.push(Value::Int(index as i128, Type::i64()));
+            }
             let output = self.call(&module, &[name.clone()], values, span)?;
             match op {
                 "map" => result.push(output),

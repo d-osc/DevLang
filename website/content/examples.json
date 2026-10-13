@@ -1493,7 +1493,7 @@
       "d examples/array-methods/main.dev",
       "d build examples/array-methods/main.dev --release -o out/array-methods.exe"
     ],
-    "notes": "Current source after v0.5.1. Homogeneous Array, Vec and Slice; mutations require writable Vec. Callbacks take one element, reduce takes accumulator and element."
+    "notes": "Current source after v0.5.1. Homogeneous Array, Vec and Slice; mutations require writable Vec. Callbacks take element and optional index: i64; reduce takes accumulator, element and optional index: i64."
   },
   {
     "id": "array-sort",
@@ -1508,5 +1508,19 @@
       "d build examples/array-sort/main.dev --release -o out/array-sort.exe"
     ],
     "notes": "Current source after v0.5.1. sort mutates writable Vec and returns void; toSorted returns a new Vec from Array, Vec or Slice. Comparator fn(T,T):i64."
+  },
+  {
+    "id": "array-index",
+    "title": "Array callback index / ตำแหน่งสมาชิก",
+    "category": "พื้นฐาน",
+    "path": "examples/array-index/main.dev",
+    "description": "Optional index: i64 for collection iteration callbacks and reduce.",
+    "doc": "strings-arrays",
+    "mode": "both",
+    "commands": [
+      "d examples/array-index/main.dev",
+      "d build examples/array-index/main.dev --release -o out/array-index.exe"
+    ],
+    "notes": "Current source after v0.5.1. Index is zero-based and relative to the receiver, including Slice. Previous callback signatures remain supported."
   }
 ]

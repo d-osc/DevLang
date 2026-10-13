@@ -6,6 +6,7 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "array_index": 'fn main() {\n    const numbers = [10, 20, 30]\n    numbers.forEach(fn(value: i64, index: i64) {\n        print("${index}: ${value}")\n    })\n    let mapped = numbers.map(fn(value: i64, index: i64): i64 { return value + index })\n    print(mapped.at(2))\n    let selected = numbers.filter(fn(value: i64, index: i64): bool { return index % 2 == 0 })\n    print(selected.len())\n    print(numbers.some(fn(value: i64, index: i64): bool { return index == 1 }))\n    print(numbers.every(fn(value: i64, index: i64): bool { return value > index }))\n    print(numbers.findIndex(fn(value: i64, index: i64): bool { return index == 1 }))\n    print(numbers.findLastIndex(fn(value: i64, index: i64): bool { return index > 0 }))\n    print(numbers.reduce(fn(total: i64, value: i64, index: i64): i64 { return total + value + index }, 0))\n    numbers[1..3].forEach(fn(value: i64, index: i64) { print("slice ${index}: ${value}") })\n    numbers.forEach(fn(value: i64) { print(value) })\n}\nmain()\n',
     "array_sort_target": 'fn index():i64 {print("index once");return 0}\nfn main() {\n    let nested=Vec<Vec<i64>>(Vec<i64>(3,1,2))\n    nested[index()].sort()\n    print(nested[0].at(0))\n}\nmain()\n',
     "array_sort": 'fn main() {\n    const values = [10, 2, 1, 2, -3]\n    let sorted = values.toSorted()\n    for n in sorted { print(n) }\n    print(values.at(0))\n    let descending = values.toSorted(fn(a: i64, b: i64): i64 {\n        return a < b ? 1 : (a > b ? -1 : 0)\n    })\n    print(descending.at(0))\n    let queue = values.toVec()\n    let snapshot = queue.slice(0, 5)\n    queue.sort()\n    print(queue.at(0))\n    print(snapshot.at(0))\n    let words = ["zebra", "apple", "banana"].toSorted()\n    print(words.join(","))\n    let view = values[1..4].toSorted()\n    print(view.at(0))\n    let empty = Vec<i64>()\n    empty.sort()\n    print(empty.len())\n    print([7].toSorted().at(0))\n}\nmain()\n',
     "array_sort_managed": 'fn main() {\n    let xs=Vec<Ref<i64>>(ref(21),ref(10),ref(22),ref(11),ref(23))\n    let snapshot=xs.slice(0,5)\n    let divisor=ref(10)\n    xs.sort(fn(a:Ref<i64>,b:Ref<i64>):i64 {return deref(a)/deref(divisor)-deref(b)/deref(divisor)})\n    for n in xs {print(deref(n))}\n    print(deref(snapshot.at(0)))\n    let zero=xs.toSorted(fn(a:Ref<i64>,b:Ref<i64>):i64 {return 0})\n    for n in zero {print(deref(n))}\n    let asc=Vec<i64>(9223372036854775807,-9223372036854775808,0)\n    asc.sort()\n    print(asc.at(0))\n    print(asc.at(-1))\n    let floats=Vec<f64>(2.5,-1.5,0.0)\n    floats.sort()\n    print(floats.at(0))\n}\nmain()\n',
@@ -454,6 +455,9 @@ fn read(x:json.Value):str { return x.inner.name }
             'ternary_type': "print(true ? 1 : 'wrong')",
         }
         method_errors = {
+            "callback_index_type": "let xs=[1];xs.map(fn(value:i64,index:str):i64 {return value})",
+            "callback_index_arity": "let xs=[1];xs.forEach(fn(value:i64,index:i64,extra:i64) {})",
+            "reduce_index_type": "let xs=[1];xs.reduce(fn(a:i64,b:i64,index:bool):i64 {return a+b},0)",
             'sort_array': 'let xs=[1,2];xs.sort()',
             'sort_default_ref': 'let xs=Vec<Ref<i64>>(ref(1));xs.sort()',
             'sort_callback_type': 'let xs=[1,2];xs.toSorted(fn(a:i64,b:i64):bool {return a<b})',
@@ -509,6 +513,8 @@ fn read(x:json.Value):str { return x.inner.name }
             else:
                 assert all(r.returncode==0 for r in results),(name,[(r.stdout,r.stderr) for r in results])
                 assert len({r.stdout for r in results})==1,(name,[(r.stdout,r.stderr) for r in results])
+                if name == 'array_index':
+                    assert results[0].stdout.splitlines()==['0: 10','1: 20','2: 30','32','2','true','true','1','2','63','slice 0: 20','slice 1: 30','10','20','30'],results[0].stdout
                 if name == 'array_sort_target':
                     assert results[0].stdout.splitlines()==['index once','1'],results[0].stdout
                 if name == 'array_sort':
