@@ -357,6 +357,9 @@ print(factorial(5))
 
 # [strings-arrays] Strings และ fixed arrays
 
+[Array Reference / คู่มือรวม syntax และเมธอดทั้งหมด](#/docs/array-reference)
+
+
 ## String อ่านเป็น bytes
 
 ```dev

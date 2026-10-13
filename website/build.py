@@ -18,11 +18,12 @@ from markdown_it import MarkdownIt
 
 GROUPS = {
     'เริ่มต้น': ['intro', 'cheat-sheet', 'install', 'layout', 'cli', 'tooling', 'packages'],
-    'พื้นฐานภาษา': ['variables', 'types', 'operators', 'loops', 'functions', 'strings-arrays', 'modules'],
+    'พื้นฐานภาษา': ['variables', 'types', 'operators', 'loops', 'functions', 'strings-arrays', 'array-reference', 'modules'],
     'ข้อมูลและ abstraction': ['structs', 'enums-match', 'references', 'collections', 'generics', 'closures'],
     'ระบบและ interoperability': ['module-api-intro', 'tasks', 'sync', 'safety', 'ffi', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'don-editor', 'fs-http', 'node-core', 'limitations', 'ai'],
 }
 REFERENCES = {
+    'array-reference': ('Array Reference / คู่มืออ้างอิง array', 'docs/array-reference.md'),
     'cheat-sheet': ('Dev Language Cheat Sheet', 'docs/cheat-sheet.md'),
     'package-features': ('Scripts, resolution, offline and package security', 'docs/package-features.md'),
     'package-store': ('GitHub Package Store', 'docs/package-store.md'),

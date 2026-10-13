@@ -1,0 +1,17 @@
+fn main() {
+    const fixed: [i64; 3] = [10, 20, 30]
+    let repeated = [7; 3]
+    let vector = Vec<i64>(1, 2)
+    vector.push(3)
+    let view = fixed[1..3]
+    let [first, second, ...rest] = fixed
+    let merged = [...fixed, 40]
+    print(first)
+    print(second)
+    print(rest.at(0))
+    print(repeated.at(-1))
+    print(view.at(0))
+    print(merged.len())
+    for value in vector { print(value) }
+}
+main()

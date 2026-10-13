@@ -1522,5 +1522,19 @@
       "d build examples/array-index/main.dev --release -o out/array-index.exe"
     ],
     "notes": "Current source after v0.5.1. Index is zero-based and relative to the receiver, including Slice. Previous callback signatures remain supported."
+  },
+  {
+    "id": "array-reference",
+    "title": "Array Reference: syntax / รูปแบบการเขียน",
+    "category": "พื้นฐาน",
+    "path": "examples/array-reference/main.dev",
+    "description": "Fixed arrays, Vec, Slice, repeat, spread, destructuring and iteration.",
+    "doc": "array-reference",
+    "mode": "both",
+    "commands": [
+      "d examples/array-reference/main.dev",
+      "d build examples/array-reference/main.dev --release -o out/array-reference.exe"
+    ],
+    "notes": "Current source build. Full typed collection reference is available on the Array Reference page."
   }
 ]

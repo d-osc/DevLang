@@ -558,5 +558,10 @@
     "source_sha256": "ae6fb6cffc9a1c312562654ce6704b22313a227c09e1c46d36e3464c306aeef6",
     "validation_sha256": "d402949aeab4fc01c65c40e80abdf25b644f4eb4cf36ac4a0cd674a009cdfcee",
     "output": "0: 10\n1: 20\n2: 30\n32\n2\ntrue\ntrue\n1\n2\n63\nslice 0: 20\nslice 1: 30\n10\n20\n30\n"
+  },
+  "array-reference": {
+    "source_sha256": "ba311b85708ddbc17780dc870629be57a1cf9f6966a655c8263185a1863fcddc",
+    "validation_sha256": "0579f5bfb1a3527d6ebc0e238013974a2a5b7030725f461a53b5cfa7bf5ce586",
+    "output": "10\n20\n30\n7\n20\n4\n1\n2\n3\n"
   }
 }
