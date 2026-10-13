@@ -127,6 +127,12 @@ impl Expand {
                     }
                 }
             }
+            ExprKind::Conditional(_, yes, no, _) => {
+                let first = self.infer(id, yes, hint.clone())?;
+                let second = self.infer(id, no, hint)?;
+                let Some(t) = first.or(second) else { return Ok(None); };
+                t
+            }
             ExprKind::Binary(op, a, _) => {
                 if ["==", "!=", "<", ">", "<=", ">=", "&&", "||"].contains(&op.as_str()) {
                     Type::Bool

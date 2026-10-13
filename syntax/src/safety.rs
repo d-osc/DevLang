@@ -76,6 +76,11 @@ fn expression(
                 expression(ms, aliases, id, a, permitted)?;
             }
         }
+        ExprKind::Conditional(cond, yes, no, _) => {
+            expression(ms, aliases, id, cond, permitted)?;
+            expression(ms, aliases, id, yes, permitted)?;
+            expression(ms, aliases, id, no, permitted)?;
+        }
         ExprKind::Binary(_, a, b) | ExprKind::Index(a, b) => {
             expression(ms, aliases, id, a, permitted)?;
             expression(ms, aliases, id, b, permitted)?;

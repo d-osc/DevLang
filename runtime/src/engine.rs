@@ -1780,6 +1780,12 @@ impl Engine {
                     let v = self.eval(f, a, hint)?;
                     match (op.as_str(),v){("!",v)=>Value::Bool(!v.boolean()?),("-",Value::Int(n,t))=>Value::Int(wrap(-n,&t),t),("~",Value::Int(n,t))=>Value::Int(wrap(!n,&t),t),("-",Value::Float(n,t))=>Value::Float(-n,t),_=>return Err("raw pointers or unsupported unary operation; use devc for hardware access".into())}
                 }
+                ExprKind::Conditional(cond, yes, no, inferred) => {
+                    let hint = hint.or(inferred.as_ref());
+                    if self.eval(f, cond, Some(&Type::Bool))?.boolean()? {
+                        self.eval(f, yes, hint)?
+                    } else { self.eval(f, no, hint)? }
+                }
                 ExprKind::Binary(op, a, b) => {
                     let left = self.eval(f, a, hint.filter(|t| t.numeric()))?;
                     if op == "&&" && !left.boolean()? {

@@ -141,12 +141,38 @@ increase RAM usage. Native floats use `%.17g`, as native print does, whereas
 runtime floats use Rust display. Structs, collections and pointers are not
 implicitly converted to text. Freestanding interpolation is rejected.
 
+
+## Ternary operator / เลือกค่าด้วยเงื่อนไข
+
+`condition ? valueIfTrue : valueIfFalse` เลือกประเมินเพียงฝั่งเดียว
+เงื่อนไขต้องเป็น `bool` และผลลัพธ์สองฝั่งต้องมีชนิดเดียวกัน
+The condition must be bool and both branches must have the same type.
+Only the selected branch is evaluated. `?:` has lower precedence than `||`
+and associates to the right; use parentheses to make nested choices clearer.
+
+```dev
+fn main() {
+    let age = 18
+    const label = age >= 18 ? "adult" : "child"
+    print(label)
+    let score = 85
+    print(score >= 90 ? "A" : score >= 80 ? "B" : "C")
+    print(true ? 42 : 1 / 0) // The division is not evaluated.
+}
+main()
+```
+
+Supports runtime and hosted native builds from current source after v0.5.1.
+Native branches must produce a value; use Vec instead of returning a fixed array.
+See [ตัวอย่างเต็ม / Full example](#/examples/ternary).
+
 ## Expressions and control flow
 
 Operators, from low to high precedence:
 
 | Level | Operators |
 | --- | --- |
+| 0 | `?:` (right-associative) |
 | 1 | `or`, `||` |
 | 2 | `and`, `&&` |
 | 3–5 | `|`, `^`, `&` |

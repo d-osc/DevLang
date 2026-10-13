@@ -6,6 +6,33 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "ternary": """fn side(n:i64):i64 {print(n); return n}
+fn make(n:i64):Vec<i64> {let v=Vec<i64>(); v.push(n); return v}
+fn main() {
+  let age=18
+  print(age>=18 ? 'adult' : 'child')
+  print(false ? side(1) : side(2))
+  print(true ? 7 : 1/0)
+  print(false ? 1/0 : 9)
+  print(false ? 1 : true ? 2 : 3)
+  print(true || false ? 4 : 5)
+  let n:i32=6
+  let value=false ? n : 7
+  print(value+ (1 as i32))
+  let typed:i32=true ? 10 : 11
+  print(typed)
+  let user=true ? {name:'Dev'} : {name:'Other'}
+  print(user.name)
+  let vector=false ? make(1) : make(2)
+  print(vector[0])
+  let captured=12
+  let f=fn():i64 {return true ? captured : 0}
+  print(f())
+  print("${true ? 'yes' : 'no'}")
+}
+main()
+""",
+
     "constants": """fn main() {
   const user={name:'Dev',age:10,items:[1,2]}
   const {name, age}=user
@@ -269,6 +296,18 @@ fn read(x:json.Value):str { return x.inner.name }
             'const_collection': 'const x=Vec<i64>()\nx.push(1)',
             'const_capture': 'const x=1\nlet f=fn():void { x=2 }',
         }
+        ternary_errors = {
+            'ternary_condition': 'print(1 ? 2 : 3)',
+            'ternary_type': "print(true ? 1 : 'wrong')",
+        }
+        for name,code in ternary_errors.items():
+            source=root/(name+'.dev');source.write_text(code,encoding='utf-8')
+            commands=[[str(folder/('devrun'+suffix)),str(source),'--engine',engine] for engine in ['auto','ast']]
+            commands.append([str(folder/('devc'+suffix)),'build',str(source),'-o',str(root/(name+suffix))])
+            for command in commands:
+                result=run(command)
+                assert result.returncode != 0 and 'ternary' in result.stderr,(name,result.stderr)
+            print('PASS:',name)
         for name,code in const_errors.items():
             source=root/(name+'.dev');source.write_text(code,encoding='utf-8')
             commands=[[str(folder/('devrun'+suffix)),str(source),'--engine',engine] for engine in ['auto','ast']]
@@ -290,6 +329,8 @@ fn read(x:json.Value):str { return x.inner.name }
             else:
                 assert all(r.returncode==0 for r in results),(name,[(r.stdout,r.stderr) for r in results])
                 assert len({r.stdout for r in results})==1,(name,[(r.stdout,r.stderr) for r in results])
+                if name == 'ternary':
+                    assert results[0].stdout.splitlines() == ['adult','2','2','7','9','2','4','8','10','Dev','2','12','yes'],results[0].stdout
             print('PASS:',name)
     print(f'PASS: {len(CASES)} DON object scenarios and {len(FAILURES)} errors in auto/AST/native')
 

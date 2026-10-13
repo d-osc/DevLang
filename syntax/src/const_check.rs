@@ -83,6 +83,9 @@ impl Checker<'_> {
             }
         }
         match &expr.kind {
+            ExprKind::Conditional(cond, yes, no, _) => {
+                self.expr(cond, scope)?; self.expr(yes, scope)?; self.expr(no, scope)?;
+            }
             ExprKind::Closure(params, _, body) => {
                 let mut local = scope.clone();
                 for (name, _) in params { local.insert(name.clone(), false); }

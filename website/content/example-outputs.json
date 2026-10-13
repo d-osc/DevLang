@@ -513,5 +513,10 @@
     "source_sha256": "f0f19dc4893eb2e80042b11669df65493c3c8c5fdec14ecdd430064445d30ebe",
     "validation_sha256": "268fd96f301890788cc73ff3f48f880d3ec77e84dcb3f363071f23207ef19f71",
     "output": "Dev\n10\nDev\n100\n10\n11\n"
+  },
+  "ternary": {
+    "source_sha256": "aae84e5df36684c6874d46df2e0c6444ffa9d2f7250a5a0a757a66dbdc164c0b",
+    "validation_sha256": "61ae2a18fb544a59eef040910b5470611bb24055659712032f52b229f8b58b2a",
+    "output": "adult\nB\n42\n2\n"
   }
 }

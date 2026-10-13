@@ -209,6 +209,7 @@ Numeric types ไม่ผสมกันโดยอัตโนมัติ �
 | Boolean | `and or not`, `&& || !` |
 | Bitwise | `& | ^ ~ << >>` |
 | Conversion | `as Type` |
+| เลือกค่า / Conditional | `condition ? yes : no` |
 
 คูณ/หารมาก่อนบวก/ลบ จากนั้นเปรียบเทียบ แล้ว boolean ใช้วงเล็บเมื่อต้องการให้ลำดับชัดเจน `%` และ bitwise ใช้ integer เงื่อนไขต้องเป็น `bool` ไม่ถือว่าเลข 0/1 เป็น boolean
 
@@ -230,6 +231,32 @@ if score > 0 and score < 100 {
 - [if / else if / else](#/examples/conditions) — ทุกแขนงของเงื่อนไข รวม nested if และ early return
 - [&& / || / and / or / ! / not](#/examples/logical) — เปรียบเทียบสองรูปแบบ จัดกลุ่ม และพิสูจน์ short-circuit ด้วยฟังก์ชันที่พิมพ์ข้อความ
 - [คำนวณ เปรียบเทียบ และ bitwise](#/examples/operators) — Arithmetic, comparisons, shifts, bitwise, compound assignment และ sizeof
+
+
+## Ternary operator / เลือกค่าด้วยเงื่อนไข
+
+`condition ? valueIfTrue : valueIfFalse` เลือกประเมินเพียงฝั่งเดียว
+เงื่อนไขต้องเป็น `bool` และผลลัพธ์สองฝั่งต้องมีชนิดเดียวกัน
+The condition must be bool and both branches must have the same type.
+Only the selected branch is evaluated. `?:` has lower precedence than `||`
+and associates to the right; use parentheses to make nested choices clearer.
+
+```dev
+fn main() {
+    let age = 18
+    const label = age >= 18 ? "adult" : "child"
+    print(label)
+    let score = 85
+    print(score >= 90 ? "A" : score >= 80 ? "B" : "C")
+    print(true ? 42 : 1 / 0) // The division is not evaluated.
+}
+main()
+```
+
+Supports runtime and hosted native builds from current source after v0.5.1.
+Native branches must produce a value; use Vec instead of returning a fixed array.
+See [ตัวอย่างเต็ม / Full example](#/examples/ternary).
+
 
 # [loops] while, for, break และ continue
 

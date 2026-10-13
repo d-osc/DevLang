@@ -258,7 +258,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
             });
             continue;
         }
-        if "(){}[],;:.+-*/%=!<>&|^~".contains(c) {
+        if "(){}[],;:.?+-*/%=!<>&|^~".contains(c) {
             if c == '{' {
                 brace_nesting.push(nesting);
                 nesting = 0;

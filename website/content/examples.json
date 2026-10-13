@@ -1396,5 +1396,19 @@
       "d build examples/don/constants.dev --release -o out/constants.exe"
     ],
     "notes": "Current source build after v0.5.1. Assignment through const bindings is rejected, including fields and indexed elements."
+  },
+  {
+    "id": "ternary",
+    "title": "Ternary operator: condition ? yes : no",
+    "category": "พื้นฐาน",
+    "path": "examples/ternary/main.dev",
+    "description": "เลือกค่า, nested ternary, const และ short-circuit / Evaluate only the selected branch",
+    "doc": "operators",
+    "mode": "both",
+    "commands": [
+      "d examples/ternary/main.dev",
+      "d build examples/ternary/main.dev --release -o out/ternary.exe"
+    ],
+    "notes": "Current source build after v0.5.1. Conditions must be bool; both branches must have the same type."
   }
 ]

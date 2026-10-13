@@ -119,6 +119,7 @@ pub enum ExprKind {
     Name(Vec<String>),
     Unary(String, Box<Expr>),
     Binary(String, Box<Expr>, Box<Expr>),
+    Conditional(Box<Expr>, Box<Expr>, Box<Expr>, Option<Type>),
     Call(Vec<String>, Vec<Expr>),
     Cast(Box<Expr>, Type),
     Index(Box<Expr>, Box<Expr>),

@@ -133,6 +133,9 @@ fn free_expr(e: &Expr, bound: &HashSet<String>, free: &mut HashSet<String>) {
                 free_expr(a, bound, free)
             }
         }
+        ExprKind::Conditional(cond, yes, no, _) => {
+            free_expr(cond, bound, free); free_expr(yes, bound, free); free_expr(no, bound, free);
+        }
         ExprKind::Binary(_, a, b) | ExprKind::Index(a, b) => {
             free_expr(a, bound, free);
             free_expr(b, bound, free)

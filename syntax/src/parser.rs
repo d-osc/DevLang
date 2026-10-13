@@ -1077,6 +1077,13 @@ impl Parser {
                 };
                 continue;
             }
+            if min == 0 && self.eat("?") {
+                let yes = self.expr(0)?;
+                self.expect(":")?;
+                let no = self.expr(0)?;
+                left = Expr { kind: ExprKind::Conditional(Box::new(left), Box::new(yes), Box::new(no), None), span };
+                continue;
+            }
             let op = match &self.token().kind {
                 Kind::Symbol(s) | Kind::Word(s) => s.as_str(),
                 _ => break,

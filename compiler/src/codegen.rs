@@ -1384,6 +1384,34 @@ impl Emitter<'_> {
                     }
                 }
             }
+            ExprKind::Conditional(cond, yes, no, _) => {
+                let condition = self.expr(cond, Some(&Type::Bool))?;
+                self.compatible(&condition, &Type::Bool, cond.span)?;
+                let condition_name = format!("dev_cond_{}", self.next_var);
+                self.next_var += 1;
+                self.prelude.push_str(&format!("bool {condition_name}={};\n", condition.code));
+                let saved = std::mem::take(&mut self.prelude);
+                let start = self.temporaries.len();
+                let a = self.expr(yes, expected)?;
+                if matches!(a.ty, Type::Void | Type::Array(..)) {
+                    return self.fail(yes.span, "ternary branches must produce a non-array value");
+                }
+                let yes_prefix = std::mem::take(&mut self.prelude);
+                let yes_drop = self.temporary_cleanup(start);
+                self.temporaries.truncate(start);
+                let b = self.expr(no, Some(&a.ty))?;
+                self.compatible(&b, &a.ty, no.span)?;
+                let no_prefix = std::mem::take(&mut self.prelude);
+                let no_drop = self.temporary_cleanup(start);
+                self.temporaries.truncate(start);
+                let name = format!("dev_choice_{}", self.next_var);
+                self.next_var += 1;
+                let keep = self.manage(&a.ty, &name, true);
+                self.prelude = saved;
+                self.prelude.push_str(&format!("{};\nif({condition_name}) {{\n{yes_prefix}{name}={};\n{keep}{yes_drop}}} else {{\n{no_prefix}{name}={};\n{keep}{no_drop}}}\n", declaration(&a.ty, &name), a.code, b.code));
+                if contains_managed(&a.ty) { self.temporaries.push(Variable { name: name.clone(), ty: a.ty.clone() }); }
+                return Ok(Value { code: name, ty: a.ty, lvalue: false });
+            }
             ExprKind::Binary(op, left, right) => {
                 if op == "&&" || op == "||" {
                     let a = self.expr(left, Some(&Type::Bool))?;

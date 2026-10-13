@@ -697,6 +697,22 @@ impl Expand {
             | ExprKind::Dereference(a)
             | ExprKind::Unary(_, a)
             | ExprKind::Field(a, _) => self.expr(id, a, env)?,
+            ExprKind::Conditional(cond, yes, no, inferred) => {
+                let hint = expected.clone();
+                self.expr_hint(id, cond, env, Some(Type::Bool))?;
+                self.expr_hint(id, yes, env, hint.clone())?;
+                let branch_hint = hint.or(self.infer(id, yes, None)?);
+                self.expr_hint(id, no, env, branch_hint.clone())?;
+                if let Some(t) = self.infer(id, cond, Some(&Type::Bool))? {
+                    if t != Type::Bool { return Err(error(&self.paths[id], cond.span, "ternary condition must be bool")); }
+                }
+                let a = self.infer(id, yes, branch_hint.as_ref())?;
+                let b = self.infer(id, no, branch_hint.as_ref())?;
+                *inferred = a.clone().or(b.clone());
+                if let (Some(a), Some(b)) = (a, b) {
+                    if a != b { return Err(error(&self.paths[id], span, "ternary branches must have the same type")); }
+                }
+            }
             ExprKind::Binary(_, a, b) | ExprKind::Index(a, b) => {
                 self.expr(id, a, env)?;
                 self.expr(id, b, env)?;

@@ -121,6 +121,7 @@ impl Analysis {
             | ExprKind::Field(e, _)
             | ExprKind::Reference(e)
             | ExprKind::Dereference(e) => self.expr(e),
+            ExprKind::Conditional(cond, yes, no, _) => { self.expr(cond); self.expr(yes); self.expr(no); }
             ExprKind::Binary(_, a, b) | ExprKind::Index(a, b) => {
                 self.expr(a);
                 self.expr(b);
