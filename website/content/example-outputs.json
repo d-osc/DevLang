@@ -603,5 +603,20 @@
     "source_sha256": "d421f2c9f0b5307e44a3e6f122ca9cbf4a3fdd80f103788c8301ea4bd0e98e08",
     "validation_sha256": "e0551b4d87a4530faac73493ee936e121d5346ccde44d473f084f50807d02209",
     "output": "14\ntrue\n"
+  },
+  "object-aggregates": {
+    "source_sha256": "d17c8c989bcf9cd37a6308fe98c01b2f79cf549eedba0d54231f689d1457e7e8",
+    "validation_sha256": "7913718cc1c9cadb75884dab892615872800cf9b5a9e4bd3887eb36df528fa11",
+    "output": "7\n3\n1,2\n1,2,9\n6\nseven\n4\n42\n3\n"
+  },
+  "object-aggregates-managed": {
+    "source_sha256": "be8019578258fc7e5baaa72b006e180c29ae3e62659ccfef2b599b5db6f291aa",
+    "validation_sha256": "c024095f4fc4766d27e7aee303f112c603bff636a4750f6ff9f321b0cf2471c5",
+    "output": "1\n1,9\nDev\n3\n7\nend\n7\n12\nDev\n"
+  },
+  "object-aggregate-functions": {
+    "source_sha256": "c3668e3cfdb4f04faefd37a34e0fad74dbb7de97d70ca100d3df5ee72f190d05",
+    "validation_sha256": "38b9b8db85d8b25b50bdad88e3b252464df0f958270fdf0a52f31f514edc1a0f",
+    "output": "7\n8\n12\ntrue\n14\ntrue\n13\n"
   }
 }

@@ -17,6 +17,7 @@ typedef struct dev_dynamic_node {
 } dev_dynamic_node;
 static dev_dynamic_value dev_object_get(dev_dynamic_value,const char*,const char*,size_t,size_t);
 static dev_dynamic_value dev_object_update_path(dev_dynamic_value,size_t,const dev_dynamic_value*,dev_dynamic_value,const char*,const char*,size_t,size_t);
+static dev_dynamic_value dev_object_aggregate_data(dev_dynamic_value,const char*,size_t,size_t);
 static dev_dynamic_value dev_object_data_snapshot(dev_dynamic_value,const char*,size_t,size_t);
 static bool dev_object_same(dev_dynamic_value,dev_dynamic_value);
 typedef struct dev_dynamic_allocation { struct dev_dynamic_allocation *next; void *data; } dev_dynamic_allocation;
@@ -50,6 +51,7 @@ static inline dev_dynamic_value dev_dynamic_unboxed(dev_dynamic_value v) {v.boxe
 
 static inline dev_dynamic_value dev_dynamic_boxed(dev_dynamic_value v) {v.boxed=1;return v;}
 static inline dev_dynamic_value dev_dynamic_require_boxed(dev_dynamic_value v,const char *file,size_t line,size_t col) {
+    if(v.node&&dev_dynamic_node_of(v)->kind==10)dev_dynamic_error("typed aggregate requires explicit JSON/DON conversion",file,line,col);
     if(!v.boxed)dev_dynamic_error("expected json.Value, found scalar",file,line,col);return v;
 }
 static inline dev_dynamic_value dev_dynamic_require(dev_dynamic_value v,int expected,const char *file,size_t line,size_t col) {
@@ -154,10 +156,12 @@ static inline size_t dev_dynamic_find(dev_dynamic_value v,dev_dynamic_value key,
     dev_dynamic_error("DON field/index access requires object or array",file,line,col);return SIZE_MAX;
 }
 static inline dev_dynamic_value dev_dynamic_get(dev_dynamic_value v,dev_dynamic_value key,const char *file,size_t line,size_t col) {
+    v=dev_object_aggregate_data(v,file,line,col);
     if(v.node&&(dev_dynamic_node_of(v)->kind==8||dev_dynamic_node_of(v)->kind==9))return dev_object_get(v,dev_dynamic_as_string(key,file,line,col),file,line,col);
     size_t i=dev_dynamic_find(v,key,file,line,col);if(i==SIZE_MAX)dev_dynamic_error("missing DON object key",file,line,col);dev_dynamic_value result=dev_dynamic_node_of(v)->data.list.values[i];result.boxed=1;return result;
 }
 static inline dev_dynamic_value dev_dynamic_read(dev_dynamic_value v,dev_dynamic_value key,const char *file,size_t line,size_t col) {
+    v=dev_object_aggregate_data(v,file,line,col);
     if(dev_dynamic_tag(v)==6&&dev_dynamic_tag(key)==5&&!strcmp(dev_dynamic_node_of(key)->data.string,"length"))return dev_dynamic_typed(dev_dynamic_uint(dev_dynamic_node_of(v)->data.list.len),7);
     if(v.node&&(dev_dynamic_node_of(v)->kind==8||dev_dynamic_node_of(v)->kind==9))return dev_object_get(v,dev_dynamic_as_string(key,file,line,col),file,line,col);
     if(!v.boxed&&dev_dynamic_tag(v)==5) {

@@ -79,6 +79,7 @@ impl Emitter<'_> {
         if depth > 64 {
             return self.fail(span,"native DON encoding type nesting exceeds 64; flatten recursive references before encoding");
         }
+        let v = if matches!(v.ty,Type::Nominal(_)) && !is_dynamic(&v.ty) {Value{code:v.code,ty:self.resolve_collection_element(&v.ty),lvalue:v.lvalue}}else{v};
         if is_dynamic(&v.ty) {if self.object_boxing {return Ok(v);}return Ok(value(format!("dev_object_data_snapshot({}, {})",v.code,self.location(span)),v.ty));}
         if matches!(v.ty,Type::Function(..)) {if self.object_boxing {return self.object_function(v,span);}return self.fail(span,"functions require a prototype Object; use Object({...})");}
         match &v.ty {

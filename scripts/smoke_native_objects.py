@@ -6,6 +6,13 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "object_aggregate_modules": 'use "./aggregate_types" as model\nfn main(){let person=new model.Person(model.Point(2,3));let p:model.Point=person.point;print(p.x);let xs=Vec<model.Point>(p,model.Point(4,5));print(person.sum(xs))}\nmain()\n',
+    'object_aggregate_large_vector': 'use "std/json"\nfn main(){let xs=Vec<i64>();for i in 0..10000{xs.push(i)};let o=new Object({count:fn(this:json.Value,xs:Vec<i64>):usize{return xs.len()}});let total:usize=0;for i in 0..2000{total+=o.count(xs)};print(total);print(xs.at(-1))}\nmain()\n',
+    'object_aggregate_escape': 'use "std/json"\nstruct Holder{values:Vec<i64>}\nfn make():json.Value{let o=new Object({store:fn(this:json.Value,h:Holder){this.h=h}});let h=Holder(Vec<i64>(7,8));o.store(h);return o}\nfn main(){let o=make();let h:Holder=o.h;print(h.values.toString());h.values.push(9);let old:Holder=o.h;print(old.values.toString());print(h.values.toString())}\nmain()\n',
+    'object_aggregate_json': 'use "std/json"\nstruct Point{x:i64}\nfn main(){let o=new Object({f:fn(this:json.Value,p:json.Value):i64{return p.x}});let p=Point(7);print(o.f(p));print(Object.keys(p).join(","));let xs=Vec<i64>(1,2);let data=new Array(xs);print(json.stringify(data))}\nmain()\n',
+    "object_aggregate_functions": 'use "std/json"\nfn make(n: i64): fn(i64): i64{return fn(x: i64): i64{return n+x}}\nfn main(){\n    let object = new Object({\n            apply:fn(this: json.Value,f: fn(i64): i64,x: i64): i64{return f(x)}\n            copy:fn(this: json.Value,f: fn(i64): i64): fn(i64): i64{return f}\n            cb:make(10)\n    })\n    let callback = make(3)\n    print(object.apply(callback,4))\n    let copied: fn(i64): i64 = object.copy(callback)\n    print(copied(5))\n    let saved: fn(i64): i64 = object.cb\n    print(saved(2))\n    print(object.cb==object.cb)\n    Object.defineProperty(object, "getter", {\n        get: fn(this: json.Value): fn(i64): i64 { return this.cb }\n    })\n    let fromGetter: fn(i64): i64 = object.getter\n    print(fromGetter(4))\n    print(object.getter == object.cb)\n    Object.freeze(object)\n    print(saved(3))\n}\nmain()\n',
+    'object_aggregates': 'use "std/json"\nstruct Point { x:i64; y:i64 }\nenum Choice { None; Pair(i64) }\nfn Person(this:json.Value,p:Point){this.point=p}\nfn main(){\n let obj=new Object({\n  sum:fn(this:json.Value,p:Point):i64{return p.x+p.y}\n  copy:fn(this:json.Value,p:Point):Point{return p}\n  vector:fn(this:json.Value,xs:Vec<i64>):Vec<i64>{xs.push(9);return xs}\n  fixed:fn(this:json.Value,xs:[i64;2]):[i64;2]{return xs}\n  map:fn(this:json.Value,xs:Map<i64,str>):str{return xs.get(7)}\n  reference:fn(this:json.Value,p:Ref<Point>):Point{return deref(p)}\n  choice:fn(this:json.Value,c:Choice):Choice{return c}\n })\n let p=Point(3,4)\n print(obj.sum(p))\n let copy:Point=obj.copy(p)\n print(copy.x)\n let xs=Vec<i64>(1,2)\n let changed:Vec<i64>=obj.vector(xs)\n print(xs.toString());print(changed.toString())\n let fixed:[i64;2]=[5,6]\n let result:[i64;2]=obj.fixed(fixed)\n print(result[1])\n let map=Map<i64,str>();map.set(7,"seven")\n print(obj.map(map))\n let reference=ref(p)\n let point:Point=obj.reference(reference)\n print(point.y)\n let choice:Choice=obj.choice(Choice.Pair(42))\n match choice {None=>{print(0)} Pair(n)=>{print(n)}}\n let person=new Person(p)\n let stored:Point=person.point\n print(stored.x)\n}\nmain()\n',
+    'object_aggregates_managed': 'use "std/json"\nstruct Holder { values:Vec<i64>; name:str }\nenum List { Nil; Cons(i64,Ref<List>) }\nfn main(){\n let o=new Object({\n  holder:fn(this:json.Value,h:Holder):Holder{h.values.push(9);return h}\n  view:fn(this:json.Value,s:Slice<i64>):i64{return s.at(0)}\n  list:fn(this:json.Value,l:List):List{return l}\n  refList:fn(this:json.Value,l:Ref<List>):List{return deref(l)}\n  jsonData:fn(this:json.Value,p:json.Value):i64{return p.n}\n  store:fn(this:json.Value,h:Holder){this.h=h}\n })\n let h=Holder(Vec<i64>(1),"Dev")\n let out:Holder=o.holder(h)\n print(h.values.toString());print(out.values.toString());print(out.name)\n let xs=Vec<i64>(3,4);let s=xs[0..2]\n xs[0]=99\n print(o.view(s))\n let l=List.Cons(7,ref(List.Nil()))\n let copy:List=o.list(l)\n match copy {Nil=>{} Cons(n,next)=>{print(n);match deref(next){Nil=>{print("end")} Cons(_,_)=>{}}}}\n let copied:List=o.refList(ref(l))\n match copied {Nil=>{} Cons(n,_)=>{print(n)}}\n let data={n:12}\n print(o.jsonData(data))\n o.store(h)\n let stored:Holder=o.h\n print(stored.name)\n}\nmain()\n',
     "dynamic_array_integer_search": 'fn main(){let big:u64=18446744073709551615;let xs=new Array(9007199254740992,big,-1);print(xs.includes(9007199254740993));print(xs.includes(9007199254740992.0));print(xs.includes(18446744073709551616.0));print(xs.includes(-1.0));print(xs.indexOf(big))}\nmain()\n',
     "dynamic_array_methods": 'use "std/json"\nfn main(){\n let xs=new Array("Dev",42,true,null,0.1)\n print(xs.includes(42))\n print(xs.indexOf("Dev"))\n print(xs.lastIndexOf(null))\n print(xs.join("|"))\n print(xs.toString())\n let sorted=new Array(10,2,1).toSorted()\n print(sorted.toString())\n let ns=new Array(10,2,1)\n ns.sort(fn(a:json.Value,b:json.Value):i64{return json.int(a)-json.int(b)})\n print(ns.toString())\n let nested=new Array([1,[2,3]],[],[4])\n print(json.stringify(nested.flat()))\n print(nested.flat().toString())\n print(json.stringify(nested.flat(2)))\n print(nested.flat(2).toString())\n let p=new Object({name:"Dev"})\n let os=new Array(p,p,new Object({name:"Other"}))\n print(os.indexOf(p))\n print(os.lastIndexOf(p))\n print(os.includes(new Object({name:"Dev"})))\n print(os.join(","))\n Object.defineProperty(p,"toString",{value:fn(this:json.Value):str{return this.name},configurable:true})\n print(os.join(","))\n let nestedObjects=new Array([p])\n let flatObjects=nestedObjects.flat()\n print(flatObjects.includes(p))\n print(flatObjects.join(","))\n}\nmain()\n',
     "math_order": 'fn side(n:i64):i64 {print(n);return n}\nfn main(){print(Math.max(side(1),side(2),side(3)));print(Math.min(side(4),side(5)))}\nmain()\n',
@@ -393,6 +400,12 @@ print(y.inner.name)
 ''',
 }
 FAILURES = {
+    "object_aggregate_implicit_json": 'use "std/json"\nstruct Point{x:i64}\nfn main(){let o=new Object({copy:fn(this:json.Value,p:Point):Point{return p}});let p:json.Value=o.copy(Point(1));print(json.stringify(p))}\nmain()\n',
+    "object_aggregate_function_type": 'use "std/json"\nfn main(){let o=new Object({f:fn(this:json.Value,cb:fn(i64):i64):i64{return cb(1)}});let cb=fn(x:i32):i64{return x as i64};print(o.f(cb))}\nmain()\n',
+    'object_aggregate_nominal': 'use "std/json"\nstruct A{x:i64}\nstruct B{x:i64}\nfn main(){let o=new Object({f:fn(this:json.Value,a:A):i64{return a.x}});print(o.f(B(1)))}\nmain()\n',
+    'object_aggregate_length': 'use "std/json"\nfn main(){let o=new Object({f:fn(this:json.Value,a:[i64;2]):i64{return a[0]}});let xs=[1,2,3];print(o.f(xs))}\nmain()\n',
+    'object_aggregate_element': 'use "std/json"\nfn main(){let o=new Object({f:fn(this:json.Value,a:Vec<i64>):i64{return a.at(0)}});let xs=Vec<i32>(1);print(o.f(xs))}\nmain()\n',
+    'object_aggregate_don': 'use "std/json"\nstruct A{x:i64}\nfn main(){let o=new Object({f:fn(this:json.Value,a:A):i64{return a.x}});print(o.f({x:1}))}\nmain()\n',
     "array_constructor_negative": 'fn main(){let xs=new Array(-1);print(xs.length)}\nmain()\n',
     "array_constructor_fraction": 'fn main(){let xs=new Array(1.5);print(xs.length)}\nmain()\n',
     "array_constructor_limit": 'fn main(){let xs=new Array(1000001);print(xs.length)}\nmain()\n',
@@ -448,6 +461,7 @@ def main():
         return subprocess.run(argv,capture_output=True,text=True,encoding='utf-8',timeout=60)
     with tempfile.TemporaryDirectory() as tmp:
         root=Path(tmp)
+        (root/"aggregate_types.dev").write_text('use "std/json"\nstruct Point{x:i64;y:i64}\nfn Person(this:json.Value,p:Point){this.point=p;this.sum=fn(this:json.Value,xs:Vec<Point>):i64{let n:i64=0;for p in xs{n+=p.x+p.y};return n}}\n',encoding="utf-8",newline="\n")
         (root/'objects.dev').write_text('''use "std/json"
 fn make(name:str):json.Value { return {inner:{name:name}} }
 fn copy(x:json.Value):json.Value { return x }
@@ -567,6 +581,20 @@ fn read(x:json.Value):str { return x.inner.name }
                     assert results[0].stdout.splitlines()==['1','1','2','3','1','2','1','1','2','3','4','3','3','1','2','1,9,3','9,3','1,2,1,2','1,2','1,2','1,2','8','','0'],results[0].stdout
                 if name == 'array_basic':
                     assert results[0].stdout.splitlines()==['4','4','1,2,3,4','true','false','2,3','1,9,8,7,4','1,2,3,4','1,9,8,6,4','1,9,8,7,4','4','1,1,9,8','1,2,3,4','2','true,false','Hello,Dev','true','false','false'],results[0].stdout
+                if name == 'object_aggregate_modules':
+                    assert results[0].stdout.splitlines()==['2','14'],results[0].stdout
+                if name == 'object_aggregate_large_vector':
+                    assert results[0].stdout.splitlines()==['20000000','9999'],results[0].stdout
+                if name == 'object_aggregate_escape':
+                    assert results[0].stdout.splitlines()==['7,8','7,8','7,8,9'],results[0].stdout
+                if name == 'object_aggregate_json':
+                    assert results[0].stdout.splitlines()==['7','x','[[1,2]]'],results[0].stdout
+                if name == 'object_aggregate_functions':
+                    assert results[0].stdout.splitlines()==['7','8','12','true','14','true','13'],results[0].stdout
+                if name == 'object_aggregates':
+                    assert results[0].stdout.splitlines()==['7','3','1,2','1,2,9','6','seven','4','42','3'],results[0].stdout
+                if name == 'object_aggregates_managed':
+                    assert results[0].stdout.splitlines()==['1','1,9','Dev','3','7','end','7','12','Dev'],results[0].stdout
                 if name == 'dynamic_array_integer_search':
                     assert results[0].stdout.splitlines()==['false','true','false','true','1'],results[0].stdout
                 if name == 'dynamic_array_methods':

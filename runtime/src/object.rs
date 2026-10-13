@@ -192,12 +192,10 @@ impl Engine {
         let property = self
             .object_lookup(&object, key)?
             .ok_or_else(|| format!("missing object property '{key}'"))?;
-        if let Some(get) = property.get {
-            return self.object_invoke(get, vec![object], span);
-        }
-        Ok(property
-            .value
-            .unwrap_or_else(|| Value::Json(Arc::new(serde_json::Value::Null), object_type())))
+        let value=if let Some(get)=property.get {self.object_invoke(get,vec![object],span)?}else{
+            property.value.unwrap_or_else(||Value::Json(Arc::new(serde_json::Value::Null),object_type()))
+        };
+        Ok(if matches!(value,Value::Callable(..)){object_function(value)}else{value})
     }
     fn object_invoke(
         &mut self,

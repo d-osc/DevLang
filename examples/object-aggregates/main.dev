@@ -1,0 +1,36 @@
+use "std/json"
+struct Point { x: i64; y: i64 }
+enum Choice { None; Pair(i64) }
+fn Person(this: json.Value,p: Point){this.point = p}
+fn main(){
+    let obj = new Object({
+            sum:fn(this: json.Value,p: Point): i64{return p.x+p.y}
+            copy:fn(this: json.Value,p: Point): Point{return p}
+            vector:fn(this: json.Value,xs: Vec<i64>): Vec<i64>{xs.push(9);return xs}
+            fixed:fn(this: json.Value,xs: [i64;2]): [i64;2]{return xs}
+            map:fn(this: json.Value,xs: Map<i64,str>): str{return xs.get(7)}
+            reference:fn(this: json.Value,p: Ref<Point>): Point{return deref(p)}
+            choice:fn(this: json.Value,c: Choice): Choice{return c}
+    })
+    let p = Point(3,4)
+    print(obj.sum(p))
+    let copy: Point = obj.copy(p)
+    print(copy.x)
+    let xs = Vec<i64>(1,2)
+    let changed: Vec<i64>=obj.vector(xs)
+    print(xs.toString());print(changed.toString())
+    let fixed: [i64;2] = [5,6]
+    let result: [i64;2] = obj.fixed(fixed)
+    print(result[1])
+    let map = Map<i64,str>();map.set(7,"seven")
+    print(obj.map(map))
+    let reference = ref(p)
+    let point: Point = obj.reference(reference)
+    print(point.y)
+    let choice: Choice = obj.choice(Choice.Pair(42))
+    match choice {None=>{print(0)} Pair(n)=>{print(n)}}
+    let person = new Person(p)
+    let stored: Point = person.point
+    print(stored.x)
+}
+main()

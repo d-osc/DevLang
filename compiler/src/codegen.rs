@@ -363,6 +363,10 @@ fn generate_inner(
         } else if !module.statements.is_empty() {
             return Err(error(&module.path,Span{line:1,col:1},"imported modules contain declarations only; call their functions from the entry file"));
         }
+        let mut local_definitions=String::new();let mut local_seen=seen.clone();
+        let mut helper_types=emitter.managed_helpers.iter().collect::<Vec<_>>();helper_types.sort_by_key(|(key,_)|*key);
+        for (_,t) in helper_types {definitions(t,&mut local_seen,&mut local_definitions,&registry);}
+        source.push_str(&local_definitions);
         if emitter.uses_dynamic {object_runtime_used=true;source.push_str(include_str!("dynamic.c"));source.push_str(crate::object::HELPERS);source.push_str(include_str!("dynamic_array.c"));}
         if emitter.uses_templates { source.push_str(INTERPOLATION_HELPERS); }
         if emitter.uses_math {source.push_str(crate::js_math::HELPERS);}
@@ -395,6 +399,11 @@ fn generate_inner(
         source.push_str(&emitter.callback_definitions());
         let mut adapters = emitter.adapters.iter().collect::<Vec<_>>();
         adapters.sort_by_key(|(n, _)| *n);
+        for (name, _) in &adapters {
+            if name.starts_with("object_adapter_")||name.starts_with("object_encoder_") {
+                source.push_str(&format!("static dev_dynamic_value {name}(const void*,size_t,const dev_dynamic_value*,const char*,size_t,size_t);\n"));
+            }
+        }
         for (_, code) in adapters {
             source.push_str(code);
         }

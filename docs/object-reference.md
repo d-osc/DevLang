@@ -81,9 +81,9 @@ Data descriptor ใช้ `value` กับ `writable` ส่วน accessor ใ
 
 ## Serialization and limits / การแปลงข้อมูลและข้อจำกัด
 
-JSON/DON serialization evaluates own enumerable getters and omits function properties and inherited properties. Names are sorted deterministically. Missing descriptors use null; DevLang has no JavaScript undefined. Native callback arguments currently support scalar types and json.Value/don.Value. Prototype allocations in native programs live until process exit; the source runtime collects unreachable prototype cycles through arrays, maps, references and closures. GC.collect() requests a pass. Cycles hidden in foreign resources or Task internals remain conservative roots. This is prototype inheritance with DevLang's strict types, not full JavaScript compatibility.
+JSON/DON serialization evaluates own enumerable getters and omits function properties and inherited properties. Names are sorted deterministically. Missing descriptors use null; DevLang has no JavaScript undefined. Native callback arguments and results support strict scalar types, struct/enum values, Array/Vec/Slice/Map/Ref and Dev function values. Aggregate types must match exactly; DON object literals do not implicitly become structs. Use explicit type annotations for aggregate/function method results. Managed arguments and results retain ownership and collection copy-on-write behavior. Prototype allocations in native programs live until process exit; the source runtime collects unreachable prototype cycles through arrays, maps, references and closures. GC.collect() requests a pass. Cycles hidden in foreign resources or Task internals remain conservative roots. This is prototype inheritance with DevLang's strict types, not full JavaScript compatibility.
 
-JSON/DON แปลงเฉพาะ own enumerable property โดยเรียก getter และไม่รวม function หรือ property ที่สืบทอดมา ชื่อเรียงลำดับแน่นอน ไม่มี undefined แบบ JavaScript Native callback รองรับ scalar และ json.Value/don.Value ในขณะนี้ allocation ของ native prototype อยู่จนโปรแกรมจบ runtime เก็บวงจร prototype ผ่าน array/map/reference/closure ได้แล้ว ใช้ GC.collect() ขอเก็บเองได้ แต่ cycle ผ่าน foreign resource หรือภายใน Task ยังเก็บแบบ conservative
+JSON/DON แปลงเฉพาะ own enumerable property โดยเรียก getter และไม่รวม function หรือ property ที่สืบทอดมา ชื่อเรียงลำดับแน่นอน ไม่มี undefined แบบ JavaScript Native callback รับส่ง struct/enum, Array/Vec/Slice/Map/Ref และ Dev function ได้แล้ว ชนิดต้องตรงกัน ห้ามใช้ DON literal แทน struct โดยอัตโนมัติ และควรระบุชนิดของผลลัพธ์ที่เป็น aggregate/function allocation ของ native prototype อยู่จนโปรแกรมจบ runtime เก็บวงจร prototype ผ่าน array/map/reference/closure ได้แล้ว ใช้ GC.collect() ขอเก็บเองได้ แต่ cycle ผ่าน foreign resource หรือภายใน Task ยังเก็บแบบ conservative
 
 ## Constructor syntax / Syntax constructor
 
@@ -103,3 +103,29 @@ fn main() {
 }
 main()
 ```
+
+## Typed callback values / ค่าที่มีชนิดใน callback
+
+```dev
+use "std/json"
+struct Point { x: i64; y: i64 }
+fn main() {
+    let object = new Object({
+        sum: fn(this: json.Value, point: Point): i64 {
+            return point.x + point.y
+        }
+        copy: fn(this: json.Value, point: Point): Point { return point }
+    })
+    let point = Point(3, 4)
+    print(object.sum(point))
+    let copied: Point = object.copy(point)
+    print(copied.x)
+}
+main()
+```
+
+The callback boundary checks nominal type identity, array length, collection element types and function signatures before invoking native code. Pass declared typed arrays rather than untyped array literals. A captured Dev function keeps its context when passed or returned. Native typed arguments borrow a retained caller value for the invocation, without serializing collection contents. JSON/DON encoding is lazy. Escaping property/result payloads hold retained copies until process exit, following the native arena lifetime. Native JSON/DON conversion is separate: payload enums, non-string-key maps and recursive reference layouts can be passed as typed values but do not gain JSON serialization support. Raw pointer parameters and Task values remain unsupported at the Object callback boundary. This does not change the C extern/callback ABI.
+
+callback ตรวจชนิด struct/enum, ความยาว array, ชนิดสมาชิก collection และ signature ของ function ก่อนเรียก native code closure จะเก็บ context ไว้ได้ argument แบบ typed ยืมค่าที่ถูก retain ไว้ระหว่างเรียก โดยไม่ serialize สมาชิก collection จนกว่าจะต้องใช้ JSON/DON ส่วนค่าที่เก็บลง property หรือส่งคืนจะมี retained payload อยู่ใน arena จนจบโปรแกรม การรับส่ง enum payload, Map ที่ key ไม่ใช่ str และ Ref แบบ recursive ไม่ได้ทำให้แปลง JSON/DON ได้ ส่วน raw pointer และ Task ยังไม่รองรับผ่าน boundary นี้ และไม่เปลี่ยน ABI ของ C FFI
+
+[Typed structs, arrays and constructors / ตัวอย่าง](#/examples/object-aggregates) · [Managed values and recursive enums / ตัวอย่าง managed](#/examples/object-aggregates-managed) · [Captured functions / ตัวอย่าง closure](#/examples/object-aggregate-functions)

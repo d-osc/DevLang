@@ -1,0 +1,30 @@
+use "std/json"
+struct Holder { values: Vec<i64>; name: str }
+enum List { Nil; Cons(i64,Ref<List>) }
+fn main(){
+    let o = new Object({
+            holder:fn(this: json.Value,h: Holder): Holder{h.values.push(9);return h}
+            view:fn(this: json.Value,s: Slice<i64>): i64{return s.at(0)}
+            list:fn(this: json.Value,l: List): List{return l}
+            refList:fn(this: json.Value,l: Ref<List>): List{return deref(l)}
+            jsonData:fn(this: json.Value,p: json.Value): i64{return p.n}
+            store:fn(this: json.Value,h: Holder){this.h = h}
+    })
+    let h = Holder(Vec<i64>(1),"Dev")
+    let out: Holder = o.holder(h)
+    print(h.values.toString());print(out.values.toString());print(out.name)
+    let xs = Vec<i64>(3,4);let s = xs[0..2]
+    xs[0] = 99
+    print(o.view(s))
+    let l = List.Cons(7,ref(List.Nil()))
+    let copy: List = o.list(l)
+    match copy {Nil=>{} Cons(n,next)=>{print(n);match deref(next){Nil=>{print("end")} Cons(_,_)=>{}}}}
+    let copied: List = o.refList(ref(l))
+    match copied {Nil=>{} Cons(n,_)=>{print(n)}}
+    let data = {n:12}
+    print(o.jsonData(data))
+    o.store(h)
+    let stored: Holder = o.h
+    print(stored.name)
+}
+main()

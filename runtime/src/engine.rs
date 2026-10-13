@@ -171,6 +171,7 @@ pub(crate) fn float_to_integer(n: f64, t: &Type) -> Result<i128, String> {
 }
 
 pub(crate) fn convert(v: Value, t: &Type, explicit: bool) -> Result<Value, String> {
+    if matches!(t,Type::Function(..)) {if let Value::PrototypeFunction(inner,_) = &v {return convert((**inner).clone(),t,explicit);}}
     if matches!(t,Type::Record(n,_)|Type::Nominal(n) if n=="dev_dynamic_value" || n=="dev_dynamic_don_value") {
         match v {Value::Callable(..)=>return Ok(Value::PrototypeFunction(Box::new(v),t.clone())),Value::PrototypeArray(values,_)=>return Ok(Value::PrototypeArray(values,t.clone())),Value::PrototypeObject(object,_)=>return Ok(Value::PrototypeObject(object,t.clone())),Value::PrototypeFunction(function,_)=>return Ok(Value::PrototypeFunction(function,t.clone())),_=>{}}
     }

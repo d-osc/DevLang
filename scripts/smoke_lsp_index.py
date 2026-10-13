@@ -18,7 +18,7 @@ def send(binary,messages):
 def main():
  args=argparse.ArgumentParser();args.add_argument('--bin',required=True);binary=Path(args.parse_args().bin).resolve()
  with tempfile.TemporaryDirectory() as d:
-  root=Path(d);helper=root/'helper.dev';helper.write_text('fn add(a:i64,b:i64):i64{return a+b}\n',encoding='utf-8')
+  root=Path(d).resolve();helper=root/'helper.dev';helper.write_text('fn add(a:i64,b:i64):i64{return a+b}\n',encoding='utf-8')
   main=root/'main.dev';text='use "./helper" as math\nfn main(){print(math.add(1,2));print(Math.sin(0))}\nmain()\n';main.write_text(text,encoding='utf-8');uri=main.as_uri();helper_uri=helper.as_uri()
   base={'textDocument':{'uri':uri}};add=text.splitlines()[1].index('add')+1;sin=text.splitlines()[1].index('sin')+1
   (root/'target').mkdir();(root/'target/ignored.dev').write_text('fn should_not_index(){}',encoding='utf-8')

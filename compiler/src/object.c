@@ -14,6 +14,9 @@ typedef struct dev_object_meta {
 typedef dev_dynamic_value (*dev_object_adapter)(const void *, size_t,
                                                 const dev_dynamic_value *,
                                                 const char *, size_t, size_t);
+typedef struct dev_object_aggregate {
+ const char *type;void *payload;size_t size;dev_object_adapter encode;
+} dev_object_aggregate;
 typedef struct dev_object_function {
   struct dev_object_function *next;
   dev_object_adapter invoke;
@@ -21,6 +24,8 @@ typedef struct dev_object_function {
   const void *context;
   const char *identity;
   void *payload;
+  const char *signature;
+  size_t size;
   int builtin, result_kind;
   size_t argc;
   const char *name;
@@ -282,7 +287,7 @@ static dev_dynamic_value
 dev_object_function_value(dev_object_adapter invoke, void (*original)(void),
                           const void *context, const char *identity,
                           const void *payload, size_t size,
-                          void (*keep)(void *), size_t argc, int result_kind) {
+                          void (*keep)(void *), size_t argc, int result_kind, const char *signature) {
   dev_dynamic_value root = dev_object_root();
   dev_object_lock(&dev_object_global_lock);
   for (dev_object_function *f = dev_object_global_functions; f; f = f->next)
@@ -306,6 +311,8 @@ dev_object_function_value(dev_object_adapter invoke, void (*original)(void),
   keep(f->payload);
   f->node = (dev_dynamic_node *)v.node;
   f->node->data.opaque = f;
+  f->signature=dev_dynamic_copy_string(signature);
+  f->size=size;
   dev_object_init(&f->meta, root);
   dev_dynamic_value proto = dev_object_new(root);
   dev_object_property prop = dev_object_data_prop("prototype", proto);
@@ -320,9 +327,25 @@ dev_object_function_value(dev_object_adapter invoke, void (*original)(void),
   dev_object_unlock(&dev_object_global_lock);
   return v;
 }
+/* Preserve nominal aggregate types for callbacks without aliasing mutable COW storage. */
+static dev_dynamic_value dev_object_aggregate_value(dev_object_adapter encode,const char *type,const void *payload,size_t size,void(*keep)(void*)) {
+ dev_dynamic_value out=dev_dynamic_make(10);dev_object_aggregate *a=dev_dynamic_alloc(sizeof(*a));
+ a->encode=encode;a->type=dev_dynamic_copy_string(type);a->size=size;
+ a->payload=dev_dynamic_alloc(size);memcpy(a->payload,payload,size);keep(a->payload);
+ ((dev_dynamic_node*)out.node)->data.opaque=a;return out;
+}
+static dev_dynamic_value dev_object_aggregate_data(dev_dynamic_value v,const char *p,size_t l,size_t c) {
+ const dev_dynamic_node *n=dev_dynamic_node_of(v);
+ if(n&&n->kind==10){const dev_object_aggregate *a=n->data.opaque;if(!a->encode)dev_dynamic_error("typed aggregate cannot be represented as JSON/DON data",p,l,c);return a->encode(a->payload,0,NULL,p,l,c);}return v;
+}
+static const void *dev_object_aggregate_require(dev_dynamic_value value,const char *type,size_t size,const char *p,size_t l,size_t c) {
+ const dev_dynamic_node *n=dev_dynamic_node_of(value);const char *actual=NULL;const void *payload=NULL;size_t bytes=0;
+ if(n&&n->kind==10){const dev_object_aggregate *a=n->data.opaque;actual=a->type;payload=a->payload;bytes=a->size;}
+ else if(n&&n->kind==8){const dev_object_function *f=n->data.opaque;actual=f->signature;payload=f->payload;bytes=f->size;}
+ if(!actual||strcmp(actual,type)||bytes!=size)dev_dynamic_error("Object callback aggregate type mismatch",p,l,c);return payload;
+}
 static dev_dynamic_value dev_object_box_data(dev_dynamic_value v) {
-  v.boxed = 1;
-  return v;
+ v=dev_object_aggregate_data(v,"<Object>",0,0);v.boxed=1;return v;
 }
 static bool dev_object_same(dev_dynamic_value a, dev_dynamic_value b) {
   if (a.node == b.node)
@@ -500,6 +523,7 @@ static bool dev_object_contains_reference(dev_dynamic_value v, unsigned depth) {
 static dev_dynamic_value dev_object_data_snapshot(dev_dynamic_value v,
                                                   const char *p, size_t l,
                                                   size_t c) {
+  v=dev_object_aggregate_data(v,p,l,c);
   if (!dev_object_contains_reference(v, 0)) {
     v.boxed = 1;
     return v;
@@ -643,6 +667,15 @@ static dev_dynamic_value dev_object_descriptor(dev_object_property property) {
 static dev_dynamic_value dev_object_api(const char *name, size_t argc,
                                         const dev_dynamic_value *argv,
                                         const char *p, size_t l, size_t c) {
+  if(strcmp(name,"construct")){
+    dev_dynamic_value *data=NULL;
+    for(size_t i=0;i<argc;i++)if(argv[i].node&&dev_dynamic_node_of(argv[i])->kind==10){
+      if(!data){data=dev_dynamic_alloc(argc*sizeof(*data));memcpy(data,argv,argc*sizeof(*data));}
+      data[i]=dev_object_aggregate_data(argv[i],p,l,c);
+    }
+    if(data)argv=data;
+  }
+
   if (!strcmp(name, "array")) {
     size_t count = argc;
     bool length = argc == 1 && !argv[0].boxed &&

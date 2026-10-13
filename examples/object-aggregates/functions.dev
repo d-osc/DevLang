@@ -1,0 +1,25 @@
+use "std/json"
+fn make(n: i64): fn(i64): i64{return fn(x: i64): i64{return n+x}}
+fn main(){
+    let object = new Object({
+            apply:fn(this: json.Value,f: fn(i64): i64,x: i64): i64{return f(x)}
+            copy:fn(this: json.Value,f: fn(i64): i64): fn(i64): i64{return f}
+            cb:make(10)
+    })
+    let callback = make(3)
+    print(object.apply(callback,4))
+    let copied: fn(i64): i64 = object.copy(callback)
+    print(copied(5))
+    let saved: fn(i64): i64 = object.cb
+    print(saved(2))
+    print(object.cb==object.cb)
+    Object.defineProperty(object, "getter", {
+        get: fn(this: json.Value): fn(i64): i64 { return this.cb }
+    })
+    let fromGetter: fn(i64): i64 = object.getter
+    print(fromGetter(4))
+    print(object.getter == object.cb)
+    Object.freeze(object)
+    print(saved(3))
+}
+main()

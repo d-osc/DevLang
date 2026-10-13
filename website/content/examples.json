@@ -1634,5 +1634,41 @@
       "d examples/prototype-gc/main.dev"
     ],
     "mode": "runtime"
+  },
+  {
+    "id": "object-aggregates",
+    "title": "Typed Object Callbacks",
+    "category": "Objects",
+    "path": "examples/object-aggregates/main.dev",
+    "description": "Typed values across Object callbacks / รับส่งค่าที่มีชนิดผ่าน Object callbacks",
+    "doc": "object-reference",
+    "commands": [
+      "d examples/object-aggregates/main.dev",
+      "d build examples/object-aggregates/main.dev -o out/example.exe"
+    ]
+  },
+  {
+    "id": "object-aggregates-managed",
+    "title": "Managed Object Callback Values",
+    "category": "Objects",
+    "path": "examples/object-aggregates/managed.dev",
+    "description": "Typed values across Object callbacks / รับส่งค่าที่มีชนิดผ่าน Object callbacks",
+    "doc": "object-reference",
+    "commands": [
+      "d examples/object-aggregates/managed.dev",
+      "d build examples/object-aggregates/managed.dev -o out/example.exe"
+    ]
+  },
+  {
+    "id": "object-aggregate-functions",
+    "title": "Object Callback Functions",
+    "category": "Objects",
+    "path": "examples/object-aggregates/functions.dev",
+    "description": "Typed values across Object callbacks / รับส่งค่าที่มีชนิดผ่าน Object callbacks",
+    "doc": "object-reference",
+    "commands": [
+      "d examples/object-aggregates/functions.dev",
+      "d build examples/object-aggregates/functions.dev -o out/example.exe"
+    ]
   }
 ]
