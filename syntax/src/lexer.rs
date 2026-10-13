@@ -18,6 +18,9 @@ pub struct Token {
 }
 
 pub fn lex(source: &str) -> Result<Vec<Token>, (Span, String)> {
+    if source.len() > 8 * 1024 * 1024 {
+        return Err((Span { line: 1, col: 1 }, "source size limit exceeded (8 MiB)".into()));
+    }
     let chars: Vec<char> = source.chars().collect();
     let (mut i, mut line, mut col, mut nesting) = (0, 1, 1, 0usize);
     let mut brace_nesting = Vec::new();

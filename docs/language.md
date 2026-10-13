@@ -285,7 +285,7 @@ Clang/GCC backend flags include `-fwrapv` for signed addition/subtraction/multip
 
 Ordinary named calls and Dev function values evaluate arguments from left to right, as do array literals and spread parts. Binary operands and native callback invocation still follow C evaluation rules; split state-changing operands into statements if their order matters. `and/or` retain C's short-circuit behavior. Volatile accesses are observable C accesses, not atomic synchronization, CPU fences, DMA cache maintenance or a substitute for platform drivers.
 
-Compiler limits currently include 512 modules, 8 MiB per source file, and 1..1,000,000 elements per explicitly sized array. Deeply nested source is not hardened against exhausting the parser stack. The language is an initial implementation, with no ownership/lifetime system or production safety guarantees.
+Compiler limits currently include 512 modules, 8 MiB per source file, and 1..1,000,000 elements per explicitly sized array. Parsing rejects source beyond 32 active recursive parser frames or 128 expression AST levels, including left-associated and postfix chains. These are resource limits, not a sandbox; generated code should split deeply nested expressions into intermediate variables. The lexer also enforces the 8 MiB limit for formatter/editor entry points. The language is an initial implementation, with no ownership/lifetime system or production safety guarantees.
 
 ## Range for
 

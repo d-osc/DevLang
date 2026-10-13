@@ -2,6 +2,94 @@ use crate::ast::*;
 use crate::lexer::{lex, Kind, Token};
 use std::path::PathBuf;
 
+// Iterative traversal also bounds left-associated/postfix trees, whose parsing
+// itself does not recurse. Check before constructing the next wrapper node.
+fn expression_depth_ok(root: &Expr) -> bool {
+    let mut work = vec![(root, 1usize)];
+    while let Some((expr, depth)) = work.pop() {
+        if depth > MAX_EXPRESSION_DEPTH { return false; }
+        let mut push = |child| work.push((child, depth + 1));
+        match &expr.kind {
+            ExprKind::Unary(_, a) | ExprKind::Cast(a, _) | ExprKind::Field(a, _)
+            | ExprKind::Reference(a) | ExprKind::Dereference(a) | ExprKind::Repeat(a, _) => push(a),
+            ExprKind::Binary(_, a, b) | ExprKind::Index(a, b) => { push(a); push(b); }
+            ExprKind::Conditional(a, b, c, _) => { push(a); push(b); push(c); }
+            ExprKind::Invoke(a, xs) | ExprKind::Collection(a, _, xs) => {
+                push(a); for x in xs { push(x); }
+            }
+            ExprKind::Call(_, xs) | ExprKind::GenericCall(_, _, xs) | ExprKind::Array(xs)
+            | ExprKind::Record(_, xs) | ExprKind::Enum(_, _, xs) | ExprKind::Vector(_, xs) => {
+                for x in xs { push(x); }
+            }
+            ExprKind::Object(_, xs) => { for (_, x) in xs { push(x); } }
+            ExprKind::Spread(xs) => { for (_, x) in xs { push(x); } }
+            ExprKind::Callable(_, Some(a), _) => push(a),
+            // Closure bodies are checked by the statement/parser guards.
+            ExprKind::Closure(..) | ExprKind::Callable(_, None, _) | ExprKind::SizeOf(_)
+            | ExprKind::Map(_) | ExprKind::Number(_) | ExprKind::String(_)
+            | ExprKind::Bool(_) | ExprKind::Name(_) => {}
+        }
+    }
+    true
+}
+
+#[cfg(test)]
+mod resource_limit_tests {
+    use super::*;
+
+    #[test]
+    fn malformed_token_sequences_do_not_panic() {
+        let pieces = ["fn", "let", "const", "if", "else", "match", "Some", "Ref", "x", "1", "true", "{", "}", "(", ")", "[", "]", "<", ">", ":", "=", "+", "!", ",", "\n", "\"${x}\""];
+        let mut seed = 0x91a7_u64;
+        for _ in 0..1000 {
+            let mut source = String::new();
+            for _ in 0..80 {
+                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+                source.push_str(pieces[(seed >> 32) as usize % pieces.len()]);
+                source.push(' ');
+            }
+            // Both editor and executable parser paths must tolerate bad input.
+            let _ = parse("mutated.dev".into(), &source);
+            let _ = type_annotations("mutated.dev".into(), &source);
+        }
+    }
+
+    #[test]
+    fn all_parser_entries_enforce_source_byte_limit() {
+        let source = " ".repeat(8 * 1024 * 1024 + 1);
+        assert!(parse("large.dev".into(), &source).unwrap_err().contains("source size limit"));
+        assert!(type_annotations("large.dev".into(), &source).unwrap_err().contains("source size limit"));
+    }
+
+    #[test]
+    fn adversarial_sources_return_diagnostics_on_small_stack() {
+        // Exercise parser + annotation/formatter entry on the ordinary worker
+        // stack, rather than relying on the runtime's larger interpreter stack.
+        std::thread::Builder::new().stack_size(2 * 1024 * 1024).spawn(|| {
+            let cases = [
+                format!("let x = {}1{}", "(".repeat(5000), ")".repeat(5000)),
+                format!("let x = {}true", "!".repeat(5000)),
+                format!("let x = {}1", "1 + ".repeat(5000)),
+                format!("let x = f(){}", ".x".repeat(5000)),
+                format!("fn main() {{ {}print(1){} }}", "if true { ".repeat(5000), " }".repeat(5000)),
+                format!("if true {{}} {} {{}}", "else if true {} ".repeat(5000)),
+                format!("fn f(x: {}i32{}) {{}}", "Ref<".repeat(5000), ">".repeat(5000)),
+                format!("match x {{ Some({}v{}) => {{}} }}", "Some(".repeat(5000), ")".repeat(5000)),
+            ];
+            for source in cases {
+                let error = parse("hostile.dev".into(), &source).unwrap_err();
+                assert!(error.contains("limit exceeded"), "{error}");
+                let error = type_annotations("hostile.dev".into(), &source).unwrap_err();
+                assert!(error.contains("limit exceeded"), "{error}");
+            }
+            let source = format!("let x = {}1{}", "(".repeat(12), ")".repeat(12));
+            assert!(parse("normal.dev".into(), &source).is_ok());
+            let source = format!("let x = [{}]", vec!["1"; 2000].join(","));
+            assert!(parse("wide.dev".into(), &source).is_ok());
+        }).unwrap().join().unwrap();
+    }
+}
+
 pub fn parse(path: PathBuf, source: &str) -> Result<Module, String> {
     let tokens = lex(source).map_err(|(span, msg)| error(&path, span, msg))?;
     Parser {
@@ -13,6 +101,7 @@ pub fn parse(path: PathBuf, source: &str) -> Result<Module, String> {
         array_newline_end: false,
         annotations: vec![],
         constants: vec![],
+        depth: 0,
     }
     .module()
 }
@@ -29,12 +118,17 @@ pub fn type_annotations(path: PathBuf, source: &str) -> Result<Vec<(Span, Span)>
         array_newline_end: false,
         annotations: vec![],
         constants: vec![],
+        depth: 0,
     };
     parser.module()?;
     Ok(parser.annotations)
 }
 
+const MAX_PARSE_DEPTH: usize = 32;
+const MAX_EXPRESSION_DEPTH: usize = 128;
+
 struct Parser {
+    depth: usize,
     constants: Vec<Span>,
     annotations: Vec<(Span, Span)>,
     object_literals: bool,
@@ -408,6 +502,13 @@ impl Parser {
         Ok(module)
     }
     fn ty(&mut self) -> Result<Type, String> {
+        if self.depth >= MAX_PARSE_DEPTH { return self.fail("source nesting limit exceeded (32 parser frames)"); }
+        self.depth += 1;
+        let result = self.ty_inner();
+        self.depth -= 1;
+        result
+    }
+    fn ty_inner(&mut self) -> Result<Type, String> {
         if self.is("fn") || self.is("callback") {
             let callback = self.eat("callback");
             if !callback {
@@ -577,6 +678,13 @@ impl Parser {
         false
     }
     fn block(&mut self) -> Result<Vec<Stmt>, String> {
+        if self.depth >= MAX_PARSE_DEPTH { return self.fail("source nesting limit exceeded (32 parser frames)"); }
+        self.depth += 1;
+        let result = self.block_inner();
+        self.depth -= 1;
+        result
+    }
+    fn block_inner(&mut self) -> Result<Vec<Stmt>, String> {
         self.separators();
         self.expect("{")?;
         self.separators();
@@ -592,6 +700,13 @@ impl Parser {
         Ok(body)
     }
     fn pattern(&mut self) -> Result<Pattern, String> {
+        if self.depth >= MAX_PARSE_DEPTH { return self.fail("source nesting limit exceeded (32 parser frames)"); }
+        self.depth += 1;
+        let result = self.pattern_inner();
+        self.depth -= 1;
+        result
+    }
+    fn pattern_inner(&mut self) -> Result<Pattern, String> {
         let name = self.ident()?;
         if self.eat("(") {
             let mut ps = vec![];
@@ -608,6 +723,13 @@ impl Parser {
         }
     }
     fn stmt(&mut self) -> Result<Stmt, String> {
+        if self.depth >= MAX_PARSE_DEPTH { return self.fail("source nesting limit exceeded (32 parser frames)"); }
+        self.depth += 1;
+        let result = self.stmt_inner();
+        self.depth -= 1;
+        result
+    }
+    fn stmt_inner(&mut self) -> Result<Stmt, String> {
         let span = self.token().span;
         if self.eat("unsafe") {
             return Ok(Stmt::Unsafe(self.block()?));
@@ -935,6 +1057,13 @@ impl Parser {
         Ok(args)
     }
     fn expr(&mut self, min: u8) -> Result<Expr, String> {
+        if self.depth >= MAX_PARSE_DEPTH { return self.fail("source nesting limit exceeded (32 parser frames)"); }
+        self.depth += 1;
+        let result = self.expr_inner(min);
+        self.depth -= 1;
+        result
+    }
+    fn expr_inner(&mut self, min: u8) -> Result<Expr, String> {
         let token = self.bump();
         let span = token.span;
         let mut left = match token.kind {
@@ -971,6 +1100,7 @@ impl Parser {
                         array_newline_end: false,
                         annotations: vec![],
                         constants: vec![],
+                        depth: self.depth,
                     };
                     arguments.push(inner.expr(0)?);
                     if inner.token().kind != Kind::Eof {
@@ -1117,6 +1247,7 @@ impl Parser {
             _ => return Err(error(&self.path, span, "expected an expression")),
         };
         loop {
+            if !expression_depth_ok(&left) { return self.fail("expression depth limit exceeded (128 AST levels)"); }
             if self.array_newline_end && self.token().span.line > self.tokens[self.at-1].end_line { break; }
             if min <= 12
                 && self.is("<")

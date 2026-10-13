@@ -32,6 +32,8 @@ jobs:
         run: cargo build --workspace --release --locked
       - name: Rust tests
         run: cargo test --workspace --locked
+      - name: Source resource limits and allocation cycles
+        run: python scripts/smoke_production_limits.py --bin-dir target/release --report out/production-limits.json
       - name: DON-style object literals
         run: python scripts/smoke_don_objects.py --bin-dir target/release
       - name: Hosted native DON object parity

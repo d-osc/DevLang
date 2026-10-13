@@ -246,3 +246,43 @@ future work. Native LLDB debugging via `d debug --vscode` is a separate mode.
 จาก Command Palette ระบบบันทึกไฟล์ก่อนเปิด debugger ใน terminal ใช้คำสั่ง
 `break`, `step`, `next`, `locals`, `stack` และ `continue` ได้โดยไม่ต้อง compile
 ยังไม่เชื่อม breakpoint ที่ gutter หรือแผง Variables ของ VS Code
+
+## Production resource checks
+
+Run the reproducible resource checks after building all executables:
+
+```sh
+cargo build --workspace --release --locked
+cargo test --workspace --locked
+python scripts/smoke_production_limits.py --bin-dir target/release --iterations 100000 --report out/production-limits.json
+```
+
+The parser limits active recursive parsing to 32 frames and expression trees to
+128 levels. This covers expressions, types, blocks, patterns, else-if chains,
+and interpolation parsers; flat binary/postfix chains have a separate iterative
+AST-depth check. Lexer entry points reject source larger than 8 MiB, including
+formatter and annotation/editor parsing. Wide arrays are allowed when shallow.
+Generated expressions beyond these limits should use intermediate variables.
+
+The regression suite runs deeply nested inputs through runtime, native checking
+and formatting and requires a normal diagnostic exit, then repeatedly allocates
+cyclic prototype objects in both source engines. The report records check
+elapsed times and exit statuses. The cycle test checks retained prototype counts
+and preservation of a live object; it does not measure RSS or prove every
+allocation path is leak-free. CI runs a shorter 5,000-iteration version on
+Windows/Linux. Deterministic malformed-token tests complement these regressions;
+they are not continuous coverage-guided fuzzing.
+
+These checks improve reliability but do not certify general production use.
+Native strings/aggregate Object payloads and references still have allocations
+retained until process exit. Raw pointers/FFI still require manual lifetime
+validation. Thread-backed async and blocking network calls require workload
+specific concurrency limits. Long-running server qualification still needs
+memory measurements, hours-long soak tests, failure recovery and load tests.
+Running hostile source requires external process isolation and OS resource
+limits; parser limits alone do not provide a sandbox.
+
+ภาษาไทย: เพิ่มเพดาน parser และทดสอบ input ที่ซ้อนลึกผ่าน runtime/compiler/formatter
+พร้อมทดสอบการเก็บ object cycles ต่อเนื่องแล้ว แต่ผลนี้ยังไม่รับรอง production
+ทุกประเภท โดยเฉพาะ native ที่รันนานและ FFI ต้องปิดความเสี่ยงหน่วยความจำต่อ
+และทดสอบโหลดตามงานจริงก่อน deploy
