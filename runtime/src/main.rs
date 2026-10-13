@@ -15,6 +15,7 @@ devrun -e|--eval 'print(40 + 2)' [--timings] [-- arguments]
   -v, -V, --version  Show runtime version
   --timings        Print source-load and execution timings to stderr
   --ffi-lib PATH   Load a native shared library (.dll/.so), repeatable
+  --debug-runtime  Interactive source debugger (AST, main thread)
   --engine MODE    auto (default numeric plans) or ast (reference interpreter)
   --module-map FILE      Read JSON array of NAME=DIR mappings
   --module-dir NAME=DIR  Map an imported namespace (repeatable)
@@ -40,6 +41,7 @@ fn run() -> Result<i32, String> {
     let mut timings = false;
     let mut libraries = Vec::new();
     let mut numeric = true;
+    let mut debug_runtime = false;
     let mut module_dirs = std::collections::HashMap::new();
     let mut raw = std::env::args().skip(1);
     while let Some(arg) = raw.next() {
@@ -50,6 +52,7 @@ fn run() -> Result<i32, String> {
                 break;
             }
             "--timings" => timings = true,
+            "--debug-runtime" => debug_runtime = true,
             "--module-map" => {
                 let path = std::path::PathBuf::from(raw.next().ok_or("--module-map needs a file")?);
                 for (name, path) in dev_syntax::modules::mapping_file(&path)? {
@@ -121,9 +124,10 @@ fn run() -> Result<i32, String> {
         source.as_deref(),
         program_args,
         &libraries,
-        numeric,
+        numeric && !debug_runtime,
         module_dirs,
     )?;
+    if debug_runtime { engine.enable_debugger(); }
     let loaded = start.elapsed();
     let executed = Instant::now();
     let result = engine.run();
@@ -135,5 +139,5 @@ fn run() -> Result<i32, String> {
             executed.elapsed().as_secs_f64() * 1000.0
         );
     }
-    result
+    if engine.debugger_quit() { Ok(0) } else { result }
 }

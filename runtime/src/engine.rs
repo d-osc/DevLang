@@ -293,6 +293,7 @@ impl TaskState {
     }
 }
 pub struct Engine {
+    debugger: Option<RuntimeDebugger>,
     object_prototype: Option<Value>,
     function_objects: HashMap<String,Arc<Mutex<ProtoObject>>>,
     function_contexts:HashMap<String,std::sync::Weak<Value>>,
@@ -320,7 +321,7 @@ impl Engine {
         module_dirs: HashMap<String, PathBuf>,
     ) -> Result<Self, String> {
         let mut e = Self {
-            object_prototype:None, function_objects:HashMap::new(),function_contexts:HashMap::new(),
+            debugger:None, object_prototype:None, function_objects:HashMap::new(),function_contexts:HashMap::new(),
             module_dirs,
             libraries: libraries.to_vec(),
             modules: HashMap::new(),
@@ -722,7 +723,7 @@ impl Engine {
                         }
                     }
                     let mut worker = Engine {
-                        object_prototype:None,function_objects:HashMap::new(),function_contexts:HashMap::new(),
+                        debugger:None, object_prototype:None,function_objects:HashMap::new(),function_contexts:HashMap::new(),
                         http: None,
                         servers: HashMap::new(),
                         responses: HashMap::new(),
@@ -823,7 +824,7 @@ impl Engine {
                     }
                 }
                 let mut worker = Engine {
-                        object_prototype:None,function_objects:HashMap::new(),function_contexts:HashMap::new(),
+                        debugger:None, object_prototype:None,function_objects:HashMap::new(),function_contexts:HashMap::new(),
                     http: None,
                     servers: HashMap::new(),
                     responses: HashMap::new(),
@@ -960,7 +961,9 @@ impl Engine {
             scopes: vec![locals],
         };
         self.depth += 1;
+        if let Some(d) = &mut self.debugger { d.names.push(f.name.clone()); }
         let result = self.block(&mut frame, body);
+        if let Some(d) = &mut self.debugger { d.names.pop(); }
         self.depth -= 1;
         match result? {
             Flow::Return(v) => {
@@ -981,6 +984,9 @@ impl Engine {
     }
     fn statements(&mut self, f: &mut Frame, stmts: &[Stmt]) -> Result<Flow, String> {
         for s in stmts {
+            if self.debugger.is_some() && !matches!(s, Stmt::While { .. }) {
+                if let Some(span) = debug_statement_span(s) { self.debug_stop(f, span)?; }
+            }
             match s {
                 Stmt::Match { value, arms } => {
                     let v = self.eval(f, value, None)?;
@@ -1101,11 +1107,9 @@ impl Engine {
                     }
                 }
                 Stmt::While { cond, body } => {
-                    while self
-                        .eval(f, cond, None)?
-                        .boolean()
-                        .map_err(|e| self.located(&f.module, cond.span, e))?
-                    {
+                    loop {
+                        self.debug_stop(f, cond.span)?;
+                        if !self.eval(f, cond, None)?.boolean().map_err(|e| self.located(&f.module, cond.span, e))? { break; }
                         match self.block(f, body)? {
                             Flow::Break => break,
                             Flow::Return(v) => return Ok(Flow::Return(v)),
@@ -2464,3 +2468,5 @@ include!("dynamic_array.rs");
 include!("prototype_gc.rs");
 
 include!("io_pool.rs");
+
+include!("debugger.rs");

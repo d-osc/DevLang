@@ -55,6 +55,7 @@ Common options (before --):
   --package NAME   Select a named workspace package (changes working directory)
   --timings        Print runtime or compiler timings to stderr
   --ffi-lib PATH   Load a native shared library in runtime mode (repeatable)
+  --debug-runtime  Runtime: interactive source debugger (AST)
   --engine MODE    Runtime: auto (default) or ast
   -- ARGUMENTS     Forward program arguments in runtime mode
 

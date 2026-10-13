@@ -198,3 +198,48 @@ Runtime เก็บวงจร object ที่ไม่มีผู้ใช�
 fs/promises จำกัดจำนวน worker และขนาดคิว หากเต็ม Task จะคืน error ตอน await จึงควรรองานเดิมก่อนส่งเพิ่ม
 
 [Concurrent cycle collection example / ตัวอย่าง GC หลาย threads](#/examples/prototype-gc)
+
+## Interactive runtime debugger
+
+```sh
+d run examples/hello.dev --debug-runtime
+# Direct runtime executable:
+devrun examples/hello.dev --debug-runtime
+```
+
+Execution pauses before the first executable statement. Debugger messages and
+prompts use stderr; program output stays on stdout. Commands:
+
+| Command | Behavior |
+| --- | --- |
+| `step` / `s` | Execute one statement, entering source functions |
+| `next` / `n` | Continue to the next statement at the same or lower call depth |
+| `finish` | Continue until the current source function returns |
+| `continue` / `c` | Run until a breakpoint or program completion |
+| `break 5` | Break before statements on line 5 of the current file |
+| `break /path/lib.dev:5` | Break in another loaded source file; Windows paths work too |
+| `breakpoints` | List breakpoints |
+| `clear` | Remove all breakpoints |
+| `locals` | Show visible local variables, respecting scope shadowing |
+| `stack` | Show source function names and their last statement locations |
+| `quit` / `q` | Stop execution with exit code 0 |
+| `help` | Show available commands |
+
+The debugger always uses the AST interpreter, including when `--engine auto`
+is supplied. Stops happen before statements and every loop condition check;
+several statements on one line can produce several stops. Scalar/string values
+are shown directly (long strings are truncated); collections and objects show
+a type summary without evaluating getters. Breakpoint files must already be
+loaded; a line without an executable statement will not stop.
+
+This debugger covers the main interpreter thread. Native FFI, numeric plans,
+worker tasks and VS Code/DAP integration are outside its scope. Debugger commands
+share stdin with the program, so interactive programs reading stdin should use
+separate test inputs with care. EOF ends the debugging session with exit code 0.
+Program errors retain their normal error exit code.
+
+ภาษาไทย: ใช้ `d run FILE.dev --debug-runtime` เพื่อหยุดก่อนคำสั่ง แล้วใช้
+`step` เข้าไปในฟังก์ชัน, `next` ข้ามการเรียกฟังก์ชัน, `finish` รอจนฟังก์ชันคืนค่า,
+`locals` ดูตัวแปร และ `stack` ดูลำดับการเรียก ใช้ `break LINE` หรือ
+`break FILE:LINE` ตั้ง breakpoint และ `continue` รันต่อ ระบบนี้ใช้ AST
+และตรวจเฉพาะเธรดหลัก ยังไม่ใช่ debugger ผ่าน VS Code และใช้ stdin ร่วมกับโปรแกรม
