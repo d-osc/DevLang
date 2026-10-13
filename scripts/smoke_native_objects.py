@@ -6,6 +6,7 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "array_search": 'fn needle(): i64 { print("needle once"); return 2 }\nfn main() {\n    const values = [1, 2, 3, 2]\n    print(values.includes(2))\n    print(values.indexOf(2))\n    print(values.lastIndexOf(2))\n    print(values.indexOf(9))\n    print(values.includes(9))\n    let slice = values[1..3]\n    print(slice.indexOf(2))\n    print(slice.lastIndexOf(3))\n    let vector = [...values]\n    print(vector.indexOf(needle()))\n    let names = ["Dev", "Other", "Dev"]\n    print(names.lastIndexOf("D" + "ev"))\n    let empty = Vec<i64>()\n    print(empty.indexOf(1))\n    print([true, false].includes(false))\n    print([1.5, 2.5].indexOf(2.5))\n}\nmain()\n',
     "array_order": """fn side(n:i64):i64 {print(n);return n}
 fn make():[i64;2] {print(2);return [1,2]}
 fn use_values(a:i64,xs:[i64;2],b:i64):i64 {return a+xs[0]+b}
@@ -467,6 +468,8 @@ fn read(x:json.Value):str { return x.inner.name }
             else:
                 assert all(r.returncode==0 for r in results),(name,[(r.stdout,r.stderr) for r in results])
                 assert len({r.stdout for r in results})==1,(name,[(r.stdout,r.stderr) for r in results])
+                if name == 'array_search':
+                    assert results[0].stdout.splitlines()==['true','1','3','-1','false','0','1','needle once','1','2','-1','true','1'],results[0].stdout
                 if name == 'array_order':
                     assert results[0].stdout.splitlines()==['1','2','3','5','4','5','5','6'],results[0].stdout
                 if name == 'array_managed':

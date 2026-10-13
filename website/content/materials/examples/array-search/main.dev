@@ -1,0 +1,21 @@
+fn needle(): i64 { print("needle once"); return 2 }
+fn main() {
+    const values = [1, 2, 3, 2]
+    print(values.includes(2))
+    print(values.indexOf(2))
+    print(values.lastIndexOf(2))
+    print(values.indexOf(9))
+    print(values.includes(9))
+    let slice = values[1..3]
+    print(slice.indexOf(2))
+    print(slice.lastIndexOf(3))
+    let vector = [...values]
+    print(vector.indexOf(needle()))
+    let names = ["Dev", "Other", "Dev"]
+    print(names.lastIndexOf("D" + "ev"))
+    let empty = Vec<i64>()
+    print(empty.indexOf(1))
+    print([true, false].includes(false))
+    print([1.5, 2.5].indexOf(2.5))
+}
+main()

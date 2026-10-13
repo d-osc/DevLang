@@ -1412,7 +1412,7 @@ impl Engine {
         };
         let element = self.resolve_collection_element(inner)?;
         let count = match op {
-            "push" => 1,
+            "push" | "includes" | "indexOf" | "lastIndexOf" => 1,
             "slice" => 2,
             "len" | "pop" | "clear" => 0,
             _ => return Err("unknown collection method".into()),
@@ -1427,6 +1427,22 @@ impl Engine {
         };
         if op == "len" {
             return Ok(Value::Int(len as i128, Type::Size { signed: false }));
+        }
+        if ["includes", "indexOf", "lastIndexOf"].contains(&op) {
+            if !(element.integer() || matches!(element, Type::Float(_) | Type::Bool | Type::Str)) {
+                return Err("array search requires numeric, bool or str elements".into());
+            }
+            let needle = self.eval(f, &args[0], Some(&element))?;
+            if needle.ty() != element { return Err("array search value type mismatch".into()); }
+            let items = match &value {Value::Vector(xs, _) => &xs[..], Value::Slice(xs, offset, n, _) => &xs[*offset..*offset+*n], _ => unreachable!()};
+            let mut index = -1;
+            for (i, item) in items.iter().enumerate() {
+                if matches!(self.binary("==", item.clone(), needle.clone())?, Value::Bool(true)) {
+                    index = i as i128;
+                    if op != "lastIndexOf" {break;}
+                }
+            }
+            return Ok(if op == "includes" {Value::Bool(index >= 0)} else {Value::Int(index, Type::Int {bits:64,signed:true})});
         }
         if op == "slice" {
             let a = usize::try_from(self.eval(f, &args[0], None)?.integer()?)

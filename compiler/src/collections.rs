@@ -88,7 +88,7 @@ impl Emitter<'_> {
                 self.prelude.push_str(&format!("{};\nmemcpy({temporary}, {}, sizeof({temporary}));\n", crate::codegen::declaration(&v.ty, &temporary), v.code));
             }
             if op == "len" && args.is_empty() {return Ok(Value {code: count.to_string(), ty: Type::Size {signed:false}, lvalue:false});}
-            if op != "slice" {return self.fail(span, "fixed arrays support len and slice; use Vec for mutation methods");}
+            if !["slice","includes","indexOf","lastIndexOf"].contains(&op) {return self.fail(span, "fixed arrays support len, slice and search; use Vec for mutation methods");}
             let ty = Type::Vector(inner);
             let name = self.collection(&ty);
             v = self.owned(Value {code: format!("{name}_make({temporary}, {count})"), ty, lvalue:false});
@@ -104,7 +104,7 @@ impl Emitter<'_> {
         let element = self.resolve_collection_element(inner);
         let name = self.collection(&v.ty);
         let count = match op {
-            "push" => 1,
+            "push" | "includes" | "indexOf" | "lastIndexOf" => 1,
             "slice" => 2,
             "len" | "pop" | "clear" => 0,
             _ => return self.fail(span, "unknown collection method"),
@@ -113,6 +113,21 @@ impl Emitter<'_> {
             return self.fail(span, "wrong collection argument count");
         }
         let location = self.location(span);
+        if ["includes", "indexOf", "lastIndexOf"].contains(&op) {
+            if !(element.integer() || matches!(element, Type::Float(_) | Type::Bool | Type::Str)) {
+                return self.fail(span, "array search requires numeric, bool or str elements");
+            }
+            let receiver = self.sequence_save(v);
+            let needle = self.expr(&args[0], Some(&element))?;
+            self.compatible(&needle, &element, args[0].span)?;
+            let needle = self.sequence_save(needle);
+            let result = format!("dev_search_{}", self.next_var); self.next_var += 1;
+            let item = format!("{}.data[{}.offset + dev_search_i]", receiver.code, receiver.code);
+            let equal = if element == Type::Str {format!("dev_switch_str_equal({item}, {})", needle.code)} else {format!("({item} == {})", needle.code)};
+            let stop = if op == "lastIndexOf" {""} else {"break;"};
+            self.prelude.push_str(&format!("int64_t {result} = -1;\nfor (size_t dev_search_i = 0; dev_search_i < {}.len; ++dev_search_i) {{ if ({equal}) {{ {result} = (int64_t)dev_search_i; {stop} }} }}\n", receiver.code));
+            return Ok(Value {code: if op == "includes" {format!("({result} >= 0)")} else {result}, ty: if op == "includes" {Type::Bool} else {Type::Int {bits:64,signed:true}}, lvalue:false});
+        }
         match op {
             "len" => Ok(Value {
                 code: format!("({}).len", v.code),

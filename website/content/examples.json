@@ -1466,5 +1466,19 @@
       "d build examples/array-tools/main.dev --release -o out/array-tools.exe"
     ],
     "notes": "Current source build after v0.5.1. Repeat counts are positive integer literals; spread/rest produce Vec and range slicing produces Slice. C FFI array aggregates remain unsupported."
+  },
+  {
+    "id": "array-search",
+    "title": "Array search",
+    "category": "พื้นฐาน",
+    "path": "examples/array-search/main.dev",
+    "description": "includes, indexOf and lastIndexOf for Array, Vec and Slice.",
+    "doc": "strings-arrays",
+    "mode": "both",
+    "commands": [
+      "d examples/array-search/main.dev",
+      "d build examples/array-search/main.dev --release -o out/array-search.exe"
+    ],
+    "notes": "Numeric, bool and str elements; missing indices return -1."
   }
 ]

@@ -448,6 +448,28 @@ Available in current source after v0.5.1 in runtime and native modes.
 See [ตัวอย่างเต็ม / Full example](#/examples/array-tools).
 
 
+## Array search
+
+```dev
+fn main() {
+    const values = [1, 2, 3, 2]
+    print(values.includes(2))      // true
+    print(values.indexOf(2))       // 1
+    print(values.lastIndexOf(2))   // 3
+    print(values.indexOf(9))       // -1
+}
+main()
+```
+
+`includes(value)` returns bool. `indexOf(value)` returns the first matching
+index and `lastIndexOf(value)` the last, as i64; both return -1 when absent.
+Indices start at zero and are relative to the receiver, including Slice.
+Supported in source runtime and native for homogeneous Array, Vec and Slice
+of numeric, bool or str values. String comparison uses contents. The needle
+must have the same element type. Search is read-only, evaluates the receiver
+and needle once in that order, and takes O(n) time. No fromIndex argument,
+predicate find/findIndex, record equality or heterogeneous DON-array search yet.
+
 # [modules] Modules และ export
 
 ## แยกหลายไฟล์

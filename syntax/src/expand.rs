@@ -950,7 +950,7 @@ impl Expand {
                 }
                 if names.len() >= 2
                     && [
-                        "set", "get", "contains", "remove", "push", "pop", "len", "slice", "clear",
+                        "set", "get", "contains", "remove", "push", "pop", "len", "slice", "clear", "includes", "indexOf", "lastIndexOf",
                     ]
                     .contains(&names.last().unwrap().as_str())
                     && !self.module_aliases[id].contains(&names[0])

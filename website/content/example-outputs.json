@@ -538,5 +538,10 @@
     "source_sha256": "9c9e7151906076bd1e04d6b4ca4980dd5d3767bd46eb8470ebd92a05116d2b55",
     "validation_sha256": "6df4d148ddc595776a2e109283647b4de9d37ff147d1507623645ebd4588c40f",
     "output": "6\n1\n2\n3\n0\n1\n2\n3\n3\n4\n2\n2\n4\n1\n5\n"
+  },
+  "array-search": {
+    "source_sha256": "9dc81fdf076a40da2c7771a4d0ea214c77f8f3da7c1d57965f3cfd725b66782d",
+    "validation_sha256": "9160af5f64c1fb451329840d9363d209070a47a07491c1875117ef045c915a66",
+    "output": "true\n1\n3\n-1\nfalse\n0\n1\nneedle once\n1\n2\n-1\ntrue\n1\n"
   }
 }

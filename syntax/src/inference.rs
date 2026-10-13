@@ -166,7 +166,8 @@ impl Expand {
                 match op.as_str() {
                     "len" | "$iter_len" => Type::Size { signed: false },
                     "clear" | "push" | "set" => Type::Void,
-                    "contains" | "remove" => Type::Bool,
+                    "contains" | "remove" | "includes" => Type::Bool,
+                    "indexOf" | "lastIndexOf" => Type::Int {bits:64,signed:true},
                     "pop" => {
                         if let Type::Vector(t) = t {
                             self.concrete(&t)
