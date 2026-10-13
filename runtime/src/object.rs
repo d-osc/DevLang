@@ -323,7 +323,10 @@ impl Engine {
         let _world=prototype_read();
         let mut state = state.lock().map_err(|_| "object lock poisoned")?;
         if let Some(property) = state.properties.get_mut(key) {
-            property.value = Some(value);
+            let retired = property.value.replace(value);
+            drop(state);
+            drop(_world);
+            drop(retired);
             return Ok(());
         }
         if !state.extensible {
@@ -545,7 +548,10 @@ impl Engine {
                 }
             }
         }
-        state.properties.insert(key.into(), property);
+        let retired = state.properties.insert(key.into(), property);
+        drop(state);
+        drop(_world);
+        drop(retired);
         Ok(())
     }
     fn descriptor_value(&mut self, property: ProtoProperty) -> Result<Value, String> {
@@ -740,7 +746,10 @@ impl Engine {
                 if state.properties.get(key).is_some_and(|p| !p.configurable) {
                     return Ok(Value::Bool(false));
                 }
-                state.properties.remove(key);
+                let retired = state.properties.remove(key);
+                drop(state);
+                drop(_world);
+                drop(retired);
                 Ok(Value::Bool(true))
             }
             "freeze" | "seal" | "preventExtensions" => {
