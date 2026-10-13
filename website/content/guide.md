@@ -1109,6 +1109,7 @@ callback รับข้อมูลของ TCP/UDP ทำงานหลั�
 handle ต้องใช้และปิดใน thread ที่สร้างมัน และ API ไม่มี optional arguments, Promise หรือ timer แบบ JavaScript
 อ่าน [signatures และข้อจำกัดครบทุกตัว](../../docs/node-core.md) ก่อนใช้ API ที่ชื่อคล้าย Node
 
+
 # [don] Dev Object Notation (DON)
 
 DON เป็นรูปแบบข้อมูลคู่กับ DevLang ใช้นามสกุล `.don` และใช้ `package.don` เป็น manifest ของโปรเจกต์ใหม่
@@ -1178,6 +1179,31 @@ quotes remain literal. `\${...}` escapes a placeholder. Forward references
 work; missing names, cycles, non-string concatenation and expansion over 8 MiB
 are rejected. DON does not execute DevLang expressions or function calls.
 Available in source builds after v0.5.1.
+
+## Object destructuring / แยก field เป็นตัวแปร
+
+```dev
+fn main() {
+    let user = { name: "test", age: 10 }
+    let {name, age} = user
+    print(name)
+    print(age)
+    let {name: userName, age: userAge} = user
+    print(userName)
+    print(userAge)
+}
+main()
+```
+
+ใช้ชื่อ field เดิมเป็นตัวแปร หรือใช้ `field: variable` เพื่อเปลี่ยนชื่อ
+ค่าทางขวาประเมินครั้งเดียว ตัวแปรที่แยกเป็นสำเนาที่แก้ไขได้ โดยไม่แก้ object เดิม
+Bindings use the surrounding scope. The right-hand expression is evaluated once;
+changing a binding does not change the original object. Supports runtime and
+hosted native builds from current source after v0.5.1. Defaults, rest bindings
+and nested binding patterns are not supported. Missing fields report an error.
+
+ดู [ตัวอย่างเต็ม / Full example](#/examples/don-destructuring).
+
 
 # [basic-libs] ไลบรารีพื้นฐาน: Math, Random, Strings, Datetime, Test และ Log
 

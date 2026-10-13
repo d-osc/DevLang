@@ -42,6 +42,16 @@ struct Parser {
     path: PathBuf,
 }
 impl Parser {
+    // Destructuring expands into declarations in the surrounding scope.
+    fn append_statement(body: &mut Vec<Stmt>, statement: Stmt) {
+        if let Stmt::Block(entries) = &statement {
+            if matches!(entries.first(), Some(Stmt::Let { name, .. }) if name.starts_with("$destructure_")) {
+                body.extend(entries.clone());
+                return;
+            }
+        }
+        body.push(statement);
+    }
     fn type_separator(&mut self, arrow: bool) -> Result<(), String> {
         let previous = self.tokens[self.at - 1].clone();
         let separator = self.eat(":") || (arrow && self.eat("->"));
@@ -370,7 +380,8 @@ impl Parser {
                     span,
                 });
             } else {
-                statements.push(self.stmt()?);
+                let statement = self.stmt()?;
+                Self::append_statement(&mut statements, statement);
             }
             self.separators();
         }
@@ -569,7 +580,8 @@ impl Parser {
             if self.token().kind == Kind::Eof {
                 return self.fail("expected '}' before end of file");
             }
-            body.push(self.stmt()?);
+            let statement = self.stmt()?;
+            Self::append_statement(&mut body, statement);
             self.separators();
         }
         Ok(body)
@@ -632,6 +644,36 @@ impl Parser {
             return Ok(Stmt::Match { value, arms });
         }
         if self.eat("let") {
+            if self.eat("{") {
+                let hidden = format!("$destructure_{}", self.at);
+                let mut fields = Vec::new();
+                self.separators();
+                while !self.eat("}") {
+                    let field_span = self.token().span;
+                    let field = self.ident()?;
+                    let name = if self.eat(":") { self.ident()? } else { field.clone() };
+                    if fields.iter().any(|(_, existing, _)| existing == &name) {
+                        return self.fail(format!("duplicate destructuring binding '{name}'"));
+                    }
+                    fields.push((field, name, field_span));
+                    self.separators();
+                    if self.eat(",") { self.separators(); }
+                    else if !self.is("}") { return self.fail("expected ',' or '}' in destructuring"); }
+                }
+                self.expect("=")?;
+                let value = self.expr(0)?;
+                self.end()?;
+                let mut entries = vec![Stmt::Let { name: hidden.clone(), ty: None, value, span }];
+                for (field, name, field_span) in fields {
+                    entries.push(Stmt::Let {
+                        name, ty: None, span: field_span,
+                        value: Expr { kind: ExprKind::Field(Box::new(Expr {
+                            kind: ExprKind::Name(vec![hidden.clone()]), span: field_span,
+                        }), field), span: field_span },
+                    });
+                }
+                return Ok(Stmt::Block(entries));
+            }
             let name = self.ident()?;
             self.type_separator(false)?;
             let ty = if self.is("=") { None } else { Some(self.ty()?) };

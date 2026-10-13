@@ -30,6 +30,24 @@ def main():
         run('don','check',config)
         parsed = json.loads(run('don','to-json',config))
         assert parsed == {'name':'Dev','items':[1,2]}
+        comma_config = root / 'comma-array.don'
+        comma_config.write_text("""items: [
+  'hello',
+  42,
+  true,
+  null,
+  {
+    name: 'Dev',
+    age: 18
+  }
+]
+""", encoding='utf-8')
+        expected = {'items': ['hello', 42, True, None, {'name': 'Dev', 'age': 18}]}
+        run('don', 'check', comma_config)
+        assert json.loads(run('don', 'to-json', comma_config)) == expected
+        comma_formatted = root / 'comma-formatted.don'
+        comma_formatted.write_text(run('don', 'fmt', comma_config), encoding='utf-8')
+        assert json.loads(run('don', 'to-json', comma_formatted)) == expected
         formatted = root / 'formatted.don'
         formatted.write_text(run('don','fmt',config),encoding='utf-8')
         assert json.loads(run('don','to-json',formatted)) == parsed

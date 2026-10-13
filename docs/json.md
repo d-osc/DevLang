@@ -154,6 +154,31 @@ This change does not embed the DON document parser in native executables:
 `don.parse`/`don.valid`, document-root references and forward references remain
 source-runtime facilities. Available in source builds after v0.5.1.
 
+
+## Object destructuring / แยก field เป็นตัวแปร
+
+```dev
+fn main() {
+    let user = { name: "test", age: 10 }
+    let {name, age} = user
+    print(name)
+    print(age)
+    let {name: userName, age: userAge} = user
+    print(userName)
+    print(userAge)
+}
+main()
+```
+
+ใช้ชื่อ field เดิมเป็นตัวแปร หรือใช้ `field: variable` เพื่อเปลี่ยนชื่อ
+ค่าทางขวาประเมินครั้งเดียว ตัวแปรที่แยกเป็นสำเนาที่แก้ไขได้ โดยไม่แก้ object เดิม
+Bindings use the surrounding scope. The right-hand expression is evaluated once;
+changing a binding does not change the original object. Supports runtime and
+hosted native builds from current source after v0.5.1. Defaults, rest bindings
+and nested binding patterns are not supported. Missing fields report an error.
+
+ดู [ตัวอย่างเต็ม / Full example](#/examples/don-destructuring).
+
 ## Native builds
 
 ```sh

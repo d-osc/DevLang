@@ -1,0 +1,26 @@
+fn main() {
+    let user = {
+        name: "test"
+        age: 10
+        items: [
+            'hello',
+            42,
+            true,
+            null,
+            { name: 'Dev', age: 18 }
+        ]
+    }
+    let {name, age} = user
+    print(name)
+    print(age)
+
+    let {name: userName, age: userAge} = user
+    print(userName)
+    print(userAge)
+
+    age += 1
+    print(age)
+    print(user.age) // Original remains 10.
+    print(user.items[4].name)
+}
+main()

@@ -561,6 +561,21 @@
     "notes": "ใช้ source build หลัง v0.5.1; native ต้องใช้ C11 backend และเก็บ allocations จนโปรแกรมจบ; DON document parse ยังใช้ runtime"
   },
   {
+    "id": "don-destructuring",
+    "title": "DON: แยก field เป็นตัวแปร / Object destructuring",
+    "category": "Runtime APIs",
+    "path": "examples/don/destructuring.dev",
+    "description": "let {name, age} = user, rename bindings, independent copies และ multiline arrays with commas",
+    "doc": "don",
+    "mode": "both",
+    "commands": [
+      "d examples/don/destructuring.dev",
+      "d build examples/don/destructuring.dev --release -o out/destructuring.exe",
+      "./out/destructuring.exe"
+    ],
+    "notes": "Requires current source build after v0.5.1; native compilation requires a C11 backend. Defaults, rest and nested binding patterns are not supported."
+  },
+  {
     "id": "filesystem",
     "title": "อ่านเขียนไฟล์และ directory",
     "category": "I/O",

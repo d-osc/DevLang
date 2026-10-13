@@ -50,6 +50,26 @@ description: """A multiline
 description with no escapes."""
 ```
 
+### Arrays with commas
+
+Commas are supported in multiline arrays and nested objects. Elements can have
+mixed types:
+
+```don
+items: [
+  'hello',
+  42,
+  true,
+  null,
+  {
+    name: 'Dev',
+    age: 18
+  }
+]
+```
+
+The same literal can be used inside `.dev` as `let data = { items: [...] }`.
+
 ## DevLang runtime API
 
 ### References
@@ -228,3 +248,26 @@ exit; freestanding builds cannot use this allocation-backed representation.
 This change does not embed the DON document parser in native executables:
 `don.parse`/`don.valid`, document-root references and forward references remain
 source-runtime facilities. Available in source builds after v0.5.1.
+
+## Object destructuring in DevLang
+
+Extract object fields into variables in the surrounding scope:
+
+```dev
+fn main() {
+    let user = { name: 'test', age: 10 }
+    let {name, age} = user
+    print(name) // test
+    print(age)  // 10
+
+    let {name: displayName, age: years} = user
+    print(displayName)
+    print(years)
+}
+main()
+```
+
+The right-hand expression is evaluated once. Bindings are mutable local copies;
+changing them does not change the original object. Commas separate bindings and a
+trailing comma is allowed. Missing fields report the usual field access error.
+Defaults, rest bindings and nested patterns are not supported yet.

@@ -6,6 +6,20 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "destructuring": """use "std/json"
+fn make():json.Value { print('once'); return {name:'test',age:10} }
+fn main() {
+  let user=make()
+  let {name, age} = make()
+  print(name)
+  print(age)
+  let {name: display, age: years,} = user
+  print(display)
+  print(years)
+}
+main()
+""",
+
     "notation": r'''let name = 'Dev'
 let data = {
     name = name
