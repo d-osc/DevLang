@@ -1424,5 +1424,19 @@
       "d build examples/switch/main.dev --release -o out/switch.exe"
     ],
     "notes": "Current source build after v0.5.1. Case bodies require braces; default must be last. No break is needed to finish a case."
+  },
+  {
+    "id": "object-methods",
+    "title": "Object methods และ this",
+    "category": "พื้นฐาน",
+    "path": "examples/object-methods/main.dev",
+    "description": "Methods read the calling object through this / อ่าน field ของ object ผ่าน this",
+    "doc": "don",
+    "mode": "both",
+    "commands": [
+      "d examples/object-methods/main.dev",
+      "d build examples/object-methods/main.dev --release -o out/object-methods.exe"
+    ],
+    "notes": "Current source build after v0.5.1. this is a read-only snapshot. Outer-local captures, detached methods and method replacement are not supported."
   }
 ]

@@ -9,7 +9,7 @@ const hello = 'fn main() {\n    let answer = 19 + 23\n    print("Hello Dev")\n  
 try { document.body.dataset.theme = localStorage.getItem('devlang-theme') || 'light'; } catch (_) {}
 
 function highlight(code, numbers = false) {
-  const tokens = /("(?:\\.|[^"\\])*"|\/\/[^\n]*|#[^\n]*|\b(?:fn|let|return|struct|enum|trait|const|if|else|switch|case|default|while|for|in|break|continue|match|use|as|export|extern|unsafe|async|true|false|null|and|or|not)\b|\b(?:i8|i16|i32|i64|u8|u16|u32|u64|usize|isize|f32|f64|bool|str|void|Ref|Vec|Map|Slice|Task|Self|Number|Integer|Equatable|ContextCallback)\b|\b(?:0x[\da-fA-F_]+|\d+(?:\.\d+)?)(?:e[+-]?\d+)?\b)/g;
+  const tokens = /("(?:\\.|[^"\\])*"|\/\/[^\n]*|#[^\n]*|\b(?:fn|let|return|struct|enum|trait|const|this|if|else|switch|case|default|while|for|in|break|continue|match|use|as|export|extern|unsafe|async|true|false|null|and|or|not)\b|\b(?:i8|i16|i32|i64|u8|u16|u32|u64|usize|isize|f32|f64|bool|str|void|Ref|Vec|Map|Slice|Task|Self|Number|Integer|Equatable|ContextCallback)\b|\b(?:0x[\da-fA-F_]+|\d+(?:\.\d+)?)(?:e[+-]?\d+)?\b)/g;
   let result = '', last = 0;
   for (const match of code.matchAll(tokens)) {
     result += escapeHTML(code.slice(last, match.index));

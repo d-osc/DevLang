@@ -1,0 +1,17 @@
+fn main() {
+    let user = {
+        name: "Dev"
+        age: 18
+        greet: fn(): str {
+            return "Hello ${this.name}"
+        }
+        ageAfter: fn(years: i64): i64 {
+            return this.age + years
+        }
+    }
+    print(user.greet())
+    print(user.ageAfter(2))
+    user.name = "Alice"
+    print(user.greet())
+}
+main()

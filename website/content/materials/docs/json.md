@@ -207,3 +207,37 @@ require source execution; native calls can be wrapped in ordinary Dev functions.
 `don.stringify` and `don.toJSON` work natively, but `don.parse`/`don.valid` still
 require the source runtime. `.dev` literals use lexical variables rather than
 DON document-root/forward references.
+
+
+## Object methods and this
+
+```dev
+fn main() {
+    let user = {
+        name: "Dev"
+        greet: fn(): str {
+            return "Hello ${this.name}"
+        }
+    }
+    print(user.greet())
+    user.name = "Alice"
+    print(user.greet())
+}
+main()
+```
+
+Object literals with `fn` fields create an anonymous typed record. Methods receive
+an implicit `this` containing a read-only snapshot of the object used for that
+call. Methods can call other methods through `this.method()`. Parameter and
+return annotations use ordinary function syntax. Both runtime and native builds
+support this form in current source after v0.5.1.
+
+`this` อ่านค่าของ object ที่เรียก method ณ เวลานั้น และเรียก method อื่นได้
+แต่ยังไม่รองรับการแก้ object เดิมผ่าน `this` หรือการ capture ตัวแปรนอก method
+ให้เก็บค่าที่ต้องใช้เป็น field แล้วอ่าน `this.field` แทน
+
+Data fields have fixed inferred types; adding new fields or replacing methods
+is not supported on method objects. Use Vec instead of fixed array data fields.
+Detached method values are not supported yet. `json.stringify` serializes data
+fields only. A `.don` data document cannot contain functions or `this`.
+See [ตัวอย่างเต็ม / Full example](#/examples/object-methods).

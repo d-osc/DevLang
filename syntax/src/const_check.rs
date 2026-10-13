@@ -2,7 +2,7 @@ use crate::ast::*;
 use std::collections::HashMap;
 
 pub fn validate(module: &Module, constants: &[Span]) -> Result<(), String> {
-    let checker = Checker { module, constants };
+    let checker = Checker { path: &module.path, constants };
     let mut globals = HashMap::new();
     for statement in &module.statements {
         if let Stmt::Let { name, span, .. } = statement {
@@ -17,7 +17,7 @@ pub fn validate(module: &Module, constants: &[Span]) -> Result<(), String> {
     }
     Ok(())
 }
-struct Checker<'a> { module: &'a Module, constants: &'a [Span] }
+struct Checker<'a> { path: &'a std::path::Path, constants: &'a [Span] }
 impl Checker<'_> {
     fn constant(&self, span: Span) -> bool {
         self.constants.iter().any(|s| s.line == span.line && s.col == span.col)
@@ -32,7 +32,7 @@ impl Checker<'_> {
     fn writable(&self, expr: &Expr, scope: &HashMap<String, bool>) -> Result<(), String> {
         if let Some(name) = Self::root(expr) {
             if scope.get(name) == Some(&true) {
-                return Err(format!("{}:{}:{}: cannot modify const binding '{}'", self.module.path.display(), expr.span.line, expr.span.col, name));
+                return Err(format!("{}:{}:{}: cannot modify const binding '{}'", self.path.display(), expr.span.line, expr.span.col, name));
             }
         }
         Ok(())
@@ -133,4 +133,10 @@ mod tests {
         parse(PathBuf::from("test.dev"), "const x=1\nif true { let x=2; x=3 }\nprint(x)").unwrap();
         parse(PathBuf::from("test.dev"), "let x=1\nif true {const x=2}\nx=3").unwrap();
     }
+}
+
+pub(crate) fn immutable_receiver(path: &std::path::Path, body: &[Stmt]) -> Result<(), String> {
+    let checker = Checker { path, constants: &[] };
+    let mut scope = HashMap::from([("this".to_string(), true)]);
+    checker.block(body, &mut scope)
 }

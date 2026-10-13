@@ -550,6 +550,55 @@ impl Expand {
     fn expr(&mut self, id: usize, e: &mut Expr, env: &Bindings) -> Result<(), String> {
         let span = e.span;
         let expected = self.hint.take();
+        if let ExprKind::Object(_, entries) = &e.kind {
+            if entries.iter().any(|(_, value)| matches!(value.kind, ExprKind::Closure(..))) {
+                let entries = entries.clone();
+                let type_name = format!("object_{id}_{}_{}_{}", span.line, span.col, self.queue.len());
+                let key = format!("anonymous_{type_name}");
+                let mut fields = Vec::new();
+                let mut values = Vec::new();
+                let mut methods = Vec::new();
+                for (name, mut value) in entries {
+                    if let ExprKind::Closure(params, ret, body) = &value.kind {
+                        if params.iter().any(|(n, _)| n == "this") {
+                            return Err(error(&self.paths[id], value.span, "this is an implicit object method receiver"));
+                        }
+                        crate::const_check::immutable_receiver(&self.paths[id], body)?;
+                        let mut free = HashSet::new();
+                        let mut bound: HashSet<String> = params.iter().map(|(n, _)| n.clone()).collect();
+                        bound.insert("this".into());
+                        free_body(body, &mut bound, &mut free);
+                        if free.iter().any(|n| self.locals.iter().any(|scope| scope.contains_key(n))) {
+                            return Err(error(&self.paths[id], value.span, "object methods cannot capture outer locals yet; store the value in an object field and read this.field"));
+                        }
+                        methods.push((name, params.clone(), ret.clone(), body.clone(), value.span));
+                    } else {
+                        self.expr(id, &mut value, env)?;
+                        let ty = self.infer(id, &value, None)?.ok_or_else(|| error(&self.paths[id], value.span, "cannot infer object data field type"))?;
+                        if matches!(ty, Type::Array(..) | Type::Void) {
+                            return Err(error(&self.paths[id], value.span, "method object fields require value types; use Vec instead of fixed arrays"));
+                        }
+                        fields.push((name, ty));
+                        values.push(value);
+                    }
+                }
+                let record = Type::Record(key.clone(), fields);
+                self.concrete[id].insert(key.clone(), record.clone());
+                self.nominals.insert(key, (id, type_name.clone(), vec![]));
+                for (name, mut params, ret, body, method_span) in methods {
+                    params.insert(0, ("this".into(), record.clone()));
+                    let function = Function {
+                        name: format!("method_{type_name}_{name}"), params, ret, body: Some(body),
+                        constraints: vec![], variadic: false, generics: vec![], main_default: false,
+                        exported: false, span: method_span,
+                    };
+                    self.functions[id].insert(function.name.clone(), function.clone());
+                    self.queue.push((id, function, env.clone()));
+                }
+                e.kind = ExprKind::Record(record, values);
+                return Ok(());
+            }
+        }
         if matches!(e.kind, ExprKind::Closure(..)) {
             return self.closure(id, e, env);
         }
