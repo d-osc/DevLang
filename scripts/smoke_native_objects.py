@@ -400,6 +400,7 @@ print(y.inner.name)
 ''',
 }
 FAILURES = {
+    "object_builtin_typed_function": 'use "std/json"\nfn main(){let f:fn(json.Value):str=Object.prototype.toString;print(f(new Object()))}\nmain()\n',
     "object_aggregate_implicit_json": 'use "std/json"\nstruct Point{x:i64}\nfn main(){let o=new Object({copy:fn(this:json.Value,p:Point):Point{return p}});let p:json.Value=o.copy(Point(1));print(json.stringify(p))}\nmain()\n',
     "object_aggregate_function_type": 'use "std/json"\nfn main(){let o=new Object({f:fn(this:json.Value,cb:fn(i64):i64):i64{return cb(1)}});let cb=fn(x:i32):i64{return x as i64};print(o.f(cb))}\nmain()\n',
     'object_aggregate_nominal': 'use "std/json"\nstruct A{x:i64}\nstruct B{x:i64}\nfn main(){let o=new Object({f:fn(this:json.Value,a:A):i64{return a.x}});print(o.f(B(1)))}\nmain()\n',
