@@ -1,0 +1,15 @@
+fn main() {
+    const user = { name: "Dev", age: 10, items: [1, 2] }
+    const {name, age} = user
+    const {name: userName} = user
+    const limit: i32 = 100
+    print(name)
+    print(age)
+    print(userName)
+    print(limit)
+    let copy = user
+    copy.age = 11
+    print(user.age)
+    print(copy.age)
+}
+main()

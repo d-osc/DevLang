@@ -30,6 +30,32 @@ Parameter types are required; the return type defaults to `void`, except a defin
 
 Colon return annotations and canonical formatting are available in current source after release v0.5.1.
 
+
+## Const bindings
+
+`const` creates a binding whose value cannot be changed after initialization.
+The initializer can run at runtime; it does not need to be a compile-time value.
+
+```dev
+fn main() {
+    const user = { name: "Dev", age: 10 }
+    const {name, age} = user
+    print(name)
+    print(age)
+    const limit: i32 = 100
+    print(limit)
+}
+main()
+```
+
+Assignments to a const binding, its fields or indexed elements are errors.
+Mutating Vec/Map methods through that binding are also rejected. Destructuring
+supports renamed bindings: `const {name: userName} = user`. A `let` copy can be
+changed independently. Inner scopes may shadow the binding with a new `let`.
+This is binding immutability, not a guarantee that resources behind raw pointers
+or external handles never change. Available in current source builds after v0.5.1.
+
+
 ## Types
 
 | Type | Meaning / C representation |

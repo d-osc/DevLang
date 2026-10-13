@@ -102,7 +102,7 @@ fn diagnostics_with_documents(uri: &str, doc: &Document, documents: &HashMap<Str
                 // Find the declaration's source token; skip compiler-generated for bindings.
                 let index = tokens.iter().position(|t| t.span.line == span.line && t.span.col == span.col)?;
                 let keyword = &tokens[index].kind;
-                let declaration = if matches!(keyword, Kind::Word(w) if w == "let" || w == "for") {
+                let declaration = if matches!(keyword, Kind::Word(w) if w == "let" || w == "const" || w == "for") {
                     tokens.get(index + 1)?
                 } else { return None; };
                 if !matches!(&declaration.kind, Kind::Word(w) if w == &name) { return None; }

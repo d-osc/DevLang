@@ -6,6 +6,24 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "constants": """fn main() {
+  const user={name:'Dev',age:10,items:[1,2]}
+  const {name, age}=user
+  const {age: years}=user
+  const count:i32=3
+  print(name)
+  print(age)
+  print(years)
+  print(count)
+  let copy=user
+  copy.age=11
+  print(user.age)
+  print(copy.age)
+  if true { let age=20; age+=1; print(age) }
+}
+main()
+""",
+
     "destructuring": """use "std/json"
 fn make():json.Value { print('once'); return {name:'test',age:10} }
 fn main() {
@@ -241,6 +259,24 @@ fn make(name:str):json.Value { return {inner:{name:name}} }
 fn copy(x:json.Value):json.Value { return x }
 fn read(x:json.Value):str { return x.inner.name }
 ''',encoding='utf-8',newline='\n')
+        const_errors = {
+            'const_assign': 'const x=1\nx=2',
+            'const_compound': 'const x=1\nx+=2',
+            'const_field': 'const x={a:1}\nx.a=2',
+            'const_index': 'const x={a:[1]}\nx.a[0]=2',
+            'const_destructure': 'const {a}={a:1}\na=2',
+            'const_rename': 'const {a:b}={a:1}\nb=2',
+            'const_collection': 'const x=Vec<i64>()\nx.push(1)',
+            'const_capture': 'const x=1\nlet f=fn():void { x=2 }',
+        }
+        for name,code in const_errors.items():
+            source=root/(name+'.dev');source.write_text(code,encoding='utf-8')
+            commands=[[str(folder/('devrun'+suffix)),str(source),'--engine',engine] for engine in ['auto','ast']]
+            commands.append([str(folder/('devc'+suffix)),'build',str(source),'-o',str(root/(name+suffix))])
+            for command in commands:
+                result=run(command)
+                assert result.returncode != 0 and 'cannot modify const' in result.stderr,(name,result.stderr)
+            print('PASS:',name)
         for name,code in {**CASES,**FAILURES}.items():
             source=root/(name+'.dev');source.write_text(code,encoding='utf-8',newline='\n')
             results=[run([str(folder/('devrun'+suffix)),str(source),'--engine',engine]) for engine in ['auto','ast']]

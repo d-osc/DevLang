@@ -1382,5 +1382,19 @@
       "stdlib/src",
       "stdlib/include"
     ]
+  },
+  {
+    "id": "constants",
+    "title": "Const: ตัวแปรที่แก้ค่าไม่ได้ / Immutable bindings",
+    "category": "พื้นฐาน",
+    "path": "examples/don/constants.dev",
+    "description": "const, typed declarations, destructuring และ mutable copies",
+    "doc": "variables",
+    "mode": "both",
+    "commands": [
+      "d examples/don/constants.dev",
+      "d build examples/don/constants.dev --release -o out/constants.exe"
+    ],
+    "notes": "Current source build after v0.5.1. Assignment through const bindings is rejected, including fields and indexed elements."
   }
 ]

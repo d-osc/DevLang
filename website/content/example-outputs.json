@@ -508,5 +508,10 @@
     "source_sha256": "e1265f6e4d14138d60938b47dadd26f4163143e3484b257546e3e5bea15162e8",
     "validation_sha256": "84b3e5b1b28614c0138f40dae8046aeca65ee8b1b26963a53037ccab02e02cd2",
     "output": "test\n10\ntest\n10\n11\n10\nDev\n"
+  },
+  "constants": {
+    "source_sha256": "f0f19dc4893eb2e80042b11669df65493c3c8c5fdec14ecdd430064445d30ebe",
+    "validation_sha256": "268fd96f301890788cc73ff3f48f880d3ec77e84dcb3f363071f23207ef19f71",
+    "output": "Dev\n10\nDev\n100\n10\n11\n"
   }
 }

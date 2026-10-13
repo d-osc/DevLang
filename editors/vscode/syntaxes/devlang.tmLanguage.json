@@ -71,7 +71,7 @@
     },
     {
       "name": "storage.type.devlang",
-      "match": "\\b(fn|async|let|struct|enum|trait|extern)\\b"
+      "match": "\\b(fn|async|let|const|struct|enum|trait|extern)\\b"
     },
     {
       "name": "constant.language.devlang",

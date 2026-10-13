@@ -12,6 +12,7 @@ pub fn parse(path: PathBuf, source: &str) -> Result<Module, String> {
         object_literals: false,
         array_newline_end: false,
         annotations: vec![],
+        constants: vec![],
     }
     .module()
 }
@@ -27,12 +28,14 @@ pub fn type_annotations(path: PathBuf, source: &str) -> Result<Vec<(Span, Span)>
         object_literals: false,
         array_newline_end: false,
         annotations: vec![],
+        constants: vec![],
     };
     parser.module()?;
     Ok(parser.annotations)
 }
 
 struct Parser {
+    constants: Vec<Span>,
     annotations: Vec<(Span, Span)>,
     object_literals: bool,
     array_newline_end: bool,
@@ -392,7 +395,7 @@ impl Parser {
                 span: Span { line: 1, col: 1 },
             });
         }
-        Ok(Module {
+        let module = Module {
             traits,
             path: self.path.clone(),
             imports,
@@ -400,7 +403,9 @@ impl Parser {
             statements,
             definitions,
             concrete_types: vec![],
-        })
+        };
+        crate::const_check::validate(&module, &self.constants)?;
+        Ok(module)
     }
     fn ty(&mut self) -> Result<Type, String> {
         if self.is("fn") || self.is("callback") {
@@ -643,7 +648,9 @@ impl Parser {
             }
             return Ok(Stmt::Match { value, arms });
         }
-        if self.eat("let") {
+        let constant = self.is("const");
+        if self.eat("let") || self.eat("const") {
+            if constant { self.constants.push(span); }
             if self.eat("{") {
                 let hidden = format!("$destructure_{}", self.at);
                 let mut fields = Vec::new();
@@ -655,6 +662,7 @@ impl Parser {
                     if fields.iter().any(|(_, existing, _)| existing == &name) {
                         return self.fail(format!("duplicate destructuring binding '{name}'"));
                     }
+                    if constant { self.constants.push(field_span); }
                     fields.push((field, name, field_span));
                     self.separators();
                     if self.eat(",") { self.separators(); }
@@ -874,12 +882,14 @@ impl Parser {
                         object_literals: false,
                         array_newline_end: false,
                         annotations: vec![],
+                        constants: vec![],
                     };
                     arguments.push(inner.expr(0)?);
                     if inner.token().kind != Kind::Eof {
                         return inner.fail("expected end of interpolation expression");
                     }
                     self.object_literals |= inner.object_literals;
+                    self.constants.extend(inner.constants);
                 }
                 Expr {
                     kind: ExprKind::Call(vec!["$interpolate".into()], arguments),

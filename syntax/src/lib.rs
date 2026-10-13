@@ -8,3 +8,5 @@ pub mod modules;
 pub mod parser;
 
 pub mod safety;
+
+mod const_check;
