@@ -34,9 +34,9 @@ DevLang ยังเป็นภาษาในช่วงพัฒนา ไ�
 
 # [install] ติดตั้งและเริ่มต้น
 
-## Windows
+## Windows x86_64 และ ARM64
 
-ดาวน์โหลดตัวติดตั้ง `.exe` จากหน้า Download เปิดไฟล์ แล้วกด **Install** ตัวติดตั้งรวม `d`, `devc`, `devrun`, stdlib และ examples พร้อมเพิ่ม user PATH ติดตั้งโดยไม่ต้องใช้สิทธิ์ administrator
+Release ปัจจุบันคือ **v0.5.2** สำหรับ x86_64 ดาวน์โหลดตัวติดตั้ง `.exe` จากหน้า Download เปิดไฟล์ แล้วกด **Install** ตัวติดตั้งรวม `d`, `devc`, `devrun`, stdlib และ examples พร้อมเพิ่ม user PATH ติดตั้งโดยไม่ต้องใช้สิทธิ์ administrator
 
 โฟลเดอร์เริ่มต้นคือ `%LOCALAPPDATA%\Programs\DevLang` เปิด terminal ใหม่หลังติดตั้ง
 
@@ -48,15 +48,19 @@ d --eval 'print(40 + 2)'
 
 ใน PowerShell ใช้ single quotes สำหรับ argument ของ `--eval` ได้ เก็บ source เป็น UTF-8 และตั้งชื่อ `main.dev`
 
-## Linux
+สำหรับ Windows 11 ARM64 ใช้ `devlang-setup-v0.5.2-windows-arm64.zip` แตกไฟล์แล้วเปิด `install.cmd` ชุดนี้มี binary ARM64 จริง ส่วน GUI EXE มีเฉพาะ x86_64
+
+## Linux x86_64 และ ARM64
 
 รัน offline installer ด้วย Python 3.9 ขึ้นไป ชุด binary Linux x86_64 ต้องการ glibc 2.39 ขึ้นไป
 
 ```sh
-python3 devlang-setup-v0.5.1-linux-x86_64.py
+python3 devlang-setup-v0.5.2-linux-x86_64.py
 export PATH="$HOME/.local/bin:$PATH"
 d --help
 ```
+
+สำหรับ ARM64 ใช้ `devlang-setup-v0.5.2-linux-arm64.py` แทน
 
 ติดตั้งใน `~/.local/share/devlang` และสร้าง symlink ใน `~/.local/bin` หากต้องการใช้ถาวร ให้เพิ่ม PATH ในการตั้งค่า shell ของคุณ
 
@@ -68,7 +72,7 @@ d run main.dev --timings
 d build main.dev --release --output out/app
 ```
 
-Windows native builds ต้องมี Clang/GCC และ target toolchain ส่วน Linux bundle มี TinyCC สำหรับ basic fast builds งาน threads/callbacks ขั้นสูงต้องใช้ backend ที่รองรับ C11 atomics
+Native builds และ first-use C source FFI ต้องมี Clang/GCC และ toolchain ที่ตรงกับ target ทุกแพลตฟอร์ม Release นี้ไม่ได้รวม TinyCC งาน threads/callbacks ขั้นสูงต้องใช้ backend ที่รองรับ C11 atomics
 
 ถอนการติดตั้ง Windows ผ่าน Installed apps ได้ Linux ให้รัน installer เดิมพร้อม `--uninstall` และ directory options เดิม
 
