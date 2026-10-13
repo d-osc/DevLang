@@ -11,6 +11,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--version', required=True)
     parser.add_argument('--output', required=True)
+    parser.add_argument("--platform", action="append", choices=("windows-x86_64", "linux-x86_64", "windows-arm64", "linux-arm64"))
     args = parser.parse_args()
     if not re.fullmatch(r'v\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?', args.version):
         parser.error('version must be a release tag such as v0.4.0')
@@ -18,7 +19,7 @@ def main():
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     assets = []
-    for platform in ('windows-x86_64', 'linux-x86_64'):
+    for platform in (args.platform or ['windows-x86_64', 'linux-x86_64']):
         for component in ('d', 'compiler', 'runtime', 'stdlib'):
             source = repo / 'dist' / component / platform
             manifest = source / 'SHA256SUMS'

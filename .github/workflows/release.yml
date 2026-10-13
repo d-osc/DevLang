@@ -1,0 +1,99 @@
+name: Build and publish DevLang release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag
+        required: true
+        default: v0.5.2
+        type: string
+env:
+  RELEASE_VERSION: ${{ inputs.version }}
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux-x86_64
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+            target: aarch64-unknown-linux-gnu
+          - os: windows-latest
+            platform: windows-x86_64
+            target: x86_64-pc-windows-msvc
+          - os: windows-11-arm
+            platform: windows-arm64
+            target: aarch64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Linux prerequisites
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang llvm autoconf automake libtool
+      - name: Prepare Rust target
+        run: rustup target add ${{ matrix.target }}
+      - name: Build native binaries
+        run: cargo build --workspace --release --locked --target ${{ matrix.target }}
+      - name: Execute Rust tests on target hardware
+        run: cargo test --workspace --locked --target ${{ matrix.target }}
+      - name: Smoke runtime and CLI
+        run: python scripts/smoke_production_limits.py --bin-dir target/${{ matrix.target }}/release
+      - name: Build standalone C runtime
+        run: python stdlib/build.py --cc clang --ar llvm-ar --cflag=--target=${{ matrix.target }}
+      - name: Package and archive
+        shell: python
+        run: |
+          import os, subprocess
+          suffix = '.exe' if os.name == 'nt' else ''
+          folder = 'target/${{ matrix.target }}/release/'
+          version = os.environ['RELEASE_VERSION']
+          if not version.startswith('v'):
+              raise SystemExit('Invalid release version')
+          subprocess.run(['python','scripts/package.py','--platform','${{ matrix.platform }}','--compiler',folder+'devc'+suffix,'--runtime',folder+'devrun'+suffix,'--cli',folder+'d'+suffix,'--runtime-library','stdlib/lib/libdevruntime.a'],check=True)
+          subprocess.run(['python','scripts/release_archives.py','--version',version,'--platform','${{ matrix.platform }}','--output','dist/releases/'+version],check=True)
+          subprocess.run(['python','scripts/build_installers.py','--version',version,'--platform','${{ matrix.platform }}'],check=True)
+          if '${{ matrix.platform }}' == 'windows-x86_64':
+              subprocess.run(['python','scripts/build_installers.py','--version',version,'--platform','windows-x86_64','--windows-exe'],check=True)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: dist/releases/${{ inputs.version }}/
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+      - name: Assemble verified assets
+        shell: python
+        run: |
+          from pathlib import Path
+          import hashlib, shutil
+          destination=Path('publish');destination.mkdir()
+          for manifest in Path('release-assets').rglob('SHA256SUMS'):
+              for line in manifest.read_text().splitlines():
+                  digest,name=line.split('  ',1)
+                  source=(manifest.parent/name).resolve()
+                  if not source.is_relative_to(manifest.parent.resolve()) or hashlib.sha256(source.read_bytes()).hexdigest()!=digest:
+                      raise SystemExit('Invalid artifact checksum')
+                  if (destination/name).exists():raise SystemExit('Duplicate release asset')
+                  shutil.copy2(source,destination/name)
+          assets=sorted(destination.iterdir())
+          (destination/'SHA256SUMS').write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n' for p in assets))
+      - name: Publish release after every architecture passes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$RELEASE_VERSION" publish/* --target "$GITHUB_SHA" --title "DevLang $RELEASE_VERSION" --notes-file "docs/releases/$RELEASE_VERSION.md"

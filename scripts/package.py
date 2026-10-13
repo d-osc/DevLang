@@ -12,10 +12,22 @@ def main():
     parser.add_argument("--runtime-library", required=True)
     parser.add_argument("--runtime", required=True)
     parser.add_argument("--cli", required=True)
-    parser.add_argument("--platform", required=True, choices=("windows-x86_64", "linux-x86_64"))
+    parser.add_argument("--platform", required=True, choices=("windows-x86_64", "linux-x86_64", "windows-arm64", "linux-arm64"))
     parser.add_argument("--backend")
     args = parser.parse_args()
     repo = Path(__file__).resolve().parents[1]
+    for executable in (args.compiler, args.runtime, args.cli):
+        data = Path(executable).read_bytes()
+        if args.platform.startswith("windows"):
+            pe = int.from_bytes(data[60:64], "little")
+            machine = int.from_bytes(data[pe+4:pe+6], "little")
+            expected = 0xAA64 if args.platform.endswith("arm64") else 0x8664
+            valid = data[:2] == b"MZ" and data[pe:pe+4] == b"PE\0\0" and machine == expected
+        else:
+            machine = int.from_bytes(data[18:20], "little")
+            expected = 183 if args.platform.endswith("arm64") else 62
+            valid = data[:4] == b"\x7fELF" and data[4:6] == b"\x02\x01" and machine == expected
+        if not valid: raise ValueError(f"wrong executable architecture for {args.platform}: {executable}")
     compiler = repo / "dist/compiler" / args.platform
     runtime = repo / "dist/stdlib" / args.platform
     compiler.mkdir(parents=True, exist_ok=True)
@@ -55,6 +67,12 @@ def main():
                     ignore=shutil.ignore_patterns("node_modules", "*.vsix"))
     shutil.copy2(repo / "LICENSE", bundle / "LICENSE")
     shutil.copy2(repo / "runtime/THIRD_PARTY_NOTICES.md", bundle / "THIRD_PARTY_NOTICES.md")
+    for directory in (bundle, interpreter):
+        (directory / "scripts").mkdir(exist_ok=True)
+        for name in ("serve_http.py", "windows_job.py", "soak_http_server.py", "check_http_certificate.py"):
+            shutil.copy2(repo / "scripts" / name, directory / "scripts" / name)
+        shutil.copytree(repo / "deploy/http", directory / "deploy/http", dirs_exist_ok=True,
+                        ignore=shutil.ignore_patterns("logs", "temp", "certs"))
     for directory in (compiler, runtime, interpreter, bundle):
         for document in ("advanced.md","language.md","runtime.md","json.md","tooling.md","packages.md","don.md","map-performance.md","map-benchmark-windows.json","map-benchmark-linux.json"):
             shutil.copy2(repo / "docs" / document,directory / document)

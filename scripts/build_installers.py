@@ -17,13 +17,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', required=True)
     parser.add_argument('--windows-exe', action='store_true', help='Build only the single-file Windows GUI installer (requires Windows .NET Framework csc)')
+    parser.add_argument("--platform", action="append", choices=("windows-x86_64", "linux-x86_64", "windows-arm64", "linux-arm64"))
     args = parser.parse_args()
     if not re.fullmatch(r'v\d+\.\d+\.\d+', args.version):
         parser.error('Expected vX.Y.Z')
     repo = Path(__file__).resolve().parents[1]
     output = repo / 'dist/releases' / args.version
     output.mkdir(parents=True, exist_ok=True)
-    platforms = ('windows-x86_64',) if args.windows_exe else ('windows-x86_64', 'linux-x86_64')
+    platforms = args.platform or (('windows-x86_64',) if args.windows_exe else ('windows-x86_64', 'linux-x86_64'))
     for platform in platforms:
         with tempfile.TemporaryDirectory(prefix='devlang-package-') as temporary:
             stage = Path(temporary) / 'payload'
