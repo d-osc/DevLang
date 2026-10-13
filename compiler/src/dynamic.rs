@@ -79,9 +79,8 @@ impl Emitter<'_> {
         if depth > 64 {
             return self.fail(span,"native DON encoding type nesting exceeds 64; flatten recursive references before encoding");
         }
-        if is_dynamic(&v.ty) {
-            return Ok(v);
-        }
+        if is_dynamic(&v.ty) {if self.object_boxing {return Ok(v);}return Ok(value(format!("dev_object_data_snapshot({}, {})",v.code,self.location(span)),v.ty));}
+        if matches!(v.ty,Type::Function(..)) {if self.object_boxing {return self.object_function(v,span);}return self.fail(span,"functions require a prototype Object; use Object({...})");}
         match &v.ty {
             Type::Record(_, fields) => {
                 let fields = fields.clone();
@@ -202,7 +201,9 @@ impl Emitter<'_> {
                 )
             }
         };
-        Ok(value(format!("dev_dynamic_{function}({})", v.code), ty()))
+        let code=format!("dev_dynamic_{function}({})",v.code);
+        let scalar=match v.ty {Type::Bool=>1,Type::Str=>5,Type::Int{bits:64,signed:true}=>2,Type::Int{bits:64,signed:false}=>3,Type::Int{bits,signed}=>10+bits as u32+if signed {128}else{0},Type::Float(64)=>4,Type::Float(32)=>8,Type::Size{signed:true}=>6,Type::Size{signed:false}=>7,_=>0};
+        Ok(value(if self.object_boxing&&scalar!=0 {format!("dev_dynamic_typed({code},{scalar})")}else{code},ty()))
     }
     pub(crate) fn dynamic_cast(&mut self, v: Value, t: &Type, span: Span) -> Result<Value, String> {
         let v = self.dynamic_save(v);
@@ -295,7 +296,7 @@ impl Emitter<'_> {
         };
         Ok(value(code, t.clone()))
     }
-    fn dynamic_expr(&mut self, e: &Expr) -> Result<Value, String> {
+    pub(crate) fn dynamic_expr(&mut self, e: &Expr) -> Result<Value, String> {
         self.dynamic_enable(e.span)?;
         if let ExprKind::Array(items) = &e.kind {
             let mut values = vec![];
@@ -316,8 +317,8 @@ impl Emitter<'_> {
         if matches!(&e.kind, ExprKind::Name(n) if n.as_slice() == ["null"]) {
             return Ok(value("((dev_dynamic_value){NULL,1})".into(), ty()));
         }
-        let v = self.expr(e, None)?;
-        self.dynamic_box(v, e.span)
+        let v=self.expr(e,None)?;
+        if self.object_boxing {self.object_argument_box(v,e.span)} else {self.dynamic_box(v,e.span)}
     }
     pub(crate) fn dynamic_object(
         &mut self,
@@ -344,7 +345,7 @@ impl Emitter<'_> {
             format!("(dev_dynamic_value[]){{{}}}", values.join(","))
         };
         Ok(value(
-            format!("dev_dynamic_object({}, {k}, {v})", fields.len()),
+            format!("{}({}, {k}, {v})",if self.object_boxing {"dev_object_literal"} else {"dev_dynamic_object"},fields.len()),
             t.clone(),
         ))
     }
@@ -427,22 +428,19 @@ impl Emitter<'_> {
                 _ => e,
             }
         }
+        let normalized;
+        let target=if let ExprKind::Name(names)=&target.kind {if names.len()>1 {let mut e=Expr{span:target.span,kind:ExprKind::Name(vec![names[0].clone()])};for name in &names[1..]{e=Expr{span:target.span,kind:ExprKind::Field(Box::new(e),name.clone())};}normalized=e;&normalized}else{target}}else{target};
         let mut keys = vec![];
         let root = path(target, &mut keys);
 
-        let ExprKind::Name(names) = &root.kind else {
-            return Ok(None);
-        };
-        if names.len() != 1 {
-            return Ok(None);
-        }
-        let Some(variable) = self.variable(&names[0]) else {
-            return Ok(None);
-        };
-        if !is_dynamic(&variable.ty) {
-            return Ok(None);
-        };
-        let root = variable.name.clone();
+        let root = if let ExprKind::Name(names)=&root.kind {
+            if names.len()!=1 {return Ok(None);}
+            if let Some(variable)=self.variable(&names[0]) {
+            if is_dynamic(&variable.ty) {variable.name.clone()} else if !keys.is_empty() && matches!(variable.ty,Type::Function(..)) {let v=self.expr(root,None)?;let v=self.object_function(v,target.span)?;self.dynamic_save(v).code} else {return Ok(None);}
+            } else if !keys.is_empty() {let v=self.expr(root,None)?;if !matches!(v.ty,Type::Function(..)){return Ok(None);}let v=self.object_function(v,target.span)?;self.dynamic_save(v).code} else {return Ok(None);}
+        } else if !keys.is_empty() && (matches!(root.kind,ExprKind::Callable(..)) || matches!(&root.kind,ExprKind::Call(names,_) if names.first().is_some_and(|n|n=="$object"))) {
+            let v=self.expr(root,None)?;let v=self.dynamic_operand(v,target.span)?;self.dynamic_save(v).code
+        } else {return Ok(None);};
         self.dynamic_enable(target.span)?;
         if keys.is_empty() {
             let wide = wide_literal(rhs);
@@ -490,7 +488,7 @@ impl Emitter<'_> {
             path_name
         };
         let v = if op == "=" {
-            self.dynamic_expr(rhs)?
+            let previous=self.object_boxing;self.object_boxing=true;let result=self.dynamic_expr(rhs);self.object_boxing=previous;result?
         } else {
             let wide = wide_literal(rhs);
             let v = self.expr(rhs, wide.as_ref())?;
@@ -516,7 +514,9 @@ impl Emitter<'_> {
             self.location(target.span)
         )))
     }
-    fn dynamic_operand(&mut self, v: Value, span: Span) -> Result<Value, String> {
+    pub(crate) fn dynamic_operand(&mut self, v: Value, span: Span) -> Result<Value, String> {
+        if is_dynamic(&v.ty) {return Ok(v);}
+        if matches!(v.ty,Type::Function(..)) {return self.object_function(v,span);}
         let scalar = !is_dynamic(&v.ty);
         let code = match v.ty {
             Type::Bool => 1,
@@ -717,8 +717,9 @@ impl Emitter<'_> {
                 }
                 value(
                     format!(
-                        "dev_dynamic_require_boxed({}, {})",
+                        "dev_object_data_snapshot(dev_dynamic_require_boxed({}, {}), {})",
                         x.code,
+                        self.location(arg.span),
                         self.location(arg.span)
                     ),
                     result_ty.clone(),

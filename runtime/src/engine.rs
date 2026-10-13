@@ -10,6 +10,9 @@ use std::{
 
 #[derive(Clone, Debug)]
 pub(crate) enum Value {
+    PrototypeObject(Arc<Mutex<ProtoObject>>,Type),
+    PrototypeArray(Arc<Vec<Value>>,Type),
+    PrototypeFunction(Box<Value>,Type),
     Shared(Arc<SharedResource>, Type),
     Json(Arc<serde_json::Value>, Type),
     Task(Arc<TaskState>, Type),
@@ -42,11 +45,13 @@ include!("secure_network.rs");
 include!("sync_lib.rs");
 include!("array_methods.rs");
 include!("array_basic.rs");
+include!("object.rs");
 
 impl Value {
     pub(crate) fn ty(&self) -> Type {
         match self {
-            Self::Json(_, t)
+            Self::PrototypeObject(_,t) | Self::PrototypeFunction(_,t) | Self::PrototypeArray(_,t)
+            | Self::Json(_, t)
             | Self::Shared(_, t)
             | Self::Task(_, t)
             | Self::Callable(_, _, _, t)
@@ -67,6 +72,9 @@ impl Value {
     }
     fn display(&self) -> String {
         match self {
+            Self::PrototypeArray(..)=>"[object Array]".into(),
+            Self::PrototypeObject(..)=>"[object Object]".into(),
+            Self::PrototypeFunction(..)=>"[Function]".into(),
             Self::Shared(..) => "<shared>".into(),
             Self::Json(value, _) => value.to_string(),
             Self::Int(n, _) => n.to_string(),
@@ -163,6 +171,9 @@ pub(crate) fn float_to_integer(n: f64, t: &Type) -> Result<i128, String> {
 }
 
 pub(crate) fn convert(v: Value, t: &Type, explicit: bool) -> Result<Value, String> {
+    if matches!(t,Type::Record(n,_)|Type::Nominal(n) if n=="dev_dynamic_value" || n=="dev_dynamic_don_value") {
+        match v {Value::Callable(..)=>return Ok(Value::PrototypeFunction(Box::new(v),t.clone())),Value::PrototypeArray(values,_)=>return Ok(Value::PrototypeArray(values,t.clone())),Value::PrototypeObject(object,_)=>return Ok(Value::PrototypeObject(object,t.clone())),Value::PrototypeFunction(function,_)=>return Ok(Value::PrototypeFunction(function,t.clone())),_=>{}}
+    }
     if &v.ty() == t {
         return Ok(v);
     }
@@ -275,6 +286,8 @@ impl TaskState {
     }
 }
 pub struct Engine {
+    object_prototype: Option<Value>,
+    function_objects: HashMap<String,Arc<Mutex<ProtoObject>>>,
     module_dirs: HashMap<String, PathBuf>,
     libraries: Vec<PathBuf>,
     modules: HashMap<String, Loaded>,
@@ -299,6 +312,7 @@ impl Engine {
         module_dirs: HashMap<String, PathBuf>,
     ) -> Result<Self, String> {
         let mut e = Self {
+            object_prototype:None, function_objects:HashMap::new(),
             module_dirs,
             libraries: libraries.to_vec(),
             modules: HashMap::new(),
@@ -564,6 +578,8 @@ impl Engine {
         args: Vec<Value>,
         span: Span,
     ) -> Result<Value, String> {
+        if key=="$object_builtin" {return self.object_builtin(name,args,span);}
+        if name.first().is_some_and(|n|n=="$object") {return self.object_api(&name[1],args,span);}
         if name == ["$interpolate"] {
             let mut text = String::new();
             for value in args {
@@ -579,7 +595,7 @@ impl Engine {
             .map_err(|e| self.located(key, span, e))?;
         if target.starts_with("std/") && target != "std/fs/promises" {
             return self
-                .builtin(&target, &n, args)
+                .builtin(&target, &n, args, span)
                 .map_err(|e| self.located(key, span, e));
         }
         if name == ["volatile_load"] || name == ["volatile_store"] {
@@ -691,6 +707,7 @@ impl Engine {
                         }
                     }
                     let mut worker = Engine {
+                        object_prototype:None,function_objects:HashMap::new(),
                         http: None,
                         servers: HashMap::new(),
                         responses: HashMap::new(),
@@ -765,7 +782,7 @@ impl Engine {
             let arguments = self.args.clone();
             let numeric = self.numeric;
             let callback_registry = self.native.callbacks.clone();
-            let handle = std::thread::spawn(move || {
+            let handle = std::thread::Builder::new().stack_size(32 * 1024 * 1024).spawn(move || {
                 let modules = snapshots
                     .into_iter()
                     .map(|(k, module, imports, functions)| {
@@ -791,6 +808,7 @@ impl Engine {
                     }
                 }
                 let mut worker = Engine {
+                        object_prototype:None,function_objects:HashMap::new(),
                     http: None,
                     servers: HashMap::new(),
                     responses: HashMap::new(),
@@ -831,7 +849,7 @@ impl Engine {
                 let result = worker.call(&module, &[function], values, span);
                 worker.native.flush_stdio();
                 result
-            });
+            }).map_err(|e| format!("cannot start task: {e}"))?;
             return Ok(Value::Task(
                 Arc::new(TaskState {
                     state: Mutex::new((Some(handle), None)),
@@ -1041,6 +1059,7 @@ impl Engine {
                         } else { None }
                     } else { None };
                     let target = rewritten.as_ref().unwrap_or(target);
+                    if self.object_assign(f,target,op,value)? {continue;}
                     if self.json_assign(f, target, op, value)? {
                         continue;
                     }
@@ -1400,9 +1419,11 @@ impl Engine {
         let fixed_array=matches!(value,Value::Array(..));
         if op=="isArray" {
             if !args.is_empty() {return Err("isArray expects no arguments".into());}
-            return Ok(Value::Bool(matches!(&value,Value::Array(..)|Value::Vector(..)|Value::Slice(..)) || matches!(&value,Value::Json(node,_) if node.is_array())));
+            return Ok(Value::Bool(matches!(&value,Value::Array(..)|Value::Vector(..)|Value::Slice(..)|Value::PrototypeArray(..)) || matches!(&value,Value::Json(node,_) if node.is_array())));
         }
         let op=if op=="length" {"len"} else {op};
+        if matches!(&value,Value::PrototypeObject(..)|Value::PrototypeFunction(..)) {let values=args.iter().map(|arg|self.object_argument(f,arg)).collect::<Result<Vec<_>,_>>()?;return self.object_method(value,op,values,base.span);}
+        if let Value::PrototypeArray(items,_) = &value {if (op=="len"||op=="$iter_len") && args.is_empty() {return Ok(Value::Int(items.len() as i128,Type::Size{signed:false}));}}
 
         if let Value::Json(node, _) = &value {
             if (op == "len" || op == "$iter_len") && args.is_empty() {
@@ -1644,6 +1665,7 @@ impl Engine {
                 }
                 ExprKind::Invoke(base, args) => {
                     let callable = self.eval(f, base, None)?;
+                    if matches!(callable,Value::PrototypeFunction(..)) {let values=args.iter().map(|arg|self.object_argument(f,arg)).collect::<Result<Vec<_>,_>>()?;return object_hint(self.object_invoke(callable,values,e.span)?,hint);}
                     if let Value::Ptr(p, t @ Type::Callback(ps, _)) = &callable {
                         if f.unsafe_depth == 0 {
                             return Err("callback invocation requires an unsafe block".into());
@@ -1740,10 +1762,13 @@ impl Engine {
                     Value::Enum(*n, ty.clone(), payload)
                 }
                 ExprKind::Field(base, name) => {
+                    let receiver=self.eval(f,base,None)?;
+                    if let Value::PrototypeArray(items,_) = &receiver {if name=="length" {return Ok(Value::Int(items.len() as i128,Type::Size{signed:false}));}}
+                    if matches!(receiver,Value::PrototypeObject(..)|Value::PrototypeFunction(..)|Value::Callable(..)) {return object_hint(self.object_get(receiver,name,e.span)?,hint);}
                     if let Some((p, t)) = self.native_target(f, e)? {
                         unsafe { crate::memory::read(p, &t) }?
                     } else {
-                        match self.eval(f, base, None)? {
+                        match receiver {
                             Value::Json(node, ty) => crate::json::unwrap(
                                 crate::json::read(
                                     &node,
@@ -1888,6 +1913,7 @@ impl Engine {
                     self.binary(op, left, right)?
                 }
                 ExprKind::Call(n, arguments) => {
+                    if n.first().is_some_and(|n|n=="$object") {let values=arguments.iter().map(|arg|self.object_argument(f,arg)).collect::<Result<Vec<_>,_>>()?;return object_hint(self.object_api(&n[1],values,e.span)?,hint);}
                     let (target, name) = self.resolve(&f.module, n)?;
                     let params = self
                         .modules
@@ -2020,6 +2046,8 @@ impl Engine {
                     }
                     let a = self.eval(f, a, None)?;
                     let index = self.eval(f, i, None)?;
+                    if let Value::PrototypeArray(items,_) = &a {let i=usize::try_from(index.integer()?).map_err(|_|"array index out of bounds")?;let item=items.get(i).cloned().ok_or("array index out of bounds")?;let item=match item {Value::Json(node,_) if !node.is_object() && !node.is_array()=>crate::json::unwrap(node.as_ref().clone(),object_type()),other=>other};return object_hint(item,hint);}
+                    if matches!(&a,Value::PrototypeObject(..)|Value::PrototypeFunction(..)|Value::Callable(..)) {return object_hint(self.object_get(a,index.string()?,e.span)?,hint);}
                     if let Value::Json(node, ty) = a {
                         let value = crate::json::unwrap(
                             crate::json::read(&node, &[crate::json::access(index)?])?.clone(),
@@ -2100,6 +2128,7 @@ impl Engine {
         })
     }
     fn binary(&self, op: &str, a: Value, b: Value) -> Result<Value, String> {
+        if (op=="==" || op=="!=") && (matches!(&a,Value::PrototypeObject(..)|Value::PrototypeFunction(..)) || matches!(&b,Value::PrototypeObject(..)|Value::PrototypeFunction(..))) {let equal=object_same(&a,&b);return Ok(Value::Bool(if op=="==" {equal} else {!equal}));}
         if let (Value::Ptr(p, Type::Ptr(t)), Value::Int(offset, _)) = (&a, &b) {
             if op == "+" || op == "-" {
                 let t = if let Type::Nominal(n) = &**t {
@@ -2213,7 +2242,7 @@ impl Engine {
             _ => Err("unsupported operands".into()),
         }
     }
-    fn builtin(&mut self, module: &str, name: &str, args: Vec<Value>) -> Result<Value, String> {
+    fn builtin(&mut self, module: &str, name: &str, args: Vec<Value>, span:Span) -> Result<Value, String> {
         if [
             "std/sync",
             "std/tls", "std/websocket",
@@ -2253,6 +2282,12 @@ impl Engine {
             return crate::http::call(name, args, ty, &mut self.http);
         }
         if module == "std/json" || module == "std/don" {
+            let mut args=args;
+            fn contains_object(value:&Value)->bool {match value {
+                Value::PrototypeObject(..)|Value::PrototypeFunction(..)|Value::PrototypeArray(..)=>true,Value::Array(values,_)=>values.iter().any(contains_object),Value::Vector(values,_)=>values.iter().any(contains_object),Value::Slice(values,o,n,_)=>values[*o..*o+*n].iter().any(contains_object),_=>false,
+            }}
+            for value in &mut args {if contains_object(value) {*value=Value::Json(Arc::new(self.object_json(value,0,span)?),object_type());}}
+
             let ty = self.modules[module]
                 .module
                 .concrete_types

@@ -867,3 +867,7 @@ flat ใช้กับชุดข้อมูลชนิดเดียวก
 Array.isArray ตรวจ DON array ได้ แต่เมธอดแก้ข้อมูลชุดนี้ยังไม่รองรับ DON array หลายชนิด
 
 [Full example / ตัวอย่างเต็ม](#/examples/array-basic)
+
+## Prototype objects
+
+`Object({...})` creates a shared mutable object. `Object.create(proto)` inherits properties, and `Object.construct(fn, ...args)` invokes a constructor with an explicit first `this: json.Value` parameter. Function prototypes can be updated at runtime. This API is supported in the source runtime and hosted native compiler. Plain DON literals and anonymous record methods keep their existing value behavior. See [Object Reference](object-reference.md) for all methods, descriptors and limitations.

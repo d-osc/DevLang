@@ -139,7 +139,7 @@ fn sync_payload_size(value: &Value) -> Result<usize, String> {
                 }
                 json_size(json, depth, bytes)?;
             }
-            Value::Ptr(..) | Value::Callable(..) | Value::Task(..) | Value::Shared(..) => return Err("shared payload must be data; pointers, functions, tasks and sync handles are not supported".into()),
+            Value::PrototypeObject(..) | Value::PrototypeFunction(..) | Value::PrototypeArray(..) | Value::Ptr(..) | Value::Callable(..) | Value::Task(..) | Value::Shared(..) => return Err("shared payload must be data; pointers, functions, tasks and sync handles are not supported".into()),
         }
         if *bytes > BASIC_LIMIT {
             return Err("shared payload exceeds 8 MiB model budget".into());

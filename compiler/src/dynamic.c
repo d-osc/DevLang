@@ -11,10 +11,14 @@
 typedef struct dev_dynamic_node {
     int kind; /* 1 bool, 2 i64, 3 u64, 4 f64, 5 string, 6 array, 7 object */
     union { bool boolean; int64_t integer; uint64_t unsigned_integer; double number;
-        const char *string;
+        const char *string; void *opaque;
         struct { size_t len; const char **keys; dev_dynamic_value *values; } list;
     } data;
 } dev_dynamic_node;
+static dev_dynamic_value dev_object_get(dev_dynamic_value,const char*,const char*,size_t,size_t);
+static dev_dynamic_value dev_object_update_path(dev_dynamic_value,size_t,const dev_dynamic_value*,dev_dynamic_value,const char*,const char*,size_t,size_t);
+static dev_dynamic_value dev_object_data_snapshot(dev_dynamic_value,const char*,size_t,size_t);
+static bool dev_object_same(dev_dynamic_value,dev_dynamic_value);
 typedef struct dev_dynamic_allocation { struct dev_dynamic_allocation *next; void *data; } dev_dynamic_allocation;
 static dev_dynamic_allocation *dev_dynamic_allocations;
 static atomic_flag dev_dynamic_allocation_lock = ATOMIC_FLAG_INIT;
@@ -41,7 +45,7 @@ static inline dev_dynamic_value dev_dynamic_make(int kind) {
     return (dev_dynamic_value){n,1};
 }
 static inline const dev_dynamic_node *dev_dynamic_node_of(dev_dynamic_value v) {return (const dev_dynamic_node*)v.node;}
-static inline int dev_dynamic_tag(dev_dynamic_value v) {return v.node?dev_dynamic_node_of(v)->kind:0;}
+static inline int dev_dynamic_tag(dev_dynamic_value v) {int k=v.node?dev_dynamic_node_of(v)->kind:0;return k==9?7:k;}
 static inline dev_dynamic_value dev_dynamic_unboxed(dev_dynamic_value v) {v.boxed=0;int tag=dev_dynamic_tag(v);if(tag==3&&dev_dynamic_node_of(v)->data.unsigned_integer<=INT64_MAX)tag=2;v.scalar_type=(unsigned char)tag;return v;}
 
 static inline dev_dynamic_value dev_dynamic_boxed(dev_dynamic_value v) {v.boxed=1;return v;}
@@ -132,7 +136,7 @@ static inline bool dev_dynamic_cast_bool(dev_dynamic_value v,const char *file,si
     return dev_dynamic_cast_integer(v,file,line,col)!=0;
 }
 static inline const char *dev_dynamic_kind(dev_dynamic_value v) {
-    const char *names[]={"null","bool","number","number","number","string","array","object"};return names[dev_dynamic_tag(v)];
+    const char *names[]={"null","bool","number","number","number","string","array","object","function"};return names[dev_dynamic_tag(v)];
 }
 static inline size_t dev_dynamic_len(dev_dynamic_value v,const char *file,size_t line,size_t col) {
     int tag=dev_dynamic_tag(v);if(tag!=6&&tag!=7)dev_dynamic_error("DON len requires object or array",file,line,col);return dev_dynamic_node_of(v)->data.list.len;
@@ -150,9 +154,12 @@ static inline size_t dev_dynamic_find(dev_dynamic_value v,dev_dynamic_value key,
     dev_dynamic_error("DON field/index access requires object or array",file,line,col);return SIZE_MAX;
 }
 static inline dev_dynamic_value dev_dynamic_get(dev_dynamic_value v,dev_dynamic_value key,const char *file,size_t line,size_t col) {
+    if(v.node&&(dev_dynamic_node_of(v)->kind==8||dev_dynamic_node_of(v)->kind==9))return dev_object_get(v,dev_dynamic_as_string(key,file,line,col),file,line,col);
     size_t i=dev_dynamic_find(v,key,file,line,col);if(i==SIZE_MAX)dev_dynamic_error("missing DON object key",file,line,col);dev_dynamic_value result=dev_dynamic_node_of(v)->data.list.values[i];result.boxed=1;return result;
 }
 static inline dev_dynamic_value dev_dynamic_read(dev_dynamic_value v,dev_dynamic_value key,const char *file,size_t line,size_t col) {
+    if(dev_dynamic_tag(v)==6&&dev_dynamic_tag(key)==5&&!strcmp(dev_dynamic_node_of(key)->data.string,"length"))return dev_dynamic_typed(dev_dynamic_uint(dev_dynamic_node_of(v)->data.list.len),7);
+    if(v.node&&(dev_dynamic_node_of(v)->kind==8||dev_dynamic_node_of(v)->kind==9))return dev_object_get(v,dev_dynamic_as_string(key,file,line,col),file,line,col);
     if(!v.boxed&&dev_dynamic_tag(v)==5) {
         if(key.boxed)dev_dynamic_error("str index requires an integer",file,line,col);
         uint64_t index=dev_dynamic_as_uint(key,file,line,col);const char *s=dev_dynamic_node_of(v)->data.string;
@@ -186,6 +193,7 @@ static inline bool dev_dynamic_has(dev_dynamic_value v,dev_dynamic_value key,con
     if(dev_dynamic_tag(v)!=7)dev_dynamic_error("DON has requires object",file,line,col);return dev_dynamic_find(v,key,file,line,col)!=SIZE_MAX;
 }
 static inline dev_dynamic_value dev_dynamic_binary(const char *op,dev_dynamic_value a,dev_dynamic_value b,const char *file,size_t line,size_t col) {
+    if((a.node&&dev_dynamic_node_of(a)->kind>=8)||(b.node&&dev_dynamic_node_of(b)->kind>=8)){if(!strcmp(op,"==")||!strcmp(op,"!="))return dev_dynamic_unboxed(dev_dynamic_bool(dev_object_same(a,b)==!strcmp(op,"==")));}
     if(a.boxed||b.boxed)dev_dynamic_error("operator requires Dev scalar operands",file,line,col);
     if(a.scalar_type!=b.scalar_type)dev_dynamic_error("numeric types do not implicitly mix",file,line,col);
     int at=dev_dynamic_tag(a),bt=dev_dynamic_tag(b);const dev_dynamic_node *an=dev_dynamic_node_of(a),*bn=dev_dynamic_node_of(b);
@@ -252,6 +260,7 @@ static inline dev_dynamic_value dev_dynamic_assign(dev_dynamic_value old,dev_dyn
     return dev_dynamic_typed(dev_dynamic_binary(binary,old,replacement,file,line,col),old.scalar_type);
 }
 static inline dev_dynamic_value dev_dynamic_update_inner(dev_dynamic_value root,size_t len,const dev_dynamic_value *path,dev_dynamic_value replacement,const char *op,const char *file,size_t line,size_t col,unsigned depth) {
+    if(len&&root.node&&(dev_dynamic_node_of(root)->kind==8||dev_dynamic_node_of(root)->kind==9))return dev_object_update_path(root,len,path,replacement,op,file,line,col);
     if(depth>128)dev_dynamic_error("DON nesting limit exceeded",file,line,col);
     if(!len) {if(!strcmp(op,"="))return replacement;char binary[3]={0};size_t n=strlen(op);if(n<2||n>3)dev_dynamic_error("invalid assignment",file,line,col);memcpy(binary,op,n-1);int tag=dev_dynamic_tag(root);if(tag>0&&tag<6)root=dev_dynamic_unboxed(root);return dev_dynamic_binary(binary,root,replacement,file,line,col);}
     size_t i=dev_dynamic_find(root,*path,file,line,col);const dev_dynamic_node *old=dev_dynamic_node_of(root);
@@ -273,7 +282,7 @@ static inline dev_dynamic_value dev_dynamic_update_inner(dev_dynamic_value root,
 }
 static inline void dev_dynamic_depth(dev_dynamic_value v,unsigned depth,const char *file,size_t line,size_t col) {
     if(depth>128)dev_dynamic_error("DON nesting limit exceeded",file,line,col);
-    if(dev_dynamic_tag(v)>=6){const dev_dynamic_node *n=dev_dynamic_node_of(v);for(size_t i=0;i<n->data.list.len;i++)dev_dynamic_depth(n->data.list.values[i],depth+1,file,line,col);}
+    if(dev_dynamic_tag(v)>=6&&dev_dynamic_node_of(v)->kind<8){const dev_dynamic_node *n=dev_dynamic_node_of(v);for(size_t i=0;i<n->data.list.len;i++)dev_dynamic_depth(n->data.list.values[i],depth+1,file,line,col);}
 }
 static inline dev_dynamic_value dev_dynamic_update(dev_dynamic_value root,size_t len,const dev_dynamic_value *path,dev_dynamic_value replacement,const char *op,const char *file,size_t line,size_t col) {
     dev_dynamic_value v=dev_dynamic_update_inner(root,len,path,replacement,op,file,line,col,0);dev_dynamic_depth(v,0,file,line,col);return v;
@@ -323,9 +332,10 @@ static inline void dev_dynamic_render(dev_dynamic_buffer *b,dev_dynamic_value v,
     }
 }
 static inline const char *dev_dynamic_serialize(dev_dynamic_value v,bool pretty,const char *file,size_t line,size_t col) {
-    dev_dynamic_depth(v,0,file,line,col);dev_dynamic_buffer b={0};dev_dynamic_render(&b,v,pretty,0);const char *s=dev_dynamic_copy_string(b.data);free(b.data);return s;
+    v=dev_object_data_snapshot(v,file,line,col);dev_dynamic_depth(v,0,file,line,col);dev_dynamic_buffer b={0};dev_dynamic_render(&b,v,pretty,0);const char *s=dev_dynamic_copy_string(b.data);free(b.data);return s;
 }
 static inline const char *dev_dynamic_text(dev_dynamic_value v,bool print,const char *file,size_t line,size_t col) {
+    if(v.node&&dev_dynamic_node_of(v)->kind==9)return "[object Object]";if(v.node&&dev_dynamic_node_of(v)->kind==8)return "[Function]";
     if(!print&&v.boxed)dev_dynamic_error("interpolation supports scalar DON fields only",file,line,col);
     if(!v.boxed&&dev_dynamic_tag(v)==5)return dev_dynamic_node_of(v)->data.string;
     if(!v.boxed&&dev_dynamic_tag(v)==4) {char text[64];snprintf(text,sizeof(text),"%.17g",dev_dynamic_node_of(v)->data.number);return dev_dynamic_copy_string(text);}
@@ -356,7 +366,7 @@ static inline void dev_dynamic_don_render(dev_dynamic_buffer *b,dev_dynamic_valu
     dev_dynamic_render(b,v,false,depth);
 }
 static inline const char *dev_dynamic_don_serialize(dev_dynamic_value v,const char *file,size_t line,size_t col) {
-    dev_dynamic_depth(v,0,file,line,col);dev_dynamic_buffer b={0};dev_dynamic_don_render(&b,v,0);const char *s=dev_dynamic_copy_string(b.data);free(b.data);return s;
+    v=dev_object_data_snapshot(v,file,line,col);dev_dynamic_depth(v,0,file,line,col);dev_dynamic_buffer b={0};dev_dynamic_don_render(&b,v,0);const char *s=dev_dynamic_copy_string(b.data);free(b.data);return s;
 }
 
 /* Strict JSON decoding for native data exchange; DON document evaluation stays

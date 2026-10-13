@@ -121,7 +121,7 @@ fn generate_inner(
                 definitions(r, seen, out, registry);
                 let mut args = vec!["const void *".into()];
                 args.extend(ps.iter().map(|p| if matches!(p,Type::Array(..)) {c_type(p)} else {declaration(p, "")}));
-                out.push_str(&format!("#ifndef {name}_DEFINED\n#define {name}_DEFINED\ntypedef struct {{ {} (*call)({}); const void *context; }} {name};\n#endif\n",c_type(r),args.join(",")));
+                out.push_str(&format!("#ifndef {name}_DEFINED\n#define {name}_DEFINED\ntypedef struct {{ {} (*call)({}); const void *context; const char *identity; }} {name};\n#endif\n",c_type(r),args.join(",")));
             }
             Type::Map(..) => {
                 let name = c_type(t);
@@ -254,6 +254,7 @@ fn generate_inner(
         for t in &signature.params { definitions(t, &mut seen, &mut nominal, &registry); }
     }
     let mut result = Vec::new();
+    let mut object_runtime_used=false;
     for (id, module) in program.modules.iter().enumerate() {
         let name = module_name(&module.path);
         let mut header = format!(
@@ -296,7 +297,7 @@ fn generate_inner(
             loop_temporaries: vec![],
             managed_helpers: HashMap::new(),
             collection_types: HashMap::new(),
-            adapters: HashMap::new(),
+            adapters: HashMap::new(),object_boxing:false,
             task_types: HashMap::new(),
             callback_types: HashMap::new(),
             context_callback_types: HashMap::new(),
@@ -361,7 +362,7 @@ fn generate_inner(
         } else if !module.statements.is_empty() {
             return Err(error(&module.path,Span{line:1,col:1},"imported modules contain declarations only; call their functions from the entry file"));
         }
-        if emitter.uses_dynamic { source.push_str(include_str!("dynamic.c")); }
+        if emitter.uses_dynamic {object_runtime_used=true;source.push_str(include_str!("dynamic.c"));source.push_str(crate::object::HELPERS);}
         if emitter.uses_templates { source.push_str(INTERPOLATION_HELPERS); }
         if emitter.uses_print {
             source.push_str("#include <stdio.h>\n");
@@ -403,6 +404,7 @@ fn generate_inner(
             dependencies,
         });
     }
+    if object_runtime_used {result[0].source.push_str("\n#include <stdatomic.h>\nstruct dev_dynamic_node *dev_object_global_root; struct dev_object_function *dev_object_global_functions; atomic_flag dev_object_global_lock=ATOMIC_FLAG_INIT;\n");}
     Ok(result)
 }
 
@@ -444,7 +446,8 @@ pub(crate) struct Emitter<'a> {
     pub(crate) loop_temporaries: Vec<usize>,
     pub(crate) managed_helpers: HashMap<String, Type>,
     pub(crate) collection_types: HashMap<String, Type>,
-    adapters: HashMap<String, String>,
+    pub(crate) adapters: HashMap<String, String>,
+    pub(crate) object_boxing: bool,
     pub(crate) task_types: HashMap<String, Type>,
     pub(crate) callback_types: HashMap<String, Type>,
     pub(crate) context_callback_types: HashMap<String, Type>,
@@ -1096,12 +1099,13 @@ impl Emitter<'_> {
                     ),
                 );
                 (
-                    format!("(({}){{ {adapter}, {ctx} }})", c_type(ty)),
+                    format!("(({}){{ {adapter}, {ctx}, {} }})", c_type(ty),c_string(&signature.c_name)),
                     ty.clone(),
                 )
             }
             ExprKind::Invoke(base, args) => {
                 let v = self.expr(base, None)?;
+                if crate::dynamic::is_dynamic(&v.ty) {let result=self.object_invoke_value(v,args,expr.span)?;return self.object_expected(result,expected,expr.span);}
                 if let Type::Callback(ps, r) = &v.ty {
                     if self.unsafe_depth == 0 {
                         return self
@@ -1159,7 +1163,7 @@ impl Emitter<'_> {
             ExprKind::Map(t) => return self.map_constructor(t, expr.span),
             ExprKind::Vector(t, args) => return self.vector(t, args, expr.span),
             ExprKind::Collection(base, op, args) => {
-                return self.collection_call(base, op, args, expr.span)
+                let result=self.collection_call(base,op,args,expr.span)?;return self.object_expected(result,expected,expr.span)
             }
             ExprKind::Reference(a) => {
                 if !self.hosted {
@@ -1298,7 +1302,8 @@ impl Emitter<'_> {
                     let value=self.sequence_save(v);
                     return Ok(Value {code:if let Type::Array(_,n)=value.ty {n.to_string()} else {format!("{}.len",value.code)},ty:Type::Size {signed:false},lvalue:false});
                 }
-                if crate::dynamic::is_dynamic(&v.ty) { return self.dynamic_field(v, name, expr.span); }
+                if crate::dynamic::is_dynamic(&v.ty) {let result=self.dynamic_field(v,name,expr.span)?;return self.object_expected(result,expected,expr.span);}
+                if matches!(v.ty,Type::Function(..)) {let value=self.object_function(v,expr.span)?;let result=self.dynamic_field(value,name,expr.span)?;return self.object_expected(result,expected,expr.span);}
                 let Type::Record(_, fields) = &v.ty else {
                     return self.fail(expr.span, "field access requires a struct");
                 };
@@ -1596,7 +1601,7 @@ impl Emitter<'_> {
                 }
                 if crate::dynamic::is_dynamic(&a.ty) || crate::dynamic::is_dynamic(&b.ty) {
                     self.prelude.push_str(&left_prefix); let a = self.dynamic_save(a);
-                    self.prelude.push_str(&right_prefix); return self.dynamic_binary(op, a, b, literal(right), expr.span);
+                    self.prelude.push_str(&right_prefix); let result=self.dynamic_binary(op,a,b,literal(right),expr.span)?;return self.object_expected(result,expected,expr.span);
                 }
                 self.prelude.push_str(&left_prefix);
                 self.prelude.push_str(&right_prefix);
@@ -1774,9 +1779,9 @@ impl Emitter<'_> {
                     let v = self.dynamic_save(v);
                     let key = self.expr(index, Some(&Type::Str))?;
                     self.compatible(&key, &Type::Str, index.span)?;
-                    return self.dynamic_index(v, key, expr.span);
+                    let result=self.dynamic_index(v,key,expr.span)?;return self.object_expected(result,expected,expr.span);
                 }
-                if crate::dynamic::is_dynamic(&v.ty) { let v = self.dynamic_save(v); let i = self.expr(index, None)?; return self.dynamic_index(v, i, expr.span); }
+                if crate::dynamic::is_dynamic(&v.ty) { let v = self.dynamic_save(v); let i = self.expr(index, None)?; let result=self.dynamic_index(v,i,expr.span)?;return self.object_expected(result,expected,expr.span); }
                 let i = self.expr(index, None)?;
                 if let Type::Vector(t) | Type::Slice(t) = &v.ty {
                     if !i.ty.integer() {
@@ -1948,9 +1953,9 @@ impl Emitter<'_> {
                     Type::Array(Box::new(first.ty), values.len()),
                 )
             }
-            ExprKind::Call(names, args) => return self.call(names, args, expr.span),
+            ExprKind::Call(names,args)=>{let result=self.call(names,args,expr.span)?;return self.object_expected(result,expected,expr.span);},
         };
-        Ok(Value { code, ty, lvalue })
+        self.object_expected(Value {code,ty,lvalue},expected,expr.span)
     }
     fn low32(&mut self, expr: &Expr, wide: &Type) -> Result<String, String> {
         if let ExprKind::Binary(op, left, right) = &expr.kind {
@@ -1964,6 +1969,7 @@ impl Emitter<'_> {
         Ok(format!("((uint32_t)({}))", value.code))
     }
     fn call(&mut self, names: &[String], args: &[Expr], span: Span) -> Result<Value, String> {
+        if names.first().is_some_and(|n|n=="$object") {return self.object_api_call(&names[1],args,span);}
         if let Some(value) = self.dynamic_call(names, args, span)? { return Ok(value); }
         if names == ["$interpolate"] {
             if !self.hosted { return self.fail(span, "string interpolation requires hosted allocation and formatting"); }

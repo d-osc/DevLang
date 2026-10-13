@@ -17,6 +17,7 @@ impl Expand {
             ExprKind::SizeOf(_) => Type::Size { signed: false },
             ExprKind::Callable(_, _, t) => t.clone(),
             ExprKind::Invoke(a, _) => {
+                if self.infer(id,a,None)?.is_some_and(|t|matches!(t,Type::Record(ref n,_)|Type::Nominal(ref n) if n=="dev_dynamic_value" || n=="dev_dynamic_don_value")) {return Ok(Some(Type::Record("dev_dynamic_value".into(),vec![])));}
                 let Some(Type::Function(_, r) | Type::Callback(_, r)) = self.infer(id, a, None)?
                 else {
                     return Ok(None);
@@ -36,6 +37,15 @@ impl Expand {
             ExprKind::Bool(_) => Type::Bool,
             ExprKind::String(_) => Type::Str,
             ExprKind::Call(n, _) if n.as_slice() == ["$interpolate"] => Type::Str,
+            ExprKind::Call(n,_) if n.first().is_some_and(|s|s=="$object") => match n.get(1).map(String::as_str) {
+                Some("keys"|"getOwnPropertyNames")=>Type::Vector(Box::new(Type::Str)),
+                Some("values")=>Type::Vector(Box::new(Type::Record("dev_dynamic_value".into(),vec![]))),
+                Some("entries")=>Type::Vector(Box::new(Type::Record("dev_dynamic_value".into(),vec![]))),
+                Some("isExtensible"|"isFrozen"|"isSealed"|"delete")=>Type::Bool,
+                Some("toString")=>Type::Str,
+                _=>Type::Record("dev_dynamic_value".into(),vec![]),
+            },
+
             ExprKind::Name(n) if n.len() == 1 => {
                 let Some(t) = self.locals.iter().rev().find_map(|s| s.get(&n[0])).cloned() else {
                     return Ok(None);
@@ -68,6 +78,8 @@ impl Expand {
                     return Ok(None);
                 };
                 if n=="length" && matches!(t,Type::Array(..)|Type::Vector(..)|Type::Slice(..)) {return Ok(Some(Type::Size {signed:false}));}
+                if n=="prototype" && matches!(&t,Type::Function(..)) {return Ok(Some(Type::Record("dev_dynamic_value".into(),vec![])));}
+                if matches!(&t,Type::Record(n,_)|Type::Nominal(n) if n=="dev_dynamic_value" || n=="dev_dynamic_don_value") {return Ok(Some(t));}
                 let Type::Record(_, fs) = self.concrete(&t) else {
                     return Ok(None);
                 };
@@ -128,7 +140,8 @@ impl Expand {
                     let Some(t) = self.infer(id, a, hint)? else {
                         return Ok(None);
                     };
-                    match op.as_str() {
+                    if matches!(&t,Type::Record(n,_)|Type::Nominal(n) if n=="dev_dynamic_value" || n=="dev_dynamic_don_value") && !["len","$iter_len","length","isArray"].contains(&op.as_str()) {return Ok(Some(t));}
+                match op.as_str() {
                         "&" => Type::Ptr(Box::new(match t {
                             Type::Record(n, _) | Type::Enum(n, _) => Type::Nominal(n),
                             t => t,

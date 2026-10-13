@@ -1,0 +1,30 @@
+use "std/json"
+fn main() {
+    let obj = Object({count:1})
+    let offset = 10
+    Object.defineProperties(obj,{
+            total:{get:fn(this: json.Value): i64 {return this.count+offset},set:fn(this: json.Value,n: i64){this.count = n-offset},enumerable:true,configurable:true}
+            hidden:{value:"secret"}
+    })
+    print(obj.total)
+    obj.total = 25
+    print(obj.count)
+    print(Object.keys(obj).join(","))
+    print(Object.getOwnPropertyNames(obj).join(","))
+    print(json.stringify(obj))
+    print(Object.isExtensible(obj))
+    Object.seal(obj)
+    print(Object.isSealed(obj))
+    print(Object.isFrozen(obj))
+    print(Object.delete(obj,"count"))
+    obj.count = 7
+    print(obj.total)
+    print(Object.valueOf(obj)==obj)
+    let child = Object.create(obj)
+    print(child.total)
+    print(Object.keys(child).length)
+    let pairs = Object.entries(obj)
+    print(pairs[0][0])
+    print(pairs[0].length)
+}
+main()

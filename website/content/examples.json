@@ -1550,5 +1550,41 @@
       "d build examples/array-basic/main.dev --release -o out/array-basic.exe"
     ],
     "notes": "Current source after v0.5.1. Dense typed collections; mutators require writable Vec. flat depth is a literal 0..32. Native nested collections use Vec<Vec<T>>."
+  },
+  {
+    "id": "object-prototype",
+    "title": "Prototype constructors and methods",
+    "category": "Collections",
+    "path": "examples/object-prototype/main.dev",
+    "description": "Prototype constructors and methods",
+    "doc": "object-reference",
+    "commands": [
+      "d examples/object-prototype/main.dev",
+      "d build examples/object-prototype/main.dev -o out/object-prototype.exe"
+    ]
+  },
+  {
+    "id": "object-descriptors",
+    "title": "Getters, setters and property descriptors",
+    "category": "Collections",
+    "path": "examples/object-descriptors/main.dev",
+    "description": "Getters, setters and property descriptors",
+    "doc": "object-reference",
+    "commands": [
+      "d examples/object-descriptors/main.dev",
+      "d build examples/object-descriptors/main.dev -o out/object-descriptors.exe"
+    ]
+  },
+  {
+    "id": "object-direct",
+    "title": "Dynamic prototype updates",
+    "category": "Collections",
+    "path": "examples/object-direct/main.dev",
+    "description": "Dynamic prototype updates",
+    "doc": "object-reference",
+    "commands": [
+      "d examples/object-direct/main.dev",
+      "d build examples/object-direct/main.dev -o out/object-direct.exe"
+    ]
   }
 ]

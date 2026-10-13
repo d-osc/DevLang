@@ -1,0 +1,30 @@
+use "std/json"
+fn Person(this: json.Value, name: str) { this.name = name }
+fn main() {
+    Object.defineProperty(Person.prototype, "greet", {
+            value: fn(this: json.Value): str { return "Hello " + this.name }
+            writable: true
+            configurable: true
+    })
+    let person = Object.construct(Person, "Dev")
+    print(person.greet())
+    print(person.constructor == Person)
+    Object.assign(person, {age: 18})
+    print(json.stringify(person))
+    Object.defineProperty(Person.prototype, "label", {value: "prototype", writable: true, configurable: true})
+    print(person.label)
+    Object.defineProperty(Person.prototype, "label", {value: "updated"})
+    print(person.label)
+    print(Object.keys(person).join(","))
+    print(Object.getOwnPropertyDescriptor(person,"name").writable)
+    let alias = person
+    Object.freeze(person)
+    print(Object.isFrozen(alias))
+    print(Object.delete(alias,"age"))
+    let entries = Object.entries(person)
+    print(json.stringify(Object.fromEntries(entries)))
+    let groups = Object.groupBy([1,2,3,4],fn(n: i64): str {return n % 2 == 0 ? "even" : "odd"})
+    print(json.stringify(groups))
+    print(person.toString())
+}
+main()

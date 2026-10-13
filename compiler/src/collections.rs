@@ -86,6 +86,7 @@ impl Emitter<'_> {
             return Ok(Value{code,ty:Type::Bool,lvalue:false});
         }
         let op=if op=="length" {"len"} else {op};
+        if crate::dynamic::is_dynamic(&v.ty) && !["len","$iter_len","isArray"].contains(&op) {return self.object_method_call(v,op,args,span);}
         if crate::dynamic::is_dynamic(&v.ty) && (op == "len" || op == "$iter_len") && args.is_empty() {
             return Ok(Value {code: format!("{}({}, {})", if op == "$iter_len" {"dev_dynamic_array_len"} else {"dev_dynamic_len"}, v.code, self.location(span)), ty: Type::Size {signed:false}, lvalue:false});
         }

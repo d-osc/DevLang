@@ -18,6 +18,7 @@ struct Expand {
     queue: Vec<(usize, Function, Bindings)>,
     locals: Vec<Bindings>,
     hint: Option<Type>,
+    raw_object_literals: bool,
     return_type: Type,
     nominals: HashMap<String, (usize, String, Vec<Type>)>,
 }
@@ -51,7 +52,7 @@ pub fn modules(modules: &mut [Module], aliases: &[HashMap<String, usize>]) -> Re
         instances: HashMap::new(),
         queue: vec![],
         locals: vec![HashMap::new()],
-        hint: None,
+        hint: None, raw_object_literals:false,
         return_type: Type::i32(),
         nominals: HashMap::new(),
         traits: modules
@@ -404,7 +405,7 @@ impl Expand {
                 }
                 self.constraints(owner, &d.generics, &d.constraints, &args, span)?;
                 let identity = format!("{}:{name}:{args:?}", self.paths[owner].display());
-                let key = if name == "Value" && self.paths[owner].parent().is_some_and(|p| p.ends_with("__devlang_intrinsics__")) && self.paths[owner].file_stem().is_some_and(|n| n == "std_json" || n == "std_don") { if self.paths[owner].file_stem().is_some_and(|n| n=="std_don") { "dev_dynamic_don_value".into() } else { "dev_dynamic_value".into() } } else { format!("dev_t_{:016x}", hash(&identity)) };
+                let key = if name == "Value" && ((self.paths[owner].parent().is_some_and(|p| p.ends_with("__devlang_intrinsics__")) && self.paths[owner].file_stem().is_some_and(|n| n == "std_json" || n == "std_don")) || self.paths[owner]==std::path::Path::new("std/json") || self.paths[owner]==std::path::Path::new("std/don")) { if self.paths[owner].file_stem().is_some_and(|n| n=="std_don") || self.paths[owner]==std::path::Path::new("std/don") { "dev_dynamic_don_value".into() } else { "dev_dynamic_value".into() } } else { format!("dev_t_{:016x}", hash(&identity)) };
                 self.nominals
                     .insert(key.clone(), (owner, name.clone(), args.clone()));
                 if indirect {
@@ -551,7 +552,7 @@ impl Expand {
         let span = e.span;
         let expected = self.hint.take();
         if let ExprKind::Object(_, entries) = &e.kind {
-            if entries.iter().any(|(_, value)| matches!(value.kind, ExprKind::Closure(..))) {
+            if !self.raw_object_literals && entries.iter().any(|(_, value)| matches!(value.kind, ExprKind::Closure(..))) {
                 let entries = entries.clone();
                 let type_name = format!("object_{id}_{}_{}_{}", span.line, span.col, self.queue.len());
                 let key = format!("anonymous_{type_name}");
@@ -642,10 +643,8 @@ impl Expand {
                     span,
                 };
                 self.expr(id, &mut base, env)?;
-                if matches!(
-                    self.infer(id, &base, None)?,
-                    Some(Type::Function(..) | Type::Callback(..))
-                ) {
+                let callable_type=self.infer(id,&base,None)?;
+                if matches!(&callable_type,Some(Type::Function(..)|Type::Callback(..))) || (names.len()==1 && callable_type.is_some_and(|t|matches!(t,Type::Record(ref n,_)|Type::Nominal(ref n) if n=="dev_dynamic_value" || n=="dev_dynamic_don_value"))) {
                     e.kind = ExprKind::Invoke(Box::new(base), args.clone());
                 }
             }
@@ -791,6 +790,12 @@ impl Expand {
                     self.expr(id, a, env)?;
                 }
             }
+            ExprKind::Name(names) if names.len()==2 && names[0]=="Object" && names[1]!="prototype" => {
+                e.kind=ExprKind::Call(vec!["$object".into(),"static".into()],vec![Expr {span,kind:ExprKind::String(names[1].clone())}]);return Ok(());
+            }
+            ExprKind::Name(names) if names.as_slice()==["Object"] || names.as_slice()==["Object","prototype"] => {
+                e.kind=ExprKind::Call(vec!["$object".into(),if names.len()==1 {"constructor".into()} else {"prototype".into()}],vec![]);return Ok(());
+            }
             ExprKind::Name(names) if names.len() > 1 => {
                 let type_name = &names[..names.len() - 1];
                 if let Some((owner, name)) = self.target(id, type_name) {
@@ -819,6 +824,7 @@ impl Expand {
                     kind: ExprKind::Name(vec![names[0].clone()]),
                     span,
                 };
+                self.expr(id,&mut base,env)?;
                 for field in &names[1..] {
                     base = Expr {
                         kind: ExprKind::Field(Box::new(base), field.clone()),
@@ -828,9 +834,12 @@ impl Expand {
                 e.kind = base.kind;
             }
             ExprKind::Call(names, args) | ExprKind::GenericCall(names, _, args) => {
+                let saved_raw=self.raw_object_literals;
+                if names.first().is_some_and(|n|n=="Object" || self.locals.iter().rev().find_map(|scope|scope.get(n)).is_some_and(|t|matches!(t,Type::Record(name,_)|Type::Nominal(name) if name=="dev_dynamic_value" || name=="dev_dynamic_don_value"))) {self.raw_object_literals=true;}
                 for a in args.iter_mut() {
                     self.expr(id, a, env)?;
                 }
+                self.raw_object_literals=saved_raw;
                 if names.len() == 1 && ["ref", "deref"].contains(&names[0].as_str()) {
                     if args.len() != 1 {
                         return Err(error(
@@ -849,6 +858,11 @@ impl Expand {
                 }
                 let names = names.clone();
                 let args = args.clone();
+                if names.as_slice()==["Object"] || (names.len()==2 && names[0]=="Object" && !self.module_aliases[id].contains(&names[0])) {
+                    let method=if names.len()==1 {"object".to_string()} else {names[1].clone()};
+                    e.kind=ExprKind::Call(vec!["$object".into(),method],args);return Ok(());
+                }
+
                 if names.as_slice()==["Array", "isArray"] && !self.module_aliases[id].contains(&names[0]) {
                     if args.len()!=1 {return Err(error(&self.paths[id],span,"Array.isArray expects one argument"));}
                     e.kind=ExprKind::Collection(Box::new(args[0].clone()),"isArray".into(),vec![]);return Ok(());
@@ -952,6 +966,13 @@ impl Expand {
                     let ty = self.ty(id, &Type::Named(names, types), env, span)?;
                     e.kind = ExprKind::Vector(ty, args);
                     return Ok(());
+                }
+                if names.len()>=2 && !self.module_aliases[id].contains(&names[0]) {
+                    let mut target=Expr {kind:ExprKind::Name(names[..names.len()-1].to_vec()),span};
+                    self.expr(id,&mut target,env)?;
+                    if self.infer(id,&target,None)?.is_some_and(|t|matches!(t,Type::Record(ref n,_)|Type::Nominal(ref n) if n=="dev_dynamic_value" || n=="dev_dynamic_don_value")) {
+                        e.kind=ExprKind::Collection(Box::new(target),names.last().unwrap().clone(),args);return Ok(());
+                    }
                 }
                 if names.len() >= 2
                     && [

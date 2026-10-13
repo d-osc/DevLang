@@ -27,6 +27,14 @@ pub(crate) fn encode(value: &Value, depth: usize) -> Result<Json, String> {
         return Err("JSON nesting limit exceeded".into());
     }
     Ok(match value {
+        Value::PrototypeArray(values,_)=>Json::Array(values.iter().map(|v|encode(v,depth+1)).collect::<Result<_,_>>()?),
+        Value::PrototypeObject(object,_)=>{
+            let properties=object.lock().map_err(|_|"object lock poisoned")?.properties.clone();
+            let mut result=serde_json::Map::new();for (key,property) in properties {
+                if property.enumerable {if let Some(value)=property.value {if !matches!(value,Value::Callable(..)|Value::PrototypeFunction(..)) {result.insert(key,encode(&value,depth+1)?);}}}
+            }Json::Object(result)
+        }
+
         Value::Json(value, _) => {
             check_depth(value, depth)?;
             (**value).clone()

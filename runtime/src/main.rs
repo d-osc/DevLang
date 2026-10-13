@@ -21,7 +21,13 @@ devrun -e|--eval 'print(40 + 2)' [--timings] [-- arguments]
 Interprets Dev directly; source-only C dependencies are prepared automatically.";
 
 fn main() {
-    match run() {
+    // The AST evaluator permits 128 nested calls; reserve enough stack on Windows
+    // for debug frames as well as release frames. Pages commit on demand.
+    let result = std::thread::Builder::new().name("dev-runtime".into()).stack_size(32 * 1024 * 1024)
+        .spawn(run).map_err(|e| format!("cannot start runtime: {e}"))
+        .and_then(|worker| worker.join().map_err(|_| "runtime worker panicked".to_string()))
+        .and_then(|result| result);
+    match result {
         Ok(code) => std::process::exit(code),
         Err(error) => {
             eprintln!("{error}");

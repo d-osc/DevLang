@@ -219,3 +219,5 @@ mod tests {
         assert!(check_sources(&entry, &HashMap::new(), &sources).is_empty());
     }
 }
+
+mod object;
