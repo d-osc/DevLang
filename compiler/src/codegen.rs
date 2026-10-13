@@ -433,7 +433,7 @@ pub(crate) struct Emitter<'a> {
     pub(crate) ret: Type,
     pub(crate) loop_depth: usize,
     pub(crate) uses_print: bool,
-    uses_templates: bool,
+    pub(crate) uses_templates: bool,
     pub(crate) uses_dynamic: bool,
     pub(crate) uses_refs: bool,
     pub(crate) unsafe_depth: usize,
@@ -2409,11 +2409,34 @@ fn pattern_c(
 const INTERPOLATION_HELPERS: &str = r#"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdarg.h>
 #include <stdatomic.h>
 struct dev_template_block { struct dev_template_block *next; char text[1]; };
 static struct dev_template_block *dev_template_blocks;
 static atomic_flag dev_template_lock = ATOMIC_FLAG_INIT;
+static const char *dev_array_join(const char *const *items,size_t count,const char *separator) {
+    size_t total=0,sep_len=strlen(separator);
+    for(size_t i=0;i<count;++i) {
+        size_t n=strlen(items[i]);
+        if(n>SIZE_MAX-total) abort(); total+=n;
+        if(i && sep_len>SIZE_MAX-total) abort();
+        if(i) total+=sep_len;
+    }
+    if(total>SIZE_MAX-sizeof(struct dev_template_block)) abort();
+    struct dev_template_block *b=(struct dev_template_block *)malloc(sizeof(*b)+total);
+    if(!b) abort();
+    char *out=b->text;
+    for(size_t i=0;i<count;++i) {
+        if(i) {memcpy(out,separator,sep_len);out+=sep_len;}
+        size_t n=strlen(items[i]);memcpy(out,items[i],n);out+=n;
+    }
+    *out=0;
+    while(atomic_flag_test_and_set(&dev_template_lock)) {}
+    b->next=dev_template_blocks;dev_template_blocks=b;
+    atomic_flag_clear(&dev_template_lock);
+    return b->text;
+}
 static const char *dev_interpolate(const char *format, ...) {
     va_list args, copy;
     va_start(args,format); va_copy(copy,args);

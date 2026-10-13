@@ -1,5 +1,6 @@
 use crate::ast::*;
 use crate::codegen::{c_type, Emitter, Value};
+include!("array_methods.rs");
 impl Emitter<'_> {
     pub(crate) fn resolve_collection_element(&self, t: &Type) -> Type {
         if let Type::Nominal(n) = t {
@@ -72,7 +73,7 @@ impl Emitter<'_> {
         span: Span,
     ) -> Result<Value, String> {
         let previous = self.writing;
-        self.writing = ["push", "pop", "clear", "set", "remove"].contains(&op);
+        self.writing = ["push", "pop", "clear", "set", "remove", "shift", "unshift", "reverse"].contains(&op);
         let mut v = self.expr(base, None)?;
         if crate::dynamic::is_dynamic(&v.ty) && (op == "len" || op == "$iter_len") && args.is_empty() {
             return Ok(Value {code: format!("{}({}, {})", if op == "$iter_len" {"dev_dynamic_array_len"} else {"dev_dynamic_len"}, v.code, self.location(span)), ty: Type::Size {signed:false}, lvalue:false});
@@ -88,7 +89,7 @@ impl Emitter<'_> {
                 self.prelude.push_str(&format!("{};\nmemcpy({temporary}, {}, sizeof({temporary}));\n", crate::codegen::declaration(&v.ty, &temporary), v.code));
             }
             if op == "len" && args.is_empty() {return Ok(Value {code: count.to_string(), ty: Type::Size {signed:false}, lvalue:false});}
-            if !["slice","includes","indexOf","lastIndexOf"].contains(&op) {return self.fail(span, "fixed arrays support len, slice and search; use Vec for mutation methods");}
+            if !["slice","includes","indexOf","lastIndexOf","at","concat","toVec","toReversed","join","map","filter","reduce","forEach","some","every","findIndex","findLastIndex"].contains(&op) {return self.fail(span, "fixed arrays support read-only methods; use Vec for mutation methods");}
             let ty = Type::Vector(inner);
             let name = self.collection(&ty);
             v = self.owned(Value {code: format!("{name}_make({temporary}, {count})"), ty, lvalue:false});
@@ -103,6 +104,9 @@ impl Emitter<'_> {
         };
         let element = self.resolve_collection_element(inner);
         let name = self.collection(&v.ty);
+        if ["at","concat","toVec","toReversed","join","shift","unshift","reverse","map","filter","reduce","forEach","some","every","findIndex","findLastIndex"].contains(&op) {
+            return self.array_method(v, &element, op, args, span);
+        }
         let count = match op {
             "push" | "includes" | "indexOf" | "lastIndexOf" => 1,
             "slice" => 2,
@@ -217,6 +221,10 @@ impl Emitter<'_> {
             out.push_str(&format!("static void {name}_unique({name} *v) {{ if(!v->data) {{*v={name}_make(NULL,0);return;}}struct dev_ref_block *b=((struct dev_ref_block *)v->data)-1;if(b->count>1) {{ {name} copy={name}_make(v->data+v->offset,v->len);dev_ref_release(v->data);*v=copy; }} }}\n"));
             out.push_str(&format!("static {ct} *{name}_at_mut({name} *v,uint64_t i,const char *p,size_t l,size_t c) {{ if(i>=v->len) dev_checked_fail(p,l,c,\"array index out of bounds\");{name}_unique(v);return &v->data[i]; }}\n"));
             out.push_str(&format!("static void {name}_push({name} *v,{ct} value) {{ {keep}(&value); {name}_unique(v);struct dev_ref_block *b=((struct dev_ref_block *)v->data)-1;size_t cap=b->bytes/sizeof({ct});if(v->len==cap){{if(cap>(SIZE_MAX-sizeof(*b))/(2*sizeof({ct}))) abort();cap*=2;struct dev_ref_block *grown=(struct dev_ref_block *)realloc(b,sizeof(*b)+cap*sizeof({ct}));if(!grown) abort();b=grown;b->bytes=cap*sizeof({ct});v->data=({ct} *)(b+1);}}v->data[v->len]=value;++v->len;b->items=v->len; }}\n"));
+            out.push_str(&format!("static {ct} const *{name}_at_signed({name} v,int64_t i,const char *p,size_t l,size_t c) {{uint64_t index;if(i<0){{uint64_t distance=(uint64_t)(-(i+1))+1;if(distance>v.len)dev_checked_fail(p,l,c,\"array index out of bounds\");index=v.len-distance;}}else index=(uint64_t)i;return {name}_at(&v,index,p,l,c);}}\n"));
+            out.push_str(&format!("static void {name}_reverse({name} *v) {{{name}_unique(v);for(size_t i=0;i<v->len/2;++i){{{ct} tmp=v->data[i];v->data[i]=v->data[v->len-1-i];v->data[v->len-1-i]=tmp;}}}}\n"));
+            out.push_str(&format!("static void {name}_unshift({name} *v,{ct} value) {{{name}_push(v,value);{ct} last=v->data[v->len-1];memmove(v->data+1,v->data,(v->len-1)*sizeof({ct}));v->data[0]=last;}}\n"));
+            out.push_str(&format!("static {ct} {name}_shift({name} *v,const char *p,size_t l,size_t c) {{if(!v->len)dev_checked_fail(p,l,c,\"shift from empty Vec\");{name}_unique(v);{ct} result=v->data[0];--v->len;memmove(v->data,v->data+1,v->len*sizeof({ct}));(((struct dev_ref_block *)v->data)-1)->items=v->len;return result;}}\n"));
             out.push_str(&format!("static {ct} {name}_pop({name} *v,const char *p,size_t l,size_t c) {{ if(!v->len) dev_checked_fail(p,l,c,\"pop from empty Vec\");{name}_unique(v);{ct} value=v->data[--v->len];(((struct dev_ref_block *)v->data)-1)->items=v->len;return value; }}\nstatic void {name}_clear({name} *v) {{dev_ref_release(v->data);v->data=NULL;v->len=0;v->offset=0;}}\n"));
         }
         for t in types.iter().filter(|t| matches!(t, Type::Map(..))) {

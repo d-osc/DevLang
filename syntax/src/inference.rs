@@ -159,15 +159,27 @@ impl Expand {
                     t
                 }
             }
-            ExprKind::Collection(a, op, _) => {
+            ExprKind::Collection(a, op, args) => {
                 let Some(t) = self.infer(id, a, None)? else {
                     return Ok(None);
                 };
                 match op.as_str() {
                     "len" | "$iter_len" => Type::Size { signed: false },
-                    "clear" | "push" | "set" => Type::Void,
-                    "contains" | "remove" | "includes" => Type::Bool,
-                    "indexOf" | "lastIndexOf" => Type::Int {bits:64,signed:true},
+                    "clear" | "push" | "set" | "unshift" | "reverse" | "forEach" => Type::Void,
+                    "contains" | "remove" | "includes" | "some" | "every" => Type::Bool,
+                    "indexOf" | "lastIndexOf" | "findIndex" | "findLastIndex" => Type::i64(),
+                    "join" => Type::Str,
+                    "at" | "shift" => {
+                        if let Type::Vector(t) | Type::Slice(t) | Type::Array(t, _) = t {self.concrete(&t)} else {return Ok(None);}
+                    }
+                    "concat" | "toVec" | "toReversed" | "filter" => {
+                        if let Type::Vector(t) | Type::Slice(t) | Type::Array(t, _) = t {Type::Vector(t)} else {return Ok(None);}
+                    }
+                    "map" | "reduce" => {
+                        let Some(arg) = args.first() else {return Ok(None);};
+                        let Some(Type::Function(_, ret)) = self.infer(id, arg, None)? else {return Ok(None);};
+                        if op == "map" {Type::Vector(ret)} else {*ret}
+                    }
                     "pop" => {
                         if let Type::Vector(t) = t {
                             self.concrete(&t)

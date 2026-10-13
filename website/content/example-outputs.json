@@ -543,5 +543,10 @@
     "source_sha256": "9dc81fdf076a40da2c7771a4d0ea214c77f8f3da7c1d57965f3cfd725b66782d",
     "validation_sha256": "9160af5f64c1fb451329840d9363d209070a47a07491c1875117ef045c915a66",
     "output": "true\n1\n3\n-1\nfalse\n0\n1\nneedle once\n1\n2\n-1\ntrue\n1\n"
+  },
+  "array-methods": {
+    "source_sha256": "79b89ce7dffb34e3acda258fc4f280661c3c31da655699e1cc6b81e0f2dfbaa0",
+    "validation_sha256": "5fdbd08466943b358c077d5b341bc34bf8dce671371000238b59e18f588c11c7",
+    "output": "2\n2\n2\n8\ntrue\ntrue\n1\n3\n2\n3\n5\n2\n0\n2\n1\nHello Dev\nDev\ntrue\nfalse\n-1\n10\n3\n"
   }
 }

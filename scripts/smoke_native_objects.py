@@ -6,6 +6,9 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "array_callbacks_order": 'fn receive():[i64;3] {print("receiver");return [1,2,3]}\nfn reducer():fn(i64,i64):i64 {print("callback");return fn(a:i64,b:i64):i64 {print(b);return a+b}}\nfn seed():i64 {print("initial");return 10}\nfn predicate(n:i64):bool {print(n);return n==2}\nfn main() {\n    print(receive().reduce(reducer(),seed()))\n    let xs=[1,2,3]\n    print(xs.some(predicate))\n    print(xs.every(predicate))\n    print(xs.findIndex(predicate))\n    print(xs.findLastIndex(predicate))\n}\nmain()\n',
+    "array_methods": 'fn main() {\n    const values = [1, 2, 3, 2]\n    print(values.at(-1))\n    let doubled = values.map(fn(n: i64): i64 { return n * 2 })\n    print(doubled.at(0))\n    let even = values.filter(fn(n: i64): bool { return n % 2 == 0 })\n    print(even.len())\n    print(values.reduce(fn(sum: i64, n: i64): i64 { return sum + n }, 0))\n    print(values.some(fn(n: i64): bool { return n > 2 }))\n    print(values.every(fn(n: i64): bool { return n > 0 }))\n    print(values.findIndex(fn(n: i64): bool { return n == 2 }))\n    print(values.findLastIndex(fn(n: i64): bool { return n == 2 }))\n    values[1..3].forEach(fn(n: i64) { print(n) })\n    let combined = values.concat([4, 5])\n    print(combined.at(-1))\n    let reversed = values.toReversed()\n    print(reversed.at(0))\n    let queue = values.toVec()\n    queue.unshift(0)\n    print(queue.shift())\n    queue.reverse()\n    print(queue.at(0))\n    print(values.at(0))\n    const words = ["Hello", "Dev"]\n    print(words.join(" "))\n    print(words[1..2].join("-"))\n    let empty = Vec<i64>()\n    print(empty.every(fn(n: i64): bool { return n > 0 }))\n    print(empty.some(fn(n: i64): bool { return n > 0 }))\n    print(empty.findIndex(fn(n: i64): bool { return true }))\n    print(empty.reduce(fn(a: i64, b: i64): i64 { return a + b }, 10))\n    let multiplier = 3\n    print(values.map(fn(n: i64): i64 { return n * multiplier }).at(0))\n}\nmain()\n',
+    "array_methods_managed": 'fn main() {\n    let refs=[ref(1),ref(2)]\n    let xs=refs.toVec()\n    let snapshot=xs.slice(0,2)\n    xs.unshift(ref(3))\n    print(deref(xs.shift()))\n    xs.reverse()\n    print(deref(xs.at(0)))\n    print(deref(snapshot.at(0)))\n    let more=xs.concat(refs)\n    print(deref(more.at(-1)))\n    let offset=ref(10)\n    let mapped=refs.map(fn(x:Ref<i64>):Ref<i64> {return ref(deref(x)+deref(offset))})\n    print(deref(mapped.at(0)))\n    let filtered=mapped.filter(fn(x:Ref<i64>):bool {return deref(x)>11})\n    print(deref(filtered.at(0)))\n    let total=[1,2,3].reduce(fn(a:Ref<i64>,n:i64):Ref<i64> {return ref(deref(a)+n)},ref(0))\n    print(deref(total))\n    let names=[1,2].map(fn(n:i64):str {return "value ${n}"})\n    print(names.join(","))\n    let nested=[1,2].map(fn(n:i64):Vec<i64> {return Vec<i64>(n)})\n    print(nested.at(1).at(0))\n    let empty=Vec<str>()\n    print(empty.join("-"))\n}\nmain()\n',
     "array_search": 'fn needle(): i64 { print("needle once"); return 2 }\nfn main() {\n    const values = [1, 2, 3, 2]\n    print(values.includes(2))\n    print(values.indexOf(2))\n    print(values.lastIndexOf(2))\n    print(values.indexOf(9))\n    print(values.includes(9))\n    let slice = values[1..3]\n    print(slice.indexOf(2))\n    print(slice.lastIndexOf(3))\n    let vector = [...values]\n    print(vector.indexOf(needle()))\n    let names = ["Dev", "Other", "Dev"]\n    print(names.lastIndexOf("D" + "ev"))\n    let empty = Vec<i64>()\n    print(empty.indexOf(1))\n    print([true, false].includes(false))\n    print([1.5, 2.5].indexOf(2.5))\n}\nmain()\n',
     "array_order": """fn side(n:i64):i64 {print(n);return n}
 fn make():[i64;2] {print(2);return [1,2]}
@@ -373,6 +376,10 @@ print(y.inner.name)
 ''',
 }
 FAILURES = {
+    "array_at_negative": "let x=[1,2];print(x.at(-3))",
+    "array_at_end": "let x=[1,2];print(x.at(2))",
+    "array_at_min": "let x=[1,2];print(x.at(-9223372036854775808))",
+    "array_shift_empty": "let x=Vec<i64>();x.shift()",
     "array_slice_reverse": "let x=[1,2]\nlet y=x[2..1]",
     "array_slice_end": "let x=[1,2]\nlet y=x[0..3]",
     "array_foreach_object": "let x={}\nfor item in x {print(item)}",
@@ -423,6 +430,9 @@ fn read(x:json.Value):str { return x.inner.name }
             'const_method_key': "const p={name:'Dev',get:fn():str {return this.name}}\np['name']='Other'",
             'this_key_mutation': "let p={name:'Dev',change:fn() {this['name']='Other'}}",
             'this_mutation': 'let x={n:1,change:fn() {this.n=2}}',
+            'const_reverse': 'const x=Vec<i64>(1);x.reverse()',
+            'const_shift': 'const x=Vec<i64>(1);x.shift()',
+            'const_unshift': 'const x=Vec<i64>();x.unshift(1)',
             'const_assign': 'const x=1\nx=2',
             'const_compound': 'const x=1\nx+=2',
             'const_field': 'const x={a:1}\nx.a=2',
@@ -439,6 +449,28 @@ fn read(x:json.Value):str { return x.inner.name }
             'ternary_condition': 'print(1 ? 2 : 3)',
             'ternary_type': "print(true ? 1 : 'wrong')",
         }
+        method_errors = {
+            'map_void': 'let xs=[1,2];xs.map(fn(n:i64) {})',
+            'map_parameter': 'let xs=[1,2];xs.map(fn(n:str):str {return n})',
+            'filter_result': 'let xs=[1,2];xs.filter(fn(n:i64):i64 {return n})',
+            'forEach_result': 'let xs=[1,2];xs.forEach(fn(n:i64):i64 {return n})',
+            'reduce_signature': 'let xs=[1,2];xs.reduce(fn(n:i64):i64 {return n},0)',
+            'reduce_seed': "let xs=[1,2];xs.reduce(fn(a:i64,b:i64):i64 {return a+b},'bad')",
+            'concat_type': 'let xs=[1,2];xs.concat([true])',
+            'at_type': 'let xs=[1,2];xs.at(true)',
+            'join_type': "let xs=[1,2];xs.join(',')",
+            'array_reverse': 'let xs=[1,2];xs.reverse()',
+            'slice_reverse': 'let xs=[1,2];let view=xs.slice(0,2);view.reverse()',
+            'unshift_type': "let xs=Vec<i64>();xs.unshift('bad')",
+        }
+        for name,code in method_errors.items():
+            source=root/(name+'.dev');source.write_text(code,encoding='utf-8')
+            commands=[[str(folder/('devrun'+suffix)),str(source),'--engine',engine] for engine in ['auto','ast']]
+            commands.append([str(folder/('devc'+suffix)),'build',str(source),'-o',str(root/(name+suffix))])
+            for command in commands:
+                result=run(command)
+                assert result.returncode != 0,(name,result.stdout,result.stderr)
+            print('PASS:',name)
         for name,code in ternary_errors.items():
             source=root/(name+'.dev');source.write_text(code,encoding='utf-8')
             commands=[[str(folder/('devrun'+suffix)),str(source),'--engine',engine] for engine in ['auto','ast']]
@@ -468,6 +500,12 @@ fn read(x:json.Value):str { return x.inner.name }
             else:
                 assert all(r.returncode==0 for r in results),(name,[(r.stdout,r.stderr) for r in results])
                 assert len({r.stdout for r in results})==1,(name,[(r.stdout,r.stderr) for r in results])
+                if name == 'array_callbacks_order':
+                    assert results[0].stdout.splitlines()==['receiver','callback','initial','1','2','3','16','1','2','true','1','false','1','2','1','3','2','1'],results[0].stdout
+                if name == 'array_methods':
+                    assert results[0].stdout.splitlines()==['2','2','2','8','true','true','1','3','2','3','5','2','0','2','1','Hello Dev','Dev','true','false','-1','10','3'],results[0].stdout
+                if name == 'array_methods_managed':
+                    assert results[0].stdout.splitlines()==['3','2','1','2','11','12','6','value 1,value 2','2',''],results[0].stdout
                 if name == 'array_search':
                     assert results[0].stdout.splitlines()==['true','1','3','-1','false','0','1','needle once','1','2','-1','true','1'],results[0].stdout
                 if name == 'array_order':

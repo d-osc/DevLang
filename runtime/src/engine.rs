@@ -40,6 +40,7 @@ include!("child_process.rs");
 include!("storage_libs.rs");
 include!("secure_network.rs");
 include!("sync_lib.rs");
+include!("array_methods.rs");
 
 impl Value {
     pub(crate) fn ty(&self) -> Type {
@@ -1411,10 +1412,13 @@ impl Engine {
             return Err("collection method requires Vec or Slice".into());
         };
         let element = self.resolve_collection_element(inner)?;
+        if ["at","concat","toVec","toReversed","join","map","filter","reduce","forEach","some","every","findIndex","findLastIndex"].contains(&op) {
+            return self.array_method(f, value, &element, op, args, base.span);
+        }
         let count = match op {
-            "push" | "includes" | "indexOf" | "lastIndexOf" => 1,
+            "push" | "unshift" | "includes" | "indexOf" | "lastIndexOf" => 1,
             "slice" => 2,
-            "len" | "pop" | "clear" => 0,
+            "len" | "pop" | "clear" | "shift" | "reverse" => 0,
             _ => return Err("unknown collection method".into()),
         };
         if args.len() != count {
@@ -1468,11 +1472,12 @@ impl Engine {
             return Err("mutable collection method requires a writable Vec".into());
         }
         drop(value);
-        let item = if op == "push" {
+        let item = if op == "push" || op == "unshift" {
             Some(self.eval(f, &args[0], Some(&element))?)
         } else {
             None
         };
+        if let Some(item) = &item {if item.ty() != element {return Err("array method element type mismatch".into());}}
         let Some(Value::Vector(xs, _)) = self.writable(f, base)? else {
             return Err("mutable collection method requires a writable Vec".into());
         };
@@ -1489,6 +1494,12 @@ impl Engine {
                 Ok(Value::Void)
             }
             "pop" => xs.pop().ok_or_else(|| "pop from empty Vec".into()),
+            "unshift" => {
+                xs.try_reserve(1).map_err(|_| "collection allocation failed")?;
+                xs.insert(0,item.unwrap()); Ok(Value::Void)
+            }
+            "shift" => {if xs.is_empty() {Err("shift from empty Vec".into())} else {Ok(xs.remove(0))}}
+            "reverse" => {xs.reverse(); Ok(Value::Void)}
             _ => unreachable!(),
         }
     }

@@ -468,7 +468,87 @@ Supported in source runtime and native for homogeneous Array, Vec and Slice
 of numeric, bool or str values. String comparison uses contents. The needle
 must have the same element type. Search is read-only, evaluates the receiver
 and needle once in that order, and takes O(n) time. No fromIndex argument,
-predicate find/findIndex, record equality or heterogeneous DON-array search yet.
+record equality or heterogeneous DON-array search yet. Predicate index searches are documented below.
+
+## Array Methods / เมธอดของ Array, Vec และ Slice
+
+These methods work in the source runtime and hosted native compiler from current
+source after v0.5.1. They operate on homogeneous typed collections. DON data arrays
+with mixed types are not supported by these methods.
+
+รองรับทั้ง runtime และ native สำหรับ Array, Vec และ Slice ที่มีชนิดข้อมูลเดียวกัน
+เมธอดที่สร้างผลลัพธ์ใหม่จะไม่เปลี่ยนข้อมูลเดิม ส่วนเมธอดแก้ข้อมูลใช้กับ Vec ที่เขียนได้เท่านั้น
+
+| Method | Receiver | Result / การทำงาน |
+| --- | --- | --- |
+| `len()` | Array, Vec, Slice | usize length / จำนวนสมาชิก |
+| `at(index)` | Array, Vec, Slice | T; i64 index, negative counts from the end / ติดลบนับจากท้าย |
+| `slice(start, end)` | Array, Vec, Slice | Read-only Slice snapshot; end exclusive |
+| `includes(value)` | Array, Vec, Slice | bool; numeric, bool or str equality |
+| `indexOf(value)`, `lastIndexOf(value)` | Array, Vec, Slice | i64 index, or -1 |
+| `toVec()` | Array, Vec, Slice | New Vec containing visible elements / สำเนาเป็น Vec |
+| `concat(other)` | Array, Vec, Slice | New Vec; other is Array, Vec or Slice of the same type |
+| `toReversed()` | Array, Vec, Slice | New Vec in reverse order / กลับลำดับโดยไม่แก้ต้นฉบับ |
+| `join(separator)` | Array, Vec, Slice of str | str; explicit str separator / รวมข้อความ |
+| `map(callback)` | Array, Vec, Slice | Vec of callback results / แปลงสมาชิก |
+| `filter(predicate)` | Array, Vec, Slice | Vec containing matching elements / กรองสมาชิก |
+| `reduce(callback, initial)` | Array, Vec, Slice | Accumulator value / รวมผลโดยเริ่มจาก initial |
+| `forEach(callback)` | Array, Vec, Slice | void; visit each element / ทำงานกับแต่ละสมาชิก |
+| `some(predicate)`, `every(predicate)` | Array, Vec, Slice | bool; short-circuit / หยุดเมื่อทราบผล |
+| `findIndex(predicate)`, `findLastIndex(predicate)` | Array, Vec, Slice | i64 index, or -1; last searches backwards |
+| `push(value)`, `unshift(value)` | Writable Vec | void; append or prepend / เพิ่มท้ายหรือหน้า |
+| `pop()`, `shift()` | Writable Vec | T; remove last or first / นำท้ายหรือหน้าออก |
+| `reverse()` | Writable Vec | void; reverse in place, preserving other snapshots |
+| `clear()` | Writable Vec | void; remove all elements |
+
+```dev
+fn main() {
+    const values = [1, 2, 3, 4]
+    let doubled = values.map(fn(n: i64): i64 { return n * 2 })
+    let even = doubled.filter(fn(n: i64): bool { return n % 4 == 0 })
+    print(even.reduce(fn(sum: i64, n: i64): i64 { return sum + n }, 0))
+    print(values.at(-1))
+    print(values.findIndex(fn(n: i64): bool { return n > 2 }))
+    let queue = values.toVec()
+    queue.unshift(0)
+    print(queue.shift())
+    queue.reverse()
+    print(queue.at(0))
+    print(["Hello", "Dev"].join(" "))
+}
+main()
+```
+
+Callbacks are Dev functions or closures with exactly one typed element parameter.
+`map` returns a non-void value; `filter`, `some`, `every` and index predicates return
+bool; `forEach` returns void. `reduce` takes a callback with two parameters:
+`fn(acc: A, item: T): A`, and an explicit initial value of A. Mapping or reducing
+cannot produce fixed arrays; use Vec for collection results. Captures follow the
+ordinary Dev snapshot rules. Array methods evaluate receiver, callback and initial
+value once, left to right, and iterate a snapshot. Slice indices are relative to
+its visible range. `findLastIndex` invokes predicates from the end and stops at the
+first match. Empty `some` is false, empty `every` true, empty index searches -1;
+empty reduce returns initial without calling its callback.
+
+Callback ใช้ฟังก์ชันหรือ closure ที่ระบุชนิด parameter ให้ตรงกับสมาชิกได้
+`reduce` ต้องมีค่าเริ่มต้นเสมอ และ predicate ต้องคืน bool เมื่อใช้ Slice ตำแหน่งเริ่มที่ 0
+ของ Slice นั้น `some`/`every` และการค้นหาด้วย predicate หยุดทันทีเมื่อได้คำตอบ
+
+`at` out of range and `pop`/`shift` on an empty Vec are located runtime errors;
+there is no undefined result. Const bindings allow read-only methods, including
+forEach, but reject mutating methods. `join` supports str elements only, requires
+an explicit separator and runs in O(total output bytes). Native generated strings
+remain allocated until process exit, as with string interpolation.
+`shift`/`unshift`/`reverse`, conversion, concat, map, filter and searches are O(n);
+unique Vec push/pop are amortized O(1). Fixed-array receivers currently convert
+through a temporary Vec, including at; do not assume zero-allocation access.
+
+ยังไม่มี sort, splice, flat/flatMap, callback index/array arguments, หรือ find ที่คืน
+optional value; ใช้ findIndex แล้วตรวจ -1 ก่อนเข้าถึงสมาชิก ไม่มี JavaScript coercion
+หรือ undefined และไม่ใช่ API ของไฟล์ .don โดยตรง
+
+[Full runnable example / ตัวอย่างเต็ม](#/examples/array-methods)
+
 
 # [modules] Modules และ export
 

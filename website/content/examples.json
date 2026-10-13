@@ -1480,5 +1480,19 @@
       "d build examples/array-search/main.dev --release -o out/array-search.exe"
     ],
     "notes": "Numeric, bool and str elements; missing indices return -1."
+  },
+  {
+    "id": "array-methods",
+    "title": "Array Methods / เมธอดของ array",
+    "category": "พื้นฐาน",
+    "path": "examples/array-methods/main.dev",
+    "description": "Map, filter, reduce, callbacks, snapshots, join and queue methods.",
+    "doc": "strings-arrays",
+    "mode": "both",
+    "commands": [
+      "d examples/array-methods/main.dev",
+      "d build examples/array-methods/main.dev --release -o out/array-methods.exe"
+    ],
+    "notes": "Current source after v0.5.1. Homogeneous Array, Vec and Slice; mutations require writable Vec. Callbacks take one element, reduce takes accumulator and element."
   }
 ]
