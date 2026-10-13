@@ -38,6 +38,8 @@ jobs:
       - name: Live HTTP ingress protections
         if: runner.os == 'Linux'
         run: python scripts/smoke_http_ingress.py --bin-dir target/release
+      - name: HTTP worker supervision and recovery
+        run: python scripts/smoke_http_supervisor.py --bin-dir target/release
       - name: Rust tests
         run: cargo test --workspace --locked
       - name: Source resource limits and allocation cycles

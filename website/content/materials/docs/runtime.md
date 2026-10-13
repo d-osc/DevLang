@@ -313,3 +313,56 @@ qualification separate from these local transport regressions.
 การส่งค้าง, เพดาน active requests และการกลับมารับงานหลัง overload แต่ยังต้อง
 ทดสอบ TLS edge และ app จริงแยกต่างหาก timeout ของ body เป็น inactivity timeout
 ไม่ใช่เพดานเวลารวมของการ upload
+
+## HTTP worker supervisor
+
+Python 3 on Windows/Linux can supervise a source worker without changing the
+language/runtime separation:
+
+```sh
+python scripts/serve_http.py --runtime target/release/devrun --file examples/production-http/main.dev --health http://127.0.0.1:3000/healthz --max-rss-mib 256 --log out/http-worker.log
+```
+
+On Windows use `target/release/devrun.exe`. Use an absolute runtime path if the
+executable is elsewhere. The worker's working directory is the source directory.
+Keep the backend loopback-only and define a small `/healthz` route returning HTTP
+200 with a finite body (at most 4096 bytes). Probes do not follow redirects.
+
+Defaults: 15-second startup grace, 2-second polling interval, 1-second health
+socket timeout, restart after 3 failed probes, and at most 5 restarts in a rolling
+60-second window with capped exponential backoff. Unexpected worker exits,
+including exit 0, are restarted: stop the supervisor to stop the service.
+Exhausting the budget returns exit 1 for monitoring. Ctrl+C/SIGTERM stops the
+worker; Windows also supports CTRL_BREAK. `--run-seconds` limits a qualification
+run and exits 0 on normal stop. A supervisor launch/configuration error exits
+nonzero instead of silently retrying a broken installation.
+
+Worker stdout/stderr are drained in bounded chunks and rotated into one log with
+three backups (`--log-bytes`, default 1 MiB per file; a final chunk may overshoot
+by about 4 KiB). Supervisor events also appear on stdout. Monitor these events and
+retain logs appropriately. A sampled RSS budget triggers restart, but it is not
+a hard OS memory cap and can miss short allocation spikes; use OS resource limits
+as well. Worker restarts interrupt in-flight requests and lose in-memory state.
+Store durable data externally and use idempotent retry policies where applicable.
+
+The health route must represent worker readiness. Long legitimate callbacks may
+fail a short health budget because handlers are serial; tune budgets from measured
+workloads. The supervisor does not repair application/database faults or manage
+the external NGINX/TLS edge. Run it under a service manager for host boot/recovery.
+
+```sh
+python scripts/smoke_http_supervisor.py --bin-dir target/release
+```
+
+This regression creates a real DevLang worker, hangs its callback, closes its
+listener and verifies recovery, checks restart exhaustion/RSS budgets, validates
+log rotation and clean shutdown. CI executes it on Windows/Linux.
+
+ภาษาไทย: supervisor มี health check, RSS budget, restart/backoff แบบจำกัดจำนวน
+และ log rotation แต่การ restart ทำให้ request ที่กำลังทำงานถูกตัดและ state
+ใน RAM หาย จึงต้องจัดการข้อมูลถาวรและ retry ของ app ให้เหมาะสม
+
+The bundled `examples/production-http/main.dev` is a minimal loopback starter with
+GET `/healthz`, GET `/`, 404 and 405 responses. Its health route checks listener
+responsiveness only; extend readiness checks for application dependencies. It is
+not a business application with authentication or durable storage.
