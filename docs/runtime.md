@@ -286,3 +286,30 @@ hours-long load/soak results, authentication and durable-state recovery checks.
 ภาษาไทย: handler ที่ผิดพลาดไม่ทำให้ server ทั้งตัวหยุดแล้ว และมีการทดสอบ HTTP
 พร้อมวัด RSS แต่ production ต้อง bind loopback ผ่าน reverse proxy มี health check
 และ supervisor รวมถึงทดสอบต่อเนื่องตามงานจริงก่อนเปิดรับผู้ใช้ภายนอก
+
+### HTTP ingress regression
+
+## Live ingress verification
+
+```sh
+python scripts/smoke_http_ingress.py --bin-dir target/release --nginx nginx
+```
+
+The test starts the shipped profile on temporary loopback ports against an actual
+DevLang interpreter, checks handler-error recovery, rejects bodies above 64 KiB
+and oversized headers, checks slow body/header deadlines, and fills all 16 active
+request slots to verify 503 load shedding. It then releases those slots and checks
+recovery. Denied and partially uploaded requests must never appear in the backend
+request log. Each test owns its processes and shuts down its own NGINX instance.
+CI runs this on Linux; local Windows validation also uses the actual NGINX binary.
+
+A timeout may close the connection without an HTTP error page. Body timeouts are
+inactivity deadlines: continuously trickling data can keep a request alive.
+This test does not qualify a TLS edge, enforce a total upload duration or test all
+request-smuggling variants. Keep public ingress protection and application
+qualification separate from these local transport regressions.
+
+ภาษาไทย: มีการทดสอบ NGINX กับ DevLang จริงแล้ว รวม body/header เกินขนาด,
+การส่งค้าง, เพดาน active requests และการกลับมารับงานหลัง overload แต่ยังต้อง
+ทดสอบ TLS edge และ app จริงแยกต่างหาก timeout ของ body เป็น inactivity timeout
+ไม่ใช่เพดานเวลารวมของการ upload

@@ -35,6 +35,9 @@ jobs:
           nginx -t -p "$GITHUB_WORKSPACE/deploy/http/" -c nginx.conf
       - name: Build executables
         run: cargo build --workspace --release --locked
+      - name: Live HTTP ingress protections
+        if: runner.os == 'Linux'
+        run: python scripts/smoke_http_ingress.py --bin-dir target/release
       - name: Rust tests
         run: cargo test --workspace --locked
       - name: Source resource limits and allocation cycles
