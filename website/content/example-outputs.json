@@ -231,7 +231,7 @@
   },
   "don": {
     "source_sha256": "9962c2cbf984f0fbef480aa1ef0e7d74e050e3f5b0a13e30e08a5ae7f75b0e2d",
-    "validation_sha256": "777a466fb66926cf0e19bd92c3a8bc30ccd523853b42262081a8e1b7cdcdba9c",
+    "validation_sha256": "8a405831754f19ada261657c17937cc03e3d934427595439912f7139882304ef",
     "output": "DevLang demo\n3000\n8080\nfalse\n{\"name\":\"Dev\"}\n"
   },
   "basic-libs": {
@@ -506,7 +506,7 @@
   },
   "don-destructuring": {
     "source_sha256": "e1265f6e4d14138d60938b47dadd26f4163143e3484b257546e3e5bea15162e8",
-    "validation_sha256": "84b3e5b1b28614c0138f40dae8046aeca65ee8b1b26963a53037ccab02e02cd2",
+    "validation_sha256": "dfb521c63d132553d2d97550ea270f3c1a1b14738bff2974ec5c845a5c82bbea",
     "output": "test\n10\ntest\n10\n11\n10\nDev\n"
   },
   "constants": {
