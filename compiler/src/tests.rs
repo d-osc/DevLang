@@ -125,8 +125,6 @@ fn reject_invalid_programs_without_codegen_panics() {
         ("fn main() { let a = [1, 2]; print(a[2]) }", "out of bounds"),
         ("fn main() { let a [i32; 2] = [1] }", "length"),
         ("fn main() { let a = []; print(a) }", "empty"),
-        ("fn main() { let a = [1]; let b = a }", "array literal"),
-        ("fn main() { print([1][0]) }", "bind the array"),
         (
             "fn main() { unsafe { let a = [1]; let p = &a } }",
             "invalid unary",
@@ -161,8 +159,6 @@ fn reject_invalid_programs_without_codegen_panics() {
             "fn main() { unsafe { let x = 1; let p = &x; let n = p * 2 } }",
             "expected",
         ),
-        ("fn f(a [i32; 2]) {}", "array parameters"),
-        ("fn f() [i32; 2] { return [1, 2] }", "return an array"),
         (
             "fn main() { let a [[i32; 2]; 2] = [[1, 2], [3, 4]] }",
             "nested arrays",
@@ -208,4 +204,9 @@ fn sizeof_uses_str_type_instead_of_literal_length() {
         .generate("fn main() { print(sizeof(\"abc\")) }")
         .unwrap();
     assert!(generated[0].source.contains("sizeof(const char *)"));
+}
+
+#[test]
+fn arrays_copy_pass_and_return_by_value() {
+    Project::new().generate("fn copy(xs:[i64;2]):[i64;2] {return xs} fn main() {let a=[1,2];let b=a;let c=copy(b);print(c[0]);print([1][0])}").unwrap();
 }

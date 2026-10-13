@@ -45,7 +45,7 @@ for i in 0..3 { total += values[i] }
 print(total)
 ```
 
-Range bounds are i64, evaluated once, ascending and end-exclusive. Changing the iteration variable does not change the internal counter. Break/continue work with while/for. Native fixed arrays cannot be copied, passed or returned directly; wrap them in structs or use Vec. Local nested arrays are unsupported.
+Range bounds are i64, evaluated once, ascending and end-exclusive. Changing the iteration variable does not change the internal counter. Break/continue work with while/for. Native fixed arrays can be copied, assigned, passed and returned by value in current source after v0.5.1, including function values. C FFI array aggregates remain unsupported. Local nested arrays are unsupported.
 
 ## Value types
 
@@ -90,3 +90,5 @@ print(make(19)(23))
 ```
 
 Function value type is fn(T1,T2) R. Captures are snapshots; modifying a capture does not update the outer value or persist across invocations. Managed captures retain storage. Wrap arrays in a supported value. Generic functions need concrete wrappers before becoming values.
+
+Array tools: `let [a, b, ...rest] = values`, `[...values, extra]`, `for item in values`, `values[start..end]`, and `[value; count]`. Spread/rest produce Vec snapshots; slicing produces read-only Slice. Foreach snapshots input once. Repeat counts are positive integer literals; repeat values evaluate once.

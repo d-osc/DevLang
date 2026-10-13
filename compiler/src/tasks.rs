@@ -62,7 +62,7 @@ impl Emitter<'_> {
             self.helper(&r, false);
         }
         self.uses_refs = true;
-        Ok(self.owned(Value {
+        Ok(self.finish_call(Value {
             code: format!(
                 "{name}_{}({})",
                 match op {

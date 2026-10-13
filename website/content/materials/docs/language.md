@@ -163,7 +163,7 @@ main()
 ```
 
 Supports runtime and hosted native builds from current source after v0.5.1.
-Native branches must produce a value; use Vec instead of returning a fixed array.
+Native ternary branches must produce a value; fixed arrays are copied by value.
 See [ตัวอย่างเต็ม / Full example](#/examples/ternary).
 
 
@@ -283,7 +283,7 @@ Cross-compiling changes emitted C pointer widths through the backend. Literal ra
 
 Clang/GCC backend flags include `-fwrapv` for signed addition/subtraction/multiplication wrapping, including `-O3` release builds. The optional `--fast` TinyCC development backend emits unoptimized machine arithmetic; wrapping, casts, pointers and volatile access are covered by native regression scenarios. Small integer operation results are cast back to the declared width; narrowing casts otherwise follow C behavior. Invalid shifts and integer division/remainder by zero are checked in both modes. Signed minimum divided by `-1` wraps to the minimum; its remainder is zero. Fixed-array, Vec, Slice and string bounds are checked. Raw native dereference/volatile access checks null/alignment; arbitrary foreign allocation bounds and expired pointers remain the caller's responsibility.
 
-Evaluation order for calls and binary operands follows C. An expression with several state-changing calls or writes must be split into statements if their order matters. `and/or` retain C's short-circuit behavior. Volatile accesses are observable C accesses, not atomic synchronization, CPU fences, DMA cache maintenance or a substitute for platform drivers.
+Ordinary named calls and Dev function values evaluate arguments from left to right, as do array literals and spread parts. Binary operands and native callback invocation still follow C evaluation rules; split state-changing operands into statements if their order matters. `and/or` retain C's short-circuit behavior. Volatile accesses are observable C accesses, not atomic synchronization, CPU fences, DMA cache maintenance or a substitute for platform drivers.
 
 Compiler limits currently include 512 modules, 8 MiB per source file, and 1..1,000,000 elements per explicitly sized array. Deeply nested source is not hardened against exhausting the parser stack. The language is an initial implementation, with no ownership/lifetime system or production safety guarantees.
 
@@ -545,7 +545,7 @@ support this form in current source after v0.5.1.
 ให้เก็บค่าที่ต้องใช้เป็น field แล้วอ่าน `this.field` แทน
 
 Data fields have fixed inferred types; adding new fields or replacing methods
-is not supported on method objects. Use Vec instead of fixed array data fields.
+is not supported on method objects. Fixed array data fields are supported.
 Detached method values are not supported yet. `json.stringify` serializes data
 fields only. A `.don` data document cannot contain functions or `this`.
 See [ตัวอย่างเต็ม / Full example](#/examples/object-methods).
@@ -579,3 +579,42 @@ Writes currently target a local object directly (`person[key] = value`);
 writes through computed chains or temporary objects are not supported yet.
 Available in current source after v0.5.1 in both runtime and hosted native builds.
 See [ตัวอย่างเต็ม / Full example](#/examples/object-keys).
+
+## Array tools / การใช้งาน array เพิ่มเติม
+
+```dev
+fn make(): [i64; 3] { return [1, 2, 3] }
+fn main() {
+    let values = make()
+    let [first, second, ...rest] = values
+    print(first)
+    print(rest[0])
+    let combined = [0, ...values, ...rest, 4]
+    for item in combined { print(item) }
+    let middle = values[1..3]
+    print(middle[0])
+    let zeros: [i32; 4] = [0; 4]
+    print(zeros.len())
+}
+main()
+```
+
+- `let [a, b] = values` และ `const [a, b] = values`: แยกสมาชิกตาม index
+- `[...values, extra]`: รวม Array, Vec และ Slice เป็น `Vec<T>` ชนิดเดียวกัน
+- `let [first, ...rest] = values`: rest ต้องอยู่ท้ายสุด และได้ Vec สำเนาที่แก้ได้
+- `for item in values`: วน Array, Vec, Slice หรือ DON array บน snapshot ที่ประเมินครั้งเดียว
+- `values[start..end]`: Slice snapshot แบบไม่รวม end ต้องระบุทั้งสอง bounds
+- `[value; count]`: fixed array ซ้ำค่า ประเมิน value ครั้งเดียว count เป็น integer literal 1..1000000
+- Fixed arrays รองรับ copy, assignment, parameters, return, closures และ data fields ของ object methods ใน native
+
+Spread creates a mutable Vec with one element type; rest bindings are Vec snapshots.
+Range slicing creates a read-only Slice. Foreach snapshots the input and evaluates
+it once; modifying the original collection does not change the iteration set.
+Break and continue retain their normal loop behavior. Fixed arrays pass and return
+by value in ordinary Dev functions and function values; native uses an internal
+aggregate carrier. C FFI array aggregates remain unsupported. Local fixed arrays
+remain one-dimensional; use Vec<Vec<T>> or nested DON arrays for matrices.
+Destructuring holes/defaults, open-ended slices and runtime repeat counts are not
+supported yet. These expression forms belong to `.dev`; `.don` remains a data format.
+Available in current source after v0.5.1 in runtime and native modes.
+See [ตัวอย่างเต็ม / Full example](#/examples/array-tools).

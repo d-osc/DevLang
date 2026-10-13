@@ -693,6 +693,45 @@ impl Parser {
         let constant = self.is("const");
         if self.eat("let") || self.eat("const") {
             if constant { self.constants.push(span); }
+            if self.eat("[") {
+                let hidden = format!("$destructure_{}", self.at);
+                let mut names = Vec::new();
+                let mut rest = None;
+                self.separators();
+                while !self.eat("]") {
+                    if self.eat("...") {
+                        let rest_span = self.token().span;
+                        let name = self.ident()?;
+                        if names.iter().any(|(n, _)| n == &name) {return self.fail("duplicate array destructuring binding");}
+                        if constant {self.constants.push(rest_span);}
+                        rest = Some((name, rest_span, names.len()));
+                        self.eat(","); self.separators(); self.expect("]")?; break;
+                    }
+                    let binding_span = self.token().span;
+                    let name = self.ident()?;
+                    if names.iter().any(|(n, _)| n == &name) { return self.fail("duplicate array destructuring binding"); }
+                    if constant { self.constants.push(binding_span); }
+                    names.push((name, binding_span));
+                    if self.eat(",") { self.separators(); } else { self.expect("]")?; break; }
+                }
+                self.expect("=")?;
+                let value = self.expr(0)?;
+                self.end()?;
+                let mut entries = vec![Stmt::Let {name: hidden.clone(), ty: None, value, span}];
+                for (index, (name, binding_span)) in names.into_iter().enumerate() {
+                    entries.push(Stmt::Let { name, ty: None, span: binding_span, value: Expr {
+                        span: binding_span, kind: ExprKind::Index(Box::new(Expr {span, kind: ExprKind::Name(vec![hidden.clone()])}),
+                        Box::new(Expr {span, kind: ExprKind::Number(index.to_string())})),
+                    }});
+                }
+                if let Some((name, binding_span, count)) = rest {
+                    let base = Expr {span, kind: ExprKind::Name(vec![hidden.clone()])};
+                    let end = Expr {span, kind: ExprKind::Collection(Box::new(base.clone()), "len".into(), vec![])};
+                    let slice = Expr {span, kind: ExprKind::Collection(Box::new(base), "slice".into(), vec![Expr {span, kind: ExprKind::Number(count.to_string())}, end])};
+                    entries.push(Stmt::Let {name, ty: None, span: binding_span, value: Expr {span, kind: ExprKind::Spread(vec![(true,slice)])}});
+                }
+                return Ok(Stmt::Block(entries));
+            }
             if self.eat("{") {
                 let hidden = format!("$destructure_{}", self.at);
                 let mut fields = Vec::new();
@@ -774,9 +813,14 @@ impl Parser {
         if self.eat("for") {
             let name = self.ident()?;
             self.expect("in")?;
-            let start = self.expr(0)?;
-            self.expect("..")?;
-            let end = self.expr(0)?;
+            let mut start = self.expr(0)?;
+            let collection = if self.eat("..") { None } else { Some(start.clone()) };
+            let collection_name = format!("$for_items_{}", self.at);
+            let end = if collection.is_some() {
+                start = Expr {kind: ExprKind::Number("0".into()), span};
+                Expr {kind: ExprKind::Cast(Box::new(Expr {kind: ExprKind::Collection(Box::new(Expr {
+                    kind: ExprKind::Name(vec![collection_name.clone()]), span }), "$iter_len".into(), vec![]), span}), Type::i64()), span}
+            } else { self.expr(0)? };
             let hidden = format!("$for_end_{}", self.at);
             let counter = format!("$for_counter_{}", self.at);
             let variable = Expr {
@@ -817,13 +861,13 @@ impl Parser {
                 0,
                 Stmt::Let {
                     name,
-                    ty: Some(Type::i64()),
-                    value: variable.clone(),
+                    ty: if collection.is_some() {None} else {Some(Type::i64())},
+                    value: if collection.is_some() {Expr {kind: ExprKind::Index(Box::new(Expr {kind: ExprKind::Name(vec![collection_name.clone()]), span}), Box::new(variable.clone())), span}} else {variable.clone()},
                     span,
                 },
             );
             body.push(increment);
-            return Ok(Stmt::Block(vec![
+            let mut lowered = vec![
                 Stmt::Let {
                     name: counter,
                     ty: Some(Type::i64()),
@@ -850,7 +894,9 @@ impl Parser {
                     },
                     body,
                 },
-            ]));
+            ];
+            if let Some(value) = collection { lowered.insert(0, Stmt::Let {name: collection_name, ty: None, value, span}); }
+            return Ok(Stmt::Block(lowered));
         }
         if self.eat("break") {
             self.end()?;
@@ -1026,8 +1072,26 @@ impl Parser {
             Kind::Symbol(s) if s == "[" => {
                 let saved = self.array_newline_end; self.array_newline_end = true;
                 let mut values = Vec::new();
+                let mut spread = Vec::new();
+                let mut has_spread = false;
+                let mut repeated = None;
                 while !self.eat("]") {
-                    values.push(self.expr(0)?);
+                    let expand = self.eat("...");
+                    has_spread |= expand;
+                    let value = self.expr(0)?;
+                    if !expand && values.is_empty() && self.is(";") && matches!(self.tokens.get(self.at+1).map(|t| &t.kind), Some(Kind::Number(_))) && matches!(self.tokens.get(self.at+2).map(|t| &t.kind), Some(Kind::Symbol(s)) if s == "]") {
+                        self.bump();
+                        let count_token = self.bump();
+                        let Kind::Number(text) = count_token.kind else {return self.fail("repeat count must be an integer literal");};
+                        let count = text.replace('_', "").parse::<usize>().map_err(|_| error(&self.path, count_token.span, "invalid repeat count"))?;
+                        if count == 0 || count > 1_000_000 {return self.fail("repeat count must be 1..1000000");}
+                        self.expect("]")?;
+                        self.array_newline_end = saved;
+                        repeated = Some((value, count));
+                        break;
+                    }
+                    spread.push((expand, value.clone()));
+                    values.push(value);
                     let previous_line = self.tokens[self.at-1].end_line;
                     if self.eat(",") || self.eat(";") { self.separators(); }
                     else if self.eat("]") { break; }
@@ -1035,7 +1099,7 @@ impl Parser {
                 }
                 self.array_newline_end = saved;
                 Expr {
-                    kind: ExprKind::Array(values),
+                    kind: if let Some((value,count)) = repeated {ExprKind::Repeat(Box::new(value),count)} else if has_spread {ExprKind::Spread(spread)} else {ExprKind::Array(values)},
                     span,
                 }
             }
@@ -1105,6 +1169,12 @@ impl Parser {
             if min <= 12 && self.eat("[") {
                 let saved=self.array_newline_end;self.array_newline_end=false;
                 let index = self.expr(0)?;
+                if self.eat("..") {
+                    let end = self.expr(0)?;
+                    self.expect("]")?;self.array_newline_end=saved;
+                    left = Expr {kind: ExprKind::Collection(Box::new(left), "slice".into(), vec![index, end]), span};
+                    continue;
+                }
                 self.expect("]")?;self.array_newline_end=saved;
                 left = Expr {
                     kind: ExprKind::Index(Box::new(left), Box::new(index)),

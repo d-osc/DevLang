@@ -575,8 +575,8 @@ impl Expand {
                     } else {
                         self.expr(id, &mut value, env)?;
                         let ty = self.infer(id, &value, None)?.ok_or_else(|| error(&self.paths[id], value.span, "cannot infer object data field type"))?;
-                        if matches!(ty, Type::Array(..) | Type::Void) {
-                            return Err(error(&self.paths[id], value.span, "method object fields require value types; use Vec instead of fixed arrays"));
+                        if matches!(ty, Type::Void) {
+                            return Err(error(&self.paths[id], value.span, "method object fields require value types"));
                         }
                         fields.push((name, ty));
                         values.push(value);
@@ -771,6 +771,14 @@ impl Expand {
                 for a in args {
                     self.expr(id, a, env)?;
                 }
+            }
+            ExprKind::Repeat(value, _) => {
+                let hint = if let Some(Type::Array(t,_)) = expected {Some(*t)} else {None};
+                self.expr_hint(id, value, env, hint)?;
+            }
+            ExprKind::Spread(items) => {
+                let hint = if let Some(Type::Vector(t)) = expected {Some(*t)} else {None};
+                for (spread,value) in items {self.expr_hint(id, value, env, if *spread {None} else {hint.clone()})?;}
             }
             ExprKind::Object(t, fields) => {
                 *t = self.ty(id, t, env, span)?;

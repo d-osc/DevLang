@@ -1452,5 +1452,19 @@
       "d build examples/object-keys/main.dev --release -o out/object-keys.exe"
     ],
     "notes": "Current source build after v0.5.1. Fixed data fields only; method calls use dot syntax. const and this remain read-only."
+  },
+  {
+    "id": "array-tools",
+    "title": "Array tools: for, spread/rest, destructuring, slicing และ repeat",
+    "category": "พื้นฐาน",
+    "path": "examples/array-tools/main.dev",
+    "description": "Collection iteration, array patterns and snapshots; fixed arrays pass/return by value",
+    "doc": "strings-arrays",
+    "mode": "both",
+    "commands": [
+      "d examples/array-tools/main.dev",
+      "d build examples/array-tools/main.dev --release -o out/array-tools.exe"
+    ],
+    "notes": "Current source build after v0.5.1. Repeat counts are positive integer literals; spread/rest produce Vec and range slicing produces Slice. C FFI array aggregates remain unsupported."
   }
 ]

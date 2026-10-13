@@ -434,3 +434,9 @@ static inline dev_dynamic_value dev_dynamic_parse(const char *text,const char *f
 static inline bool dev_dynamic_valid(const char *text) {
     if(strlen(text)>8*1024*1024)return false;dev_dynamic_parser p={(const unsigned char*)text,false,true,"invalid JSON"};(void)dev_dynamic_parse_value(&p,0);dev_dynamic_parse_space(&p);return !p.failed&&!*p.p;
 }
+
+static inline size_t dev_dynamic_array_len(dev_dynamic_value v,const char *file,size_t line,size_t col) {
+    const dev_dynamic_node *node=(const dev_dynamic_node *)v.node;
+    if(!node || node->kind!=6) dev_dynamic_error("collection iteration requires an array",file,line,col);
+    return node->data.list.len;
+}

@@ -237,7 +237,7 @@ support this form in current source after v0.5.1.
 ให้เก็บค่าที่ต้องใช้เป็น field แล้วอ่าน `this.field` แทน
 
 Data fields have fixed inferred types; adding new fields or replacing methods
-is not supported on method objects. Use Vec instead of fixed array data fields.
+is not supported on method objects. Fixed array data fields are supported.
 Detached method values are not supported yet. `json.stringify` serializes data
 fields only. A `.don` data document cannot contain functions or `this`.
 See [ตัวอย่างเต็ม / Full example](#/examples/object-methods).
@@ -271,3 +271,42 @@ Writes currently target a local object directly (`person[key] = value`);
 writes through computed chains or temporary objects are not supported yet.
 Available in current source after v0.5.1 in both runtime and hosted native builds.
 See [ตัวอย่างเต็ม / Full example](#/examples/object-keys).
+
+## Array tools / การใช้งาน array เพิ่มเติม
+
+```dev
+fn make(): [i64; 3] { return [1, 2, 3] }
+fn main() {
+    let values = make()
+    let [first, second, ...rest] = values
+    print(first)
+    print(rest[0])
+    let combined = [0, ...values, ...rest, 4]
+    for item in combined { print(item) }
+    let middle = values[1..3]
+    print(middle[0])
+    let zeros: [i32; 4] = [0; 4]
+    print(zeros.len())
+}
+main()
+```
+
+- `let [a, b] = values` และ `const [a, b] = values`: แยกสมาชิกตาม index
+- `[...values, extra]`: รวม Array, Vec และ Slice เป็น `Vec<T>` ชนิดเดียวกัน
+- `let [first, ...rest] = values`: rest ต้องอยู่ท้ายสุด และได้ Vec สำเนาที่แก้ได้
+- `for item in values`: วน Array, Vec, Slice หรือ DON array บน snapshot ที่ประเมินครั้งเดียว
+- `values[start..end]`: Slice snapshot แบบไม่รวม end ต้องระบุทั้งสอง bounds
+- `[value; count]`: fixed array ซ้ำค่า ประเมิน value ครั้งเดียว count เป็น integer literal 1..1000000
+- Fixed arrays รองรับ copy, assignment, parameters, return, closures และ data fields ของ object methods ใน native
+
+Spread creates a mutable Vec with one element type; rest bindings are Vec snapshots.
+Range slicing creates a read-only Slice. Foreach snapshots the input and evaluates
+it once; modifying the original collection does not change the iteration set.
+Break and continue retain their normal loop behavior. Fixed arrays pass and return
+by value in ordinary Dev functions and function values; native uses an internal
+aggregate carrier. C FFI array aggregates remain unsupported. Local fixed arrays
+remain one-dimensional; use Vec<Vec<T>> or nested DON arrays for matrices.
+Destructuring holes/defaults, open-ended slices and runtime repeat counts are not
+supported yet. These expression forms belong to `.dev`; `.don` remains a data format.
+Available in current source after v0.5.1 in runtime and native modes.
+See [ตัวอย่างเต็ม / Full example](#/examples/array-tools).

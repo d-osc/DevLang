@@ -76,6 +76,8 @@ fn expression(
                 expression(ms, aliases, id, a, permitted)?;
             }
         }
+        ExprKind::Repeat(value,_) => expression(ms, aliases, id, value, permitted)?,
+        ExprKind::Spread(items) => for (_,value) in items {expression(ms,aliases,id,value,permitted)?;},
         ExprKind::Conditional(cond, yes, no, _) => {
             expression(ms, aliases, id, cond, permitted)?;
             expression(ms, aliases, id, yes, permitted)?;

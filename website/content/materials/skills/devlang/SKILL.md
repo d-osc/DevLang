@@ -101,8 +101,8 @@ Write runnable DevLang using the actual implementation's syntax and execution mo
 - Declare typed parameters as `fn add(a i64, b i64) i64`. Return type follows the parameter list; colons and arrows are optional. Statements end at newline or optional semicolon.
 - Explicitly invoke `main()` after its declaration. Declarations never auto-run. Use file-level `return main()` only when the result should become exit status. Imported files contain declarations only.
 - `let` is mutable and needs an initializer. Default literals are i64/f64. Numeric types do not implicitly mix; use `as` and matching widths. Conditions require bool.
-- `for i in start..end` is ascending, end-exclusive and uses i64 bounds. There is no collection iteration, inclusive range or custom step.
-- Struct constructors are positional. Methods are `fn Type.method(self Type, ...) R` with a value receiver. Fixed native arrays cannot be copied/passed/returned directly; use a struct or Vec.
+- `for i in start..end` is ascending, end-exclusive and uses i64 bounds. Collection iteration also supports Array, Vec, Slice and DON arrays using an input snapshot. Inclusive ranges and custom steps are not supported.
+- Struct constructors are positional. Methods are `fn Type.method(self Type, ...) R` with a value receiver. Fixed native arrays copy/pass/return by value in source after v0.5.1, including function values. C FFI array aggregates remain unsupported.
 - `Ref<T>` is immutable managed storage; `deref` returns a copy. Vec/Map mutation uses copy-on-write; Slice is a read-only snapshot. Missing-key Map.get and empty Vec.pop are errors.
 - Struct/enum identity is nominal. Recursive layouts need Ref/raw-pointer/collection edges. Payload enums use exhaustive match statements; guard/nested patterns need an unguarded fallback when refutable.
 - Closures capture by value at creation. Captured mutations do not persist between calls or update the outer variable. Generic functions need concrete wrappers before becoming function values.

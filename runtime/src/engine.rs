@@ -1390,9 +1390,21 @@ impl Engine {
         op: &str,
         args: &[Expr],
     ) -> Result<Value, String> {
-        let value = self.eval(f, base, None)?;
+        let iteration=op=="$iter_len";
+        let op=if iteration {"len"} else {op};
+        let mut value = self.eval(f, base, None)?;
+        if let Value::Json(node, _) = &value {
+            if (op == "len" || op == "$iter_len") && args.is_empty() {
+                let array = node.as_array().ok_or("collection iteration requires an array")?;
+                return Ok(Value::Int(array.len() as i128, Type::Size {signed:false}));
+            }
+        }
+        if let Value::Array(items, Type::Array(inner, _)) = value {
+            value = Value::Vector(Arc::new(items), Type::Vector(inner));
+        }
         let ty = value.ty();
         if matches!(ty, Type::Map(..)) {
+            if iteration {return Err("collection iteration requires Array, Vec, Slice or a DON array".into());}
             return self.map_call(f, base, op, args, value);
         }
         let (Type::Vector(inner) | Type::Slice(inner)) = &ty else {
@@ -1845,6 +1857,33 @@ impl Engine {
                         )?)
                     }
                     self.call(&f.module, n, args, e.span)?
+                }
+                ExprKind::Repeat(value, count) => {
+                    let inner = if let Some(Type::Array(t,_)) = hint {Some(t.as_ref())} else {None};
+                    let value = self.eval(f,value,inner)?;
+                    let ty = Type::Array(Box::new(value.ty()), *count);
+                    Value::Array(vec![value; *count],ty)
+                }
+                ExprKind::Spread(items) => {
+                    let mut element = if let Some(Type::Vector(t)) = hint {Some((**t).clone())} else {None};
+                    let mut result = vec![];
+                    for (spread,value) in items {
+                        let value = self.eval(f,value,if *spread {None} else {element.as_ref()})?;
+                        if *spread {
+                            let (values,ty) = match value {
+                                Value::Array(values,Type::Array(t,_)) => (values,*t),
+                                Value::Vector(values,Type::Vector(t)) => ((*values).clone(),*t),
+                                Value::Slice(values,start,len,Type::Slice(t)) => (values[start..start+len].to_vec(),*t),
+                                _ => return Err("spread requires Array, Vec or Slice".into()),
+                            };
+                            if element.as_ref().is_some_and(|t| *t != ty) {return Err("spread element type mismatch".into());}
+                            element = Some(ty); result.extend(values);
+                        } else {
+                            if element.as_ref().is_some_and(|t| *t != value.ty()) {return Err("spread element type mismatch".into());}
+                            element = Some(value.ty()); result.push(value);
+                        }
+                    }
+                    Value::Vector(Arc::new(result),Type::Vector(Box::new(element.ok_or("spread needs an element type")?)))
                 }
                 ExprKind::Array(items) => {
                     let element = if let Some(Type::Array(t, _)) = hint {

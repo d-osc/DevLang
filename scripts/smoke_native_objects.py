@@ -6,6 +6,75 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "array_order": """fn side(n:i64):i64 {print(n);return n}
+fn make():[i64;2] {print(2);return [1,2]}
+fn use_values(a:i64,xs:[i64;2],b:i64):i64 {return a+xs[0]+b}
+fn main() {
+  print(use_values(side(1),make(),side(3)))
+  let xs=[side(4),side(5)]
+  print(xs[1])
+  print([6,7][0])
+}
+main()
+""",
+
+    "array_managed": """fn make():[Ref<i64>;2] {return [ref(1),ref(2)]}
+fn copy(xs:[Ref<i64>;2]):[Ref<i64>;2] {return xs}
+fn main() {
+  let xs=make()
+  let f=copy
+  let ys=f(xs)
+  print(deref(ys[1]))
+  let captured=fn():[Ref<i64>;2] {return xs}
+  let zs=captured()
+  print(deref(zs[0]))
+  let repeated=[ref(3);2]
+  let vector=[...repeated,ref(4)]
+  print(deref(vector[2]))
+  xs=ys
+  let selected=true ? xs : ys
+  print(deref(selected[0]))
+  let names=['A','B']
+  for name in names {print(name)}
+  let values=Vec<i64>();values.push(1);values.push(2)
+  for value in values {print(value);values.push(9)}
+  print(values.len())
+  let job=spawn(fn():[i64;2] {return [5,6]})
+  let result=await(job)
+  print(result[1])
+}
+main()
+""",
+
+    "array_features": """fn repeated():i64 {print('repeat once');return 7}
+fn make():[i64;3] {return [1,2,3]}
+fn sum(xs:[i64;3]):i64 {xs[0]=10;return xs[0]+xs[1]+xs[2]}
+fn main() {
+  let xs=make()
+  print(sum(xs))
+  print(xs[0])
+  let copy=xs
+  copy[0]=99
+  print(xs[0])
+  let repeated_values=[repeated();3]
+  print(repeated_values[2])
+  let [a,b,...rest]=xs
+  print(a)
+  print(b)
+  print(rest[0])
+  let combined=[0,...xs,4,...rest]
+  for value in combined { if value==2 {continue}; print(value) }
+  let part=xs[1..3]
+  print(part[0])
+  print(part.len())
+  let object={items:[5,6],first:fn():i64 {return this.items[0]}}
+  print(object.first())
+  let data={items:[1,2,3]}
+  for item in data.items {print(item)}
+}
+main()
+""",
+
     "method_object_keys": """fn key():str {print('key once');return 'name'}
 fn main() {
   let person={name:'Dev',age:18,greet:fn():str {return "Hello ${this.name}"}}
@@ -303,6 +372,10 @@ print(y.inner.name)
 ''',
 }
 FAILURES = {
+    "array_slice_reverse": "let x=[1,2]\nlet y=x[2..1]",
+    "array_slice_end": "let x=[1,2]\nlet y=x[0..3]",
+    "array_foreach_object": "let x={}\nfor item in x {print(item)}",
+
     "method_key_missing": "let p={name:'Dev',age:18,greet:fn() {print(this.name)}}\nprint(p['missing'])",
     "method_key_wrong_type": "let p={name:'Dev',age:18,greet:fn() {print(this.name)}}\np['age']='wrong'",
 
@@ -394,6 +467,12 @@ fn read(x:json.Value):str { return x.inner.name }
             else:
                 assert all(r.returncode==0 for r in results),(name,[(r.stdout,r.stderr) for r in results])
                 assert len({r.stdout for r in results})==1,(name,[(r.stdout,r.stderr) for r in results])
+                if name == 'array_order':
+                    assert results[0].stdout.splitlines()==['1','2','3','5','4','5','5','6'],results[0].stdout
+                if name == 'array_managed':
+                    assert results[0].stdout.splitlines()==['2','1','4','1','A','B','1','2','4','6'],results[0].stdout
+                if name == 'array_features':
+                    assert results[0].stdout.splitlines()==['15','1','1','repeat once','7','1','2','3','0','1','3','4','3','2','2','5','1','2','3'],results[0].stdout
                 if name == 'method_object_keys':
                     assert results[0].stdout.splitlines() == ['Dev','key once','Hello Alice','20','Alice'],results[0].stdout
                 if name == 'object_methods':

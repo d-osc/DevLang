@@ -73,9 +73,29 @@ impl Emitter<'_> {
     ) -> Result<Value, String> {
         let previous = self.writing;
         self.writing = ["push", "pop", "clear", "set", "remove"].contains(&op);
-        let v = self.expr(base, None)?;
+        let mut v = self.expr(base, None)?;
+        if crate::dynamic::is_dynamic(&v.ty) && (op == "len" || op == "$iter_len") && args.is_empty() {
+            return Ok(Value {code: format!("{}({}, {})", if op == "$iter_len" {"dev_dynamic_array_len"} else {"dev_dynamic_len"}, v.code, self.location(span)), ty: Type::Size {signed:false}, lvalue:false});
+        }
+        let op=if op=="$iter_len" {"len"} else {op};
+        if let Type::Array(inner, count) = &v.ty {
+            let inner = inner.clone(); let count = *count;
+            let temporary = format!("dev_array_sequence_{}", self.next_var); self.next_var += 1;
+            if matches!(base.kind, ExprKind::Array(..)) {
+                self.prelude.push_str(&format!("{} = {};\n", crate::codegen::declaration(&v.ty, &temporary), v.code));
+            } else {
+                self.uses_refs = true;
+                self.prelude.push_str(&format!("{};\nmemcpy({temporary}, {}, sizeof({temporary}));\n", crate::codegen::declaration(&v.ty, &temporary), v.code));
+            }
+            if op == "len" && args.is_empty() {return Ok(Value {code: count.to_string(), ty: Type::Size {signed:false}, lvalue:false});}
+            if op != "slice" {return self.fail(span, "fixed arrays support len and slice; use Vec for mutation methods");}
+            let ty = Type::Vector(inner);
+            let name = self.collection(&ty);
+            v = self.owned(Value {code: format!("{name}_make({temporary}, {count})"), ty, lvalue:false});
+        }
         self.writing = previous;
         if matches!(v.ty, Type::Map(..)) {
+            if op=="$iter_len" {return self.fail(span,"collection iteration requires Array, Vec, Slice or a DON array");}
             return self.map_call(v, op, args, span);
         }
         let (Type::Vector(inner) | Type::Slice(inner)) = &v.ty else {

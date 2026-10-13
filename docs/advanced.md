@@ -97,7 +97,7 @@ Generic functions need a concrete wrapper before becoming a value.
 Closures capture used outer variables by value at creation. Captured managed
 values retain their storage. Mutating a captured local changes the invocation's
 copy; it does not update an outer variable or persist into later invocations.
-Fixed arrays must be captured through a Vec or another supported value.
+Fixed arrays can be captured by value in current source builds after v0.5.1.
 Closures do not inherit the enclosing unsafe permission.
 
 Methods use `fn Type.method(self Type, ...) R`; the receiver is an ordinary
@@ -136,8 +136,8 @@ An unused generic body's errors can remain deferred until specialization.
 Const generics are nonnegative integer arguments. Array lengths must be
 1..1000000. A const parameter can be used as an array length and numeric value.
 Const expressions, default arguments and type-level arithmetic are not supported.
-Fixed arrays still cannot be passed/returned directly as function values;
-wrap them in a struct or use Vec/raw pointers.
+Fixed arrays can be copied, passed and returned directly in ordinary Dev functions
+and function values in source after v0.5.1. C FFI array aggregates remain unsupported.
 
 ## Matching
 

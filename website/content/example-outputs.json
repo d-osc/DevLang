@@ -533,5 +533,10 @@
     "source_sha256": "bfe9f69b2afee76fd97ea8820150ed811852b75c4b645d642a26ac461230db6c",
     "validation_sha256": "a30ded6ea25fcde9bb32967714acae85c0e435739ae3dba735abc666f83f0154",
     "output": "Dev\nHello Alice\n19\n"
+  },
+  "array-tools": {
+    "source_sha256": "9c9e7151906076bd1e04d6b4ca4980dd5d3767bd46eb8470ebd92a05116d2b55",
+    "validation_sha256": "6df4d148ddc595776a2e109283647b4de9d37ff147d1507623645ebd4588c40f",
+    "output": "6\n1\n2\n3\n0\n1\n2\n3\n3\n4\n2\n2\n4\n1\n5\n"
   }
 }

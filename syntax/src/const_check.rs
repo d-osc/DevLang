@@ -83,6 +83,8 @@ impl Checker<'_> {
             }
         }
         match &expr.kind {
+            ExprKind::Repeat(value, _) => self.expr(value, scope)?,
+            ExprKind::Spread(items) => for (_,value) in items {self.expr(value,scope)?;},
             ExprKind::Conditional(cond, yes, no, _) => {
                 self.expr(cond, scope)?; self.expr(yes, scope)?; self.expr(no, scope)?;
             }

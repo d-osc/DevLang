@@ -27,13 +27,6 @@ impl Expand {
             })
             .collect::<Vec<_>>();
         captures.sort_by(|a, b| a.0.cmp(&b.0));
-        if captures.iter().any(|(_, t)| matches!(t, Type::Array(..))) {
-            return Err(error(
-                &self.paths[id],
-                e.span,
-                "capture arrays through Vec or a struct",
-            ));
-        }
         let mut instance = self.queue.len();
         let name = loop {
             let n = format!("closure_{id}_{instance}");
@@ -133,6 +126,8 @@ fn free_expr(e: &Expr, bound: &HashSet<String>, free: &mut HashSet<String>) {
                 free_expr(a, bound, free)
             }
         }
+        ExprKind::Repeat(value,_) => free_expr(value,bound,free),
+        ExprKind::Spread(items) => for (_,value) in items {free_expr(value,bound,free)},
         ExprKind::Conditional(cond, yes, no, _) => {
             free_expr(cond, bound, free); free_expr(yes, bound, free); free_expr(no, bound, free);
         }

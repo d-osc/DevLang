@@ -124,6 +124,8 @@ pub enum ExprKind {
     Cast(Box<Expr>, Type),
     Index(Box<Expr>, Box<Expr>),
     Array(Vec<Expr>),
+    Repeat(Box<Expr>, usize),
+    Spread(Vec<(bool, Expr)>),
     GenericCall(Vec<String>, Vec<Type>, Vec<Expr>),
     Record(Type, Vec<Expr>),
     Enum(Type, usize, Vec<Expr>),

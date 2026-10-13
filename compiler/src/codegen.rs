@@ -25,7 +25,7 @@ pub fn c_type(ty: &Type) -> String {
         Type::Float(_) => "double".into(),
         Type::Ref(inner) => format!("{} const *", c_type(inner)),
         Type::Ptr(inner) => format!("{} *", c_type(inner)),
-        Type::Array(..) => unreachable!("array requires a declarator"),
+        Type::Array(..) => format!("dev_array_{}", managed_key(ty)),
         Type::Nominal(n) | Type::Record(n, _) | Type::Enum(n, _) => n.clone(),
         Type::Map(..) | Type::Vector(_) | Type::Slice(_) => {
             format!("dev_collection_{}", managed_key(ty))
@@ -45,7 +45,7 @@ fn prototype(program: &Program, id: usize, function: &Function) -> String {
         .params
         .iter()
         .enumerate()
-        .map(|(i, (_, t))| declaration(t, &format!("dev_p_{i}")))
+        .map(|(i, (_, t))| if matches!(t, Type::Array(..)) { format!("{} dev_p_{i}", c_type(t)) } else { declaration(t, &format!("dev_p_{i}")) })
         .collect();
     if function.variadic {
         params.push("...".into());
@@ -120,7 +120,7 @@ fn generate_inner(
                 }
                 definitions(r, seen, out, registry);
                 let mut args = vec!["const void *".into()];
-                args.extend(ps.iter().map(|p| declaration(p, "")));
+                args.extend(ps.iter().map(|p| if matches!(p,Type::Array(..)) {c_type(p)} else {declaration(p, "")}));
                 out.push_str(&format!("#ifndef {name}_DEFINED\n#define {name}_DEFINED\ntypedef struct {{ {} (*call)({}); const void *context; }} {name};\n#endif\n",c_type(r),args.join(",")));
             }
             Type::Map(..) => {
@@ -214,7 +214,11 @@ fn generate_inner(
                     definitions(t, seen, out, registry);
                 }
             }
-            Type::Array(t, _) => definitions(t, seen, out, registry),
+            Type::Array(t, n) => {
+                definitions(t, seen, out, registry);
+                let name = c_type(&Type::Array(t.clone(), *n));
+                out.push_str(&format!("#ifndef {name}_DEFINED\n#define {name}_DEFINED\ntypedef struct {{ {} data[{n}]; }} {name};\n#endif\n", c_type(t)));
+            },
             _ => {}
         }
     }
@@ -244,6 +248,10 @@ fn generate_inner(
         for t in &module.concrete_types {
             definitions(t, &mut seen, &mut nominal, &registry);
         }
+    }
+    for signature in program.signatures.values() {
+        definitions(&signature.ret, &mut seen, &mut nominal, &registry);
+        for t in &signature.params { definitions(t, &mut seen, &mut nominal, &registry); }
     }
     let mut result = Vec::new();
     for (id, module) in program.modules.iter().enumerate() {
@@ -309,7 +317,7 @@ fn generate_inner(
                 emitter.scopes[0].insert(
                     name.clone(),
                     Variable {
-                        name: format!("dev_p_{i}"),
+                        name: if matches!(ty, Type::Array(..)) {format!("dev_p_{i}.data")} else {format!("dev_p_{i}")},
                         ty: ty.clone(),
                     },
                 );
@@ -557,6 +565,24 @@ impl Emitter<'_> {
         }
         code
     }
+    pub(crate) fn finish_call(&mut self, value: Value) -> Value {
+        if matches!(value.ty,Type::Array(..)) {
+            let name=format!("dev_array_call_{}",self.next_var);self.next_var+=1;
+            self.prelude.push_str(&format!("{} {name}={};\n",c_type(&value.ty),value.code));
+            let code=format!("{name}.data");self.temporaries.push(Variable{name:code.clone(),ty:value.ty.clone()});
+            Value{code,ty:value.ty,lvalue:false}
+        } else {self.owned(value)}
+    }
+    pub(crate) fn sequence_save(&mut self, value: Value) -> Value {
+        let name=format!("dev_sequence_{}",self.next_var);self.next_var+=1;
+        if matches!(value.ty,Type::Array(..)) && !value.code.starts_with('{') {
+            self.uses_refs=true;
+            self.prelude.push_str(&format!("{};\nmemcpy({name}, {}, sizeof({name}));\n",declaration(&value.ty,&name),value.code));
+        } else {self.prelude.push_str(&format!("{} = {};\n",declaration(&value.ty,&name),value.code));}
+        let keep=self.manage(&value.ty,&name,true);self.prelude.push_str(&keep);
+        if contains_managed(&value.ty) {self.temporaries.push(Variable{name:name.clone(),ty:value.ty.clone()});}
+        Value{code:name,ty:value.ty,lvalue:false}
+    }
     pub(crate) fn owned(&mut self, value: Value) -> Value {
         if !contains_managed(&value.ty) {
             return value;
@@ -798,13 +824,15 @@ impl Emitter<'_> {
                 if v.ty == Type::Void {
                     return self.fail(*span, "cannot assign a void expression");
                 }
-                if matches!(v.ty, Type::Array(..)) && !matches!(value.kind, ExprKind::Array(..)) {
-                    return self.fail(*span, "initialize arrays with an array literal");
-                }
+                let copy_array = matches!(v.ty, Type::Array(..)) && !matches!(value.kind, ExprKind::Array(..));
                 let c_name = format!("dev_v_{}", self.next_var);
                 self.next_var += 1;
                 let decl = declaration(&v.ty, &c_name);
                 let retain = self.manage(&v.ty, &c_name, true);
+                let initialization = if copy_array {
+                    self.uses_refs = true;
+                    format!("{decl};\nmemcpy({c_name}, {}, sizeof({c_name}));\n{retain}", v.code)
+                } else { format!("{decl} = {};\n{retain}", v.code) };
                 self.scopes.last_mut().unwrap().insert(
                     name.clone(),
                     Variable {
@@ -812,7 +840,7 @@ impl Emitter<'_> {
                         ty: v.ty,
                     },
                 );
-                Ok(format!("{decl} = {};\n{retain}", v.code))
+                Ok(initialization)
             }
             Stmt::Assign { target, op, value } => {
                 if let ExprKind::Index(base, key) = &target.kind {
@@ -860,6 +888,17 @@ impl Emitter<'_> {
                 let t_result = self.expr(target, None);
                 self.writing = false;
                 let t = t_result?;
+                if t.lvalue && matches!(t.ty,Type::Array(..)) && op=="=" {
+                    self.uses_refs=true;
+                    let Type::Array(inner,count)=&t.ty else {unreachable!()};
+                    let pointer=format!("dev_array_target_{}",self.next_var);self.next_var+=1;
+                    self.prelude.push_str(&format!("{} (*{pointer})[{count}]=&({});\n",c_type(inner),t.code));
+                    let v=self.expr(value,Some(&t.ty))?;self.compatible(&v,&t.ty,value.span)?;
+                    let v=self.sequence_save(v);
+                    let keep=self.manage(&v.ty,&v.code,true);
+                    let drop=self.manage(&t.ty,&format!("*{pointer}"),false);
+                    return Ok(format!("{keep}{drop}memcpy(*{pointer}, {}, sizeof(*{pointer}));\n",v.code));
+                }
                 if !t.lvalue || matches!(t.ty, Type::Array(..)) {
                     return self.fail(
                         target.span,
@@ -930,6 +969,17 @@ impl Emitter<'_> {
                     self.compatible(&v, &ret, value.span)?;
                     let name = format!("dev_return_{}", self.next_var);
                     self.next_var += 1;
+                    if matches!(v.ty, Type::Array(..)) {
+                        self.uses_refs = true;
+                        let source = if matches!(value.kind, ExprKind::Array(..)) {
+                            let raw = format!("{name}_input");
+                            self.prelude.push_str(&format!("{} = {};\n", declaration(&v.ty, &raw), v.code)); raw
+                        } else {v.code.clone()};
+                        let keep = self.manage(&v.ty, &format!("{name}.data"), true);
+                        let temps = self.temporary_cleanup(0);
+                        let locals = self.scope_cleanup(0, false);
+                        return Ok(format!("{} {name};\nmemcpy({name}.data, {source}, sizeof({name}.data));\n{keep}{temps}{locals}return {name};\n", c_type(&v.ty)));
+                    }
                     let keep = self.manage(&v.ty, &name, true);
                     let temps = self.temporary_cleanup(0);
                     let locals = self.scope_cleanup(0, false);
@@ -1023,7 +1073,7 @@ impl Emitter<'_> {
                 params.extend(
                     ps.iter()
                         .enumerate()
-                        .map(|(i, t)| declaration(t, &format!("p{i}"))),
+                        .map(|(i,t)| if matches!(t,Type::Array(..)) {format!("{} p{i}",c_type(t))} else {declaration(t,&format!("p{i}"))}),
                 );
                 let mut args = vec![];
                 let ctx = if let Some(e) = context {
@@ -1086,7 +1136,18 @@ impl Emitter<'_> {
                 for (a, t) in args.iter().zip(ps) {
                     let value = self.expr(a, Some(t))?;
                     self.compatible(&value, t, a.span)?;
-                    codes.push(value.code)
+                    let value=self.sequence_save(value);
+                    if matches!(t,Type::Array(..)) {
+                        let packed=format!("dev_array_invoke_{}",self.next_var);self.next_var+=1;self.uses_refs=true;
+                        self.prelude.push_str(&format!("{} {packed};\nmemcpy({packed}.data, {}, sizeof({packed}.data));\n",c_type(t),value.code));
+                        codes.push(packed);
+                    } else {codes.push(value.code)}
+                }
+                if matches!(**r,Type::Array(..)) {
+                    let ty=(**r).clone(); let result=format!("dev_array_invoke_result_{}",self.next_var);self.next_var+=1;
+                    self.prelude.push_str(&format!("{} {result}={name}.call({});\n",c_type(&ty),codes.join(",")));
+                    let code=format!("{result}.data");self.temporaries.push(Variable{name:code.clone(),ty:ty.clone()});
+                    return Ok(Value{code,ty,lvalue:false});
                 }
                 return Ok(self.owned(Value {
                     code: format!("{name}.call({})", codes.join(",")),
@@ -1433,14 +1494,14 @@ impl Emitter<'_> {
                 let saved = std::mem::take(&mut self.prelude);
                 let start = self.temporaries.len();
                 let a = self.expr(yes, expected)?;
-                if matches!(a.ty, Type::Void | Type::Array(..)) {
-                    return self.fail(yes.span, "ternary branches must produce a non-array value");
-                }
+                if a.ty == Type::Void {return self.fail(yes.span,"ternary branches must produce a value");}
+                let a=if matches!(a.ty,Type::Array(..)) {self.sequence_save(a)} else {a};
                 let yes_prefix = std::mem::take(&mut self.prelude);
                 let yes_drop = self.temporary_cleanup(start);
                 self.temporaries.truncate(start);
                 let b = self.expr(no, Some(&a.ty))?;
                 self.compatible(&b, &a.ty, no.span)?;
+                let b=if matches!(b.ty,Type::Array(..)) {self.sequence_save(b)} else {b};
                 let no_prefix = std::mem::take(&mut self.prelude);
                 let no_drop = self.temporary_cleanup(start);
                 self.temporaries.truncate(start);
@@ -1448,7 +1509,9 @@ impl Emitter<'_> {
                 self.next_var += 1;
                 let keep = self.manage(&a.ty, &name, true);
                 self.prelude = saved;
-                self.prelude.push_str(&format!("{};\nif({condition_name}) {{\n{yes_prefix}{name}={};\n{keep}{yes_drop}}} else {{\n{no_prefix}{name}={};\n{keep}{no_drop}}}\n", declaration(&a.ty, &name), a.code, b.code));
+                let assign_a=if matches!(a.ty,Type::Array(..)) {self.uses_refs=true;format!("memcpy({name}, {}, sizeof({name}));",a.code)} else {format!("{name}={};",a.code)};
+                let assign_b=if matches!(b.ty,Type::Array(..)) {format!("memcpy({name}, {}, sizeof({name}));",b.code)} else {format!("{name}={};",b.code)};
+                self.prelude.push_str(&format!("{};\nif({condition_name}) {{\n{yes_prefix}{assign_a}\n{keep}{yes_drop}}} else {{\n{no_prefix}{assign_b}\n{keep}{no_drop}}}\n",declaration(&a.ty,&name)));
                 if contains_managed(&a.ty) { self.temporaries.push(Variable { name: name.clone(), ty: a.ty.clone() }); }
                 return Ok(Value { code: name, ty: a.ty, lvalue: false });
             }
@@ -1701,6 +1764,7 @@ impl Emitter<'_> {
             }
             ExprKind::Index(inner, index) => {
                 let v = self.expr(inner, None)?;
+                let v=if matches!(inner.kind,ExprKind::Array(..)) {self.sequence_save(v)} else {v};
                 if matches!(&v.ty, Type::Record(n, _) if n.starts_with("anonymous_object_")) {
                     let v = self.dynamic_box(v, expr.span)?;
                     let v = self.dynamic_save(v);
@@ -1779,9 +1843,6 @@ impl Emitter<'_> {
                     }
                 };
                 let ty = self.resolve_collection_element(&ty);
-                if matches!(inner.kind, ExprKind::Array(..)) {
-                    return self.fail(expr.span, "bind the array to a variable before indexing");
-                }
                 lvalue = writable;
                 let index_code = if let Some(n) = array_size {
                     self.uses_checks = true;
@@ -1815,6 +1876,41 @@ impl Emitter<'_> {
                     ty,
                 )
             }
+            ExprKind::Repeat(value,count) => {
+                let hint=if let Some(Type::Array(t,_))=expected {Some(t.as_ref())} else {None};
+                let v=self.expr(value,hint)?;
+                if matches!(v.ty,Type::Void|Type::Array(..)) {return self.fail(expr.span,"repeat requires a non-array value");}
+                let v=self.sequence_save(v);let ty=Type::Array(Box::new(v.ty.clone()),*count);
+                let name=format!("dev_repeat_{}",self.next_var);self.next_var+=1;
+                self.prelude.push_str(&format!("{};\nfor(size_t dev_i=0;dev_i<{count};++dev_i) {name}[dev_i]={};\n",declaration(&ty,&name),v.code));
+                let keep=self.manage(&ty,&name,true);self.prelude.push_str(&keep);
+                if contains_managed(&ty) {self.temporaries.push(Variable{name:name.clone(),ty:ty.clone()});}
+                return Ok(Value{code:name,ty,lvalue:false});
+            }
+            ExprKind::Spread(items) => {
+                let mut element=if let Some(Type::Vector(t))=expected {Some((**t).clone())} else {None};
+                let mut pieces=vec![];
+                for (spread,item) in items {
+                    let v=self.expr(item,if *spread {None} else {element.as_ref()})?;
+                    let t=if *spread {match &v.ty {
+                        Type::Array(t,_)|Type::Vector(t)|Type::Slice(t)=>self.resolve_collection_element(t),
+                        _=>return self.fail(item.span,"spread requires Array, Vec or Slice"),
+                    }} else {v.ty.clone()};
+                    if element.as_ref().is_some_and(|e| *e!=t) {return self.fail(item.span,"spread element type mismatch");}
+                    element=Some(t);let v=self.sequence_save(v);pieces.push((*spread,v));
+                }
+                let element=element.ok_or_else(||error(&self.program.modules[self.module].path,expr.span,"spread needs an element type"))?;
+                let ty=Type::Vector(Box::new(element));let helper=self.collection(&ty);
+                let result=self.owned(Value{code:format!("{helper}_make(NULL,0)"),ty,lvalue:false});
+                for (spread,v) in pieces {
+                    if spread {
+                        let (len,access)=match &v.ty {Type::Array(_,n)=>(n.to_string(),format!("{}[dev_i]",v.code)),
+                            _=>(format!("{}.len",v.code),format!("{}.data[{}.offset+dev_i]",v.code,v.code))};
+                        self.prelude.push_str(&format!("for(size_t dev_i=0;dev_i<{len};++dev_i) {helper}_push(&{}, {access});\n",result.code));
+                    } else {self.prelude.push_str(&format!("{helper}_push(&{}, {});\n",result.code,v.code));}
+                }
+                return Ok(result);
+            }
             ExprKind::Array(values) => {
                 if values.is_empty() {
                     return self.fail(expr.span, "array cannot be empty");
@@ -1835,10 +1931,12 @@ impl Emitter<'_> {
                 {
                     return self.fail(expr.span, "array elements require scalar values");
                 }
-                let mut codes = vec![first.code];
+                let first=self.sequence_save(first);
+                let mut codes = vec![first.code.clone()];
                 for value in &values[1..] {
                     let v = self.expr(value, Some(&first.ty))?;
                     self.compatible(&v, &first.ty, value.span)?;
+                    let v=self.sequence_save(v);
                     codes.push(v.code);
                 }
                 (
@@ -2067,7 +2165,14 @@ impl Emitter<'_> {
         for (arg, ty) in args.iter().zip(&signature.params) {
             let v = self.expr(arg, Some(ty))?;
             self.compatible(&v, ty, arg.span)?;
-            codes.push(v.code);
+            let v=self.sequence_save(v);
+            if matches!(ty, Type::Array(..)) {
+                self.uses_refs = true;
+                let packed = format!("dev_array_argument_{}", self.next_var); self.next_var += 1;
+                let source = v.code;
+                self.prelude.push_str(&format!("{} {packed};\nmemcpy({packed}.data, {source}, sizeof({packed}.data));\n", c_type(ty)));
+                codes.push(packed);
+            } else { codes.push(v.code); }
         }
         for arg in args.iter().skip(signature.params.len()) {
             let v = self.expr(arg, None)?;
@@ -2080,6 +2185,13 @@ impl Emitter<'_> {
             ty: signature.ret,
             lvalue: false,
         };
+        if matches!(result.ty, Type::Array(..)) {
+            let name = format!("dev_array_result_{}", self.next_var); self.next_var += 1;
+            self.prelude.push_str(&format!("{} {name} = {};\n", c_type(&result.ty), result.code));
+            let code = format!("{name}.data");
+            self.temporaries.push(Variable {name: code.clone(), ty: result.ty.clone()});
+            return Ok(Value {code, ty: result.ty, lvalue:false});
+        }
         Ok(self.owned(result))
     }
 }

@@ -64,18 +64,12 @@ impl Program {
                     return Err(fail("function name is reserved by the compiler"));
                 }
                 valid_type(&function.ret, true).map_err(|e| fail(&e))?;
-                if matches!(function.ret, Type::Array(..)) {
-                    return Err(fail("return an array through a pointer"));
-                }
                 let mut names = std::collections::HashSet::new();
                 for (name, ty) in &function.params {
                     if !names.insert(name) {
                         return Err(fail("duplicate parameter name"));
                     }
                     valid_type(ty, false).map_err(|e| fail(&e))?;
-                    if matches!(ty, Type::Array(..)) {
-                        return Err(fail("array parameters use pointers, for example *i32"));
-                    }
                 }
                 let external = function.body.is_none();
                 if external
@@ -254,13 +248,7 @@ pub fn valid_type(ty: &Type, allow_void: bool) -> Result<(), String> {
         Type::Void if !allow_void => Err("void is not a value type".into()),
         Type::Function(ps, r) => {
             for t in ps {
-                if matches!(t, Type::Array(..)) {
-                    return Err("function value parameters cannot be arrays".into());
-                }
                 valid_type(t, false)?;
-            }
-            if matches!(**r, Type::Array(..)) {
-                return Err("function values cannot return arrays".into());
             }
             valid_type(r, true)
         }

@@ -90,6 +90,22 @@ impl Expand {
                     _ => return Ok(None),
                 }
             }
+            ExprKind::Repeat(value, count) => {
+                let inner_hint = if let Some(Type::Array(t,_)) = hint {Some(t.as_ref())} else {None};
+                let Some(t) = self.infer(id, value, inner_hint)? else {return Ok(None);};
+                Type::Array(Box::new(t), *count)
+            }
+            ExprKind::Spread(items) => {
+                let mut element = if let Some(Type::Vector(t)) = hint {Some((**t).clone())} else {None};
+                for (spread,value) in items {
+                    if element.is_some() {break;}
+                    if let Some(t) = self.infer(id, value, None)? {
+                        element = if *spread {match t {Type::Array(t,_) | Type::Vector(t) | Type::Slice(t) => Some(*t), _ => None}} else {Some(t)};
+                    }
+                }
+                let Some(t) = element else {return Ok(None);};
+                Type::Vector(Box::new(t))
+            }
             ExprKind::Array(xs) => {
                 let Some(first) = xs.first() else {
                     return Ok(None);
@@ -148,7 +164,7 @@ impl Expand {
                     return Ok(None);
                 };
                 match op.as_str() {
-                    "len" => Type::Size { signed: false },
+                    "len" | "$iter_len" => Type::Size { signed: false },
                     "clear" | "push" | "set" => Type::Void,
                     "contains" | "remove" => Type::Bool,
                     "pop" => {
@@ -166,7 +182,7 @@ impl Expand {
                         }
                     }
                     "slice" => {
-                        if let Type::Vector(t) | Type::Slice(t) = t {
+                        if let Type::Vector(t) | Type::Slice(t) | Type::Array(t, _) = t {
                             Type::Slice(t)
                         } else {
                             return Ok(None);
