@@ -2,7 +2,7 @@
   "name": "devlang-language",
   "displayName": "DevLang",
   "description": "DevLang and DON syntax, formatting, file icons, language server and native breakpoint support.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "n-devs",
   "license": "MIT",
   "repository": {
@@ -29,7 +29,7 @@
     }
   },
   "scripts": {
-    "check": "node --check extension.js && node --check file-icons.js",
+    "check": "node --check extension.js && node --check file-icons.js && node --check runtime-debug.js",
     "package": "vsce package",
     "test": "node --test tests/*.test.js"
   },
@@ -255,6 +255,10 @@
       {
         "command": "devlang.restartServer",
         "title": "DevLang: Restart Language Server"
+      },
+      {
+        "command": "devlang.debugRuntime",
+        "title": "DevLang: Debug Current File (Runtime Terminal)"
       }
     ],
     "iconThemes": [
@@ -263,7 +267,16 @@
         "label": "DevLang File Icons",
         "path": "./devlang-icons.json"
       }
-    ]
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "devlang.debugRuntime",
+          "when": "editorLangId == devlang && resourceScheme == file",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "icon": "images/icon.png"
 }

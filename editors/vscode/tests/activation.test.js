@@ -29,6 +29,7 @@ test('startup configures icons without starting LSP; opening DevLang starts once
         module, console, require(name) {
             if (name === 'vscode') return vscode;
             if (name === 'vscode-languageclient/node') return { LanguageClient };
+            if (name === './runtime-debug') return { setupRuntimeDebug: () => {} };
             if (name === './file-icons') return { setupFileIcons: () => icons++ };
             return require(name);
         },

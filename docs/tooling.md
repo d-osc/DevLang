@@ -228,3 +228,21 @@ Program errors retain their normal error exit code.
 `locals` ดูตัวแปร และ `stack` ดูลำดับการเรียก ใช้ `break LINE` หรือ
 `break FILE:LINE` ตั้ง breakpoint และ `continue` รันต่อ ระบบนี้ใช้ AST
 และตรวจเฉพาะเธรดหลัก ยังไม่ใช่ debugger ผ่าน VS Code และใช้ stdin ร่วมกับโปรแกรม
+
+## Debug source in VS Code
+
+Open a saved `.dev` file, then run **DevLang: Debug Current File (Runtime Terminal)**
+from the Command Palette or its editor title button. The extension saves modified
+source first and starts `d run FILE --debug-runtime` directly in a terminal.
+Set `devlang.executablePath` to a current `d` executable; keep `devrun` beside it.
+Type `step`, `next`, `break LINE`, `locals`, `stack` and `continue` in that terminal.
+Closing the terminal stops its process. Each invocation creates a separate session.
+
+This command uses the interactive source debugger. Editor gutter breakpoints and
+VS Code's Variables/Call Stack panels are not connected to it; DAP support remains
+future work. Native LLDB debugging via `d debug --vscode` is a separate mode.
+
+ภาษาไทย: เปิดไฟล์ `.dev` แล้วเลือก **DevLang: Debug Current File (Runtime Terminal)**
+จาก Command Palette ระบบบันทึกไฟล์ก่อนเปิด debugger ใน terminal ใช้คำสั่ง
+`break`, `step`, `next`, `locals`, `stack` และ `continue` ได้โดยไม่ต้อง compile
+ยังไม่เชื่อม breakpoint ที่ gutter หรือแผง Variables ของ VS Code

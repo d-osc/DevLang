@@ -5,12 +5,14 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { setupFileIcons } = require('./file-icons');
+const { setupRuntimeDebug } = require('./runtime-debug');
 let client;
 let fileWatcher;
 let starting;
 
 async function activate(context) {
     setupFileIcons(vscode, context);
+    setupRuntimeDebug(vscode, context);
     context.subscriptions.push(vscode.languages.registerDocumentFormattingEditProvider(['devlang', 'don'], {
         async provideDocumentFormattingEdits(document, options, token) {
             const version = document.version;

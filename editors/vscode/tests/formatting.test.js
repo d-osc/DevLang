@@ -21,6 +21,7 @@ test('Format Document routes unsaved DON to the real lossless formatter and reje
         module, console, require(name) {
             if (name === 'vscode') return vscode;
             if (name === 'vscode-languageclient/node') return {LanguageClient: class {}};
+            if (name === './runtime-debug') return { setupRuntimeDebug: () => {} };
             if (name === './file-icons') return {setupFileIcons() {}};
             return require(name);
         },
