@@ -546,7 +546,7 @@
   },
   "array-methods": {
     "source_sha256": "79b89ce7dffb34e3acda258fc4f280661c3c31da655699e1cc6b81e0f2dfbaa0",
-    "validation_sha256": "5fdbd08466943b358c077d5b341bc34bf8dce671371000238b59e18f588c11c7",
+    "validation_sha256": "00524d7a4247dbb89a90d442c4292113629db63bcd6187fb58904ac55a5d9e0f",
     "output": "2\n2\n2\n8\ntrue\ntrue\n1\n3\n2\n3\n5\n2\n0\n2\n1\nHello Dev\nDev\ntrue\nfalse\n-1\n10\n3\n"
   },
   "array-sort": {
