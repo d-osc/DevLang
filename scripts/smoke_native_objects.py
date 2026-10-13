@@ -250,7 +250,7 @@ fn read(x:json.Value):str { return x.inner.name }
             results.append(run([str(exe)]))
             if name in FAILURES:
                 assert all(r.returncode!=0 and r.stderr.strip() for r in results),(name,[(r.stdout,r.stderr) for r in results])
-                assert str(source) in results[-1].stderr,(name,results[-1].stderr)
+                assert os.path.normcase(str(source)) in os.path.normcase(results[-1].stderr),(name,results[-1].stderr)
             else:
                 assert all(r.returncode==0 for r in results),(name,[(r.stdout,r.stderr) for r in results])
                 assert len({r.stdout for r in results})==1,(name,[(r.stdout,r.stderr) for r in results])
