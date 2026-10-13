@@ -107,6 +107,26 @@ description: """A multiline
 description with no escapes."""
 ```
 
+### Arrays with commas
+
+Commas are supported in multiline arrays and nested objects. Elements can have
+mixed types:
+
+```don
+items: [
+  'hello',
+  42,
+  true,
+  null,
+  {
+    name: 'Dev',
+    age: 18
+  }
+]
+```
+
+The same literal can be used inside `.dev` as `let data = { items: [...] }`.
+
 ## DevLang runtime API
 
 ### References
