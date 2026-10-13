@@ -13,7 +13,7 @@ import urllib.error
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--bin-dir', required=True)
-    d = Path(parser.parse_args().bin_dir).resolve() / ('d.exe' if os.name == 'nt' else 'd')
+    d = Path(parser.parse_args().bin_dir).resolve() / ('devrun.exe' if os.name == 'nt' else 'devrun')
     with tempfile.TemporaryDirectory(prefix='dev-node-io-') as temp:
         root = Path(temp)
         source = root / 'main.dev'
@@ -90,14 +90,19 @@ main()
                     request = urllib.request.Request(base+'/echo', data=b'payload', method=method)
                     with urllib.request.urlopen(request, timeout=3) as reply:
                         assert reply.read() == f'captured:{method}:/echo:payload'.encode()
-                # Invalid headers never reach the wire; failing handlers terminate with a located error.
+                # Invalid headers never reach the wire; a failing request must not stop the listener.
                 try:
                     urllib.request.urlopen(base+'/invalid', timeout=3)
                     raise AssertionError('invalid response header accepted')
                 except urllib.error.HTTPError as error:
                     assert error.code == 500
+                with urllib.request.urlopen(base+'/still-alive', timeout=3) as reply:
+                    assert reply.status == 201
+                    assert reply.read() == b'captured:GET:/still-alive:'
+                assert proc.poll() is None, 'handler failure terminated server'
+                proc.terminate()
                 out, err = proc.communicate(timeout=5)
-                assert proc.returncode != 0 and b'invalid response header' in err, err
+                assert b'invalid response header' in err, err
                 assert b'LISTEN_RETURNED' in out, out
             finally:
                 if proc.poll() is None:

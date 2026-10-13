@@ -311,11 +311,18 @@ impl Engine {
                 let mut response = self.responses.remove(&id).unwrap();
                 if let Some(request) = response.request.take() {
                     let _ = request.respond(
-                        tiny_http::Response::from_string("Handler must call res.end(text)")
+                        tiny_http::Response::from_string(if result.is_err() { "Internal server error" } else { "Handler must call res.end(text)" })
                             .with_status_code(500),
                     );
                 }
-                result?;
+                if let Err(error) = result {
+                    // The response entry has already been removed. A bad handler
+                    // or disconnected peer must not terminate unrelated servers.
+                    // Explicit debugger termination still stops source execution.
+                    if self.debugger_quit() { return Err(error); }
+                    eprintln!("http handler error: {error}");
+                }
+                self.collect_prototype_cycles(false);
             }
             if !handled {
                 std::thread::sleep(Duration::from_millis(2));

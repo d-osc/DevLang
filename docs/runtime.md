@@ -243,3 +243,46 @@ Program errors retain their normal error exit code.
 `locals` ดูตัวแปร และ `stack` ดูลำดับการเรียก ใช้ `break LINE` หรือ
 `break FILE:LINE` ตั้ง breakpoint และ `continue` รันต่อ ระบบนี้ใช้ AST
 และตรวจเฉพาะเธรดหลัก ยังไม่ใช่ debugger ผ่าน VS Code และใช้ stdin ร่วมกับโปรแกรม
+
+## Long-running HTTP server qualification
+
+HTTP handler errors are isolated per request: an unsent response becomes 500,
+its handle is removed, and later requests continue. Errors after `end` are logged
+without a second response. A missing `end` also produces 500. Use stderr logging
+with external rotation/retention limits. `server.close()` lets the current callback
+finish and exits when no other listeners/timers remain.
+
+```sh
+python scripts/soak_http_server.py --bin-dir target/release --requests 20000 --concurrency 8 --report out/http-soak.json
+# Extended run: minimum request count plus minimum duration for EACH engine:
+python scripts/soak_http_server.py --bin-dir target/release --requests 20000 --duration-seconds 3600 --report out/http-hour.json
+```
+
+The test issues real local HTTP requests, injects handler/header failures, allocates
+cyclic objects per request, checks a subsequent healthy response, samples process
+RSS after warm-up, and checks callback-driven shutdown. It currently supports
+Windows and Linux RSS sampling. The default RSS-growth ceiling is 32 MiB;
+`--max-growth-mib` sets an explicit workload budget. Sampled RSS is not peak
+allocation tracking. The load uses small bodies and bounded client concurrency;
+it does not qualify large uploads, TLS, public-client attacks or arbitrary code.
+
+For deployment, bind DevLang to `127.0.0.1`, keep the backend inaccessible to
+external clients, and put a proxy in front. The template
+[`deploy/http/nginx.conf`](../deploy/http/nginx.conf) buffers request bodies,
+limits body size and active requests and configures read/send timeouts. Its
+loopback port 8080 expects a separate TLS edge. See [proxy buffering](https://nginx.org/en/docs/http/ngx_http_proxy_module.html)
+and [request limits/timeouts](https://nginx.org/en/docs/http/ngx_http_core_module.html).
+Timeouts apply between reads/writes rather than providing a total application
+execution deadline. An infinite or blocking handler cannot be interrupted by the
+proxy; use external health checks and process supervision to restart a stalled
+worker. Application state/durable writes must tolerate restarts.
+
+The interpreter serves callbacks serially. Direct public exposure of its initial
+HTTP transport is not qualified: ingress connection/header deadlines and transport
+queue limits are not configurable in DevLang. Native compilation does not provide
+this HTTP server. Production approval still requires application-specific
+hours-long load/soak results, authentication and durable-state recovery checks.
+
+ภาษาไทย: handler ที่ผิดพลาดไม่ทำให้ server ทั้งตัวหยุดแล้ว และมีการทดสอบ HTTP
+พร้อมวัด RSS แต่ production ต้อง bind loopback ผ่าน reverse proxy มี health check
+และ supervisor รวมถึงทดสอบต่อเนื่องตามงานจริงก่อนเปิดรับผู้ใช้ภายนอก

@@ -174,8 +174,10 @@ managed by the runtime; explicit Content-Length/Transfer-Encoding are rejected.
 Invalid header names/values and writes after `end` produce errors.
 
 Handlers must call `end` before returning. Missing `end` produces HTTP 500.
-A handler error produces HTTP 500 if the response has not been sent, then aborts
-the runtime with a located error. Bodies are limited to 8 MiB, and at most 64
+A handler error produces HTTP 500 if the response has not been sent and logs a
+located error to stderr. The response handle is removed and the listener continues
+serving later requests. Errors after `end` cannot change the already sent response
+and are logged without sending a second response. Debugger quit still stops execution. Bodies are limited to 8 MiB, and at most 64
 server handles may exist in an interpreter. Callbacks are served serially, so
 blocking work or slow body reads delay other requests. This initial HTTP/1.x
 server does not provide configurable read/header timeouts, HTTPS serving,
