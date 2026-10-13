@@ -66,6 +66,9 @@ impl Emitter<'_> {
             lvalue: false,
         }))
     }
+    pub(crate) fn array_argument(&mut self,arg:&Expr,element:&Type)->Result<Value,String>{
+        if crate::dynamic::is_dynamic(element){let old=self.object_boxing;self.object_boxing=true;let result=self.dynamic_expr(arg);self.object_boxing=old;let mut value=result?;value.code=format!("dev_object_box_data({})",value.code);value.ty=element.clone();Ok(value)}else{self.expr(arg,Some(element))}
+    }
     pub(crate) fn collection_call(
         &mut self,
         base: &Expr,
@@ -135,7 +138,7 @@ impl Emitter<'_> {
                 return self.fail(span, "array search requires numeric, bool or str elements");
             }
             let receiver = self.sequence_save(v);
-            let needle = self.expr(&args[0], Some(&element))?;
+            let needle = self.array_argument(&args[0], &element)?;
             self.compatible(&needle, &element, args[0].span)?;
             let needle = self.sequence_save(needle);
             let result = format!("dev_search_{}", self.next_var); self.next_var += 1;
@@ -169,7 +172,7 @@ impl Emitter<'_> {
                     return self.fail(span, "mutable collection method requires a writable Vec");
                 }
                 if op == "push" {
-                    let x = self.expr(&args[0], Some(&element))?;
+                    let x = self.array_argument(&args[0], &element)?;
                     self.compatible(&x, &element, args[0].span)?;
                     Ok(Value {
                         code: format!("{name}_push(&({}), {})", v.code, x.code),

@@ -1586,5 +1586,17 @@
       "d examples/object-direct/main.dev",
       "d build examples/object-direct/main.dev -o out/object-direct.exe"
     ]
+  },
+  {
+    "id": "array-constructor",
+    "title": "Array constructor",
+    "category": "Collections",
+    "path": "examples/array-constructor/main.dev",
+    "description": "new Array(): empty, null-filled length and mixed values",
+    "doc": "array-reference",
+    "commands": [
+      "d examples/array-constructor/main.dev",
+      "d build examples/array-constructor/main.dev -o out/array-constructor.exe"
+    ]
   }
 ]

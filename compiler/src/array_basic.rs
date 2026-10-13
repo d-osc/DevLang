@@ -113,7 +113,7 @@ impl Emitter<'_> {
         let mut replacements = Vec::new();
         if op == "splice" || op == "toSpliced" {
             for arg in args.iter().skip(2) {
-                let value = self.expr(arg, Some(element))?;
+                let value = self.array_argument(arg, element)?;
                 self.compatible(&value, element, arg.span)?;
                 replacements.push(self.sequence_save(value).code);
             }

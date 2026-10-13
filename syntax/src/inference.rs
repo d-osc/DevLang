@@ -39,7 +39,7 @@ impl Expand {
             ExprKind::Call(n, _) if n.as_slice() == ["$interpolate"] => Type::Str,
             ExprKind::Call(n,_) if n.first().is_some_and(|s|s=="$object") => match n.get(1).map(String::as_str) {
                 Some("keys"|"getOwnPropertyNames")=>Type::Vector(Box::new(Type::Str)),
-                Some("values")=>Type::Vector(Box::new(Type::Record("dev_dynamic_value".into(),vec![]))),
+                Some("array"|"values")=>Type::Vector(Box::new(Type::Record("dev_dynamic_value".into(),vec![]))),
                 Some("entries")=>Type::Vector(Box::new(Type::Record("dev_dynamic_value".into(),vec![]))),
                 Some("isExtensible"|"isFrozen"|"isSealed"|"delete")=>Type::Bool,
                 Some("toString")=>Type::Str,

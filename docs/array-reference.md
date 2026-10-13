@@ -1,5 +1,32 @@
 # Array Reference / คู่มืออ้างอิง array
 
+## Array constructor / การสร้างด้วย constructor
+
+```dev
+use "std/json"
+fn main() {
+    let empty = new Array()
+    empty.push("Dev")
+    let slots = new Array(3)
+    print(json.stringify(slots)) // [null,null,null]
+    slots[0] = 42
+    let mixed = new Array("Dev", 42, true, null)
+    print(json.stringify(mixed))
+    print(mixed.length)
+    print(Array.isArray(mixed))
+}
+main()
+```
+
+`new Array()` creates an empty `Vec<json.Value>`. A single numeric argument is a length: it must be an integer from 0 to 1,000,000. Each slot contains null. A single non-number is one element; multiple arguments become elements in order. Use `[3]` or `Vec<i64>(3)` for a single numeric element.
+
+`new Array()` สร้าง `Vec<json.Value>` ว่าง หากส่งตัวเลขตัวเดียวจะหมายถึงความยาว ตั้งแต่ 0 ถึง 1,000,000 และต้องไม่มีเศษ แต่ละช่องเป็น null หากส่งค่าที่ไม่ใช่ตัวเลขตัวเดียวจะได้สมาชิกหนึ่งตัว ส่วนหลาย argument จะเรียงเป็นสมาชิกตามลำดับ ใช้ `[3]` หรือ `Vec<i64>(3)` หากต้องการเลข 3 เพียงสมาชิกเดียว
+
+The constructor is available in both the source runtime and hosted native compiler. Dynamic array insertion (`push`, `unshift`, `splice`, `toSpliced` and index assignment) boxes values into json.Value. Callbacks use `json.Value` parameters and JSON accessors such as `json.int(value)`. Typed array methods retain their type requirements: default numeric sort/search and scalar toString/join require suitable typed elements. Arrays are dense; missing entries are null, not JavaScript holes or undefined. These arrays keep DevLang Vec copy-on-write semantics.
+
+รองรับทั้ง runtime และ native สมาชิกเป็น json.Value จึงเขียน callback โดยระบุ parameter ชนิด json.Value และอ่านค่าผ่าน json.int เป็นต้น method ที่กำหนดชนิดสมาชิกไว้ยังคงข้อกำหนดเดิม ไม่มีช่องว่างแบบ JavaScript holes หรือ undefined และใช้ copy-on-write เช่นเดียวกับ Vec ของ DevLang
+
+
 A reference for DevLang collection syntax and supported methods, verified against
 the source runtime and hosted native compiler. Use a current source build after
 v0.5.1. DevLang collections do not implicitly coerce element types.

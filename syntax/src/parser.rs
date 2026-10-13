@@ -997,7 +997,7 @@ impl Parser {
                 while self.eat(".") {names.push(self.ident()?);}
                 self.expect("(")?;
                 let mut args=self.expression_arguments()?;
-                let call=if names.as_slice()==["Object"] {vec!["Object".into()]} else {
+                let call=if names.as_slice()==["Object"] {vec!["Object".into()]} else if names.as_slice()==["Array"] {vec!["Object".into(),"array".into()]} else {
                     args.insert(0,Expr{span,kind:ExprKind::Name(names)});
                     vec!["Object".into(),"construct".into()]
                 };

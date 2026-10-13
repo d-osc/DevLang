@@ -918,7 +918,7 @@ impl Emitter<'_> {
                     self.compatible(&v, &Type::Str, value.span)?;
                     return Ok(format!("*{pointer} = dev_interpolate(\"%s%s\", *{pointer}, {});\n", v.code));
                 }
-                let v = self.expr(value, Some(&t.ty))?;
+                let v = if op=="=" && matches!(target.kind,ExprKind::Index(..)) {self.array_argument(value,&t.ty)?}else{self.expr(value,Some(&t.ty))?};
                 self.compatible(&v, &t.ty, value.span)?;
                 if op == "=" && contains_managed(&t.ty) {
                     let pointer = format!("dev_target_{}", self.next_var);

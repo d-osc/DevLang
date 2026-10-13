@@ -643,6 +643,25 @@ static dev_dynamic_value dev_object_descriptor(dev_object_property property) {
 static dev_dynamic_value dev_object_api(const char *name, size_t argc,
                                         const dev_dynamic_value *argv,
                                         const char *p, size_t l, size_t c) {
+  if (!strcmp(name, "array")) {
+    size_t count = argc;
+    bool length = argc == 1 && !argv[0].boxed &&
+                  dev_dynamic_tag(argv[0]) >= 2 &&
+                  dev_dynamic_tag(argv[0]) <= 4;
+    if (length) {
+      double n = dev_dynamic_as_float(argv[0], p, l, c);
+      if (!isfinite(n) || n < 0 || n > 1000000 || floor(n) != n)
+        dev_dynamic_error(
+            "Array length must be between 0 and 1000000 and an integer", p, l,
+            c);
+      count = (size_t)n;
+    }
+    dev_dynamic_value *items = dev_dynamic_alloc(count * sizeof(*items));
+    for (size_t i = 0; i < count; i++)
+      items[i] =
+          length ? (dev_dynamic_value){NULL, 1} : dev_object_box_data(argv[i]);
+    return dev_dynamic_array(count, items);
+  }
   size_t arity = SIZE_MAX;
   if (!strcmp(name, "prototype") || !strcmp(name, "constructor"))
     arity = 0;

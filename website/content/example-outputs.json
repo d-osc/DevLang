@@ -583,5 +583,10 @@
     "source_sha256": "164bc9c85906fb49ba74d4c4b9cf9d52bada3e04a317e80231c394b9d7c48cb1",
     "validation_sha256": "3dffa44f57f1b7ef57dc00f81aba3540131943f580da5842d37ecc11a42524c1",
     "output": "Dev\nroot\n7\n"
+  },
+  "array-constructor": {
+    "source_sha256": "5643334c8fdf0763c610e2b5faa3c8ae773322636e85ba0cafd4e4a1324986b7",
+    "validation_sha256": "15e4fb9c18bd40105a181c077c2eceafecbd194d4ed273b4fe5831bc1f9c8d86",
+    "output": "[42,\"Dev\"]\n2\n[null,null,null]\n[1,\"Hi\",true]\ntrue\n[\"Dev\",42,true,null,{\"name\":\"test\"}]\ntrue\n[{\"name\":\"test\"},null,true,42,\"Dev\"]\n[{\"name\":\"test\"},\"new\",42,\"Dev\"]\n[\"single\"]\n0\n2\n"
   }
 }

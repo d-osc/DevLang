@@ -34,7 +34,7 @@ impl Emitter<'_> {
                 value.code
             ));
             if op == "unshift" {
-                let x = self.expr(&args[0], Some(element))?;
+                let x = self.array_argument(&args[0], element)?;
                 self.compatible(&x, element, args[0].span)?;
                 let x = self.sequence_save(x);
                 return Ok(Value {

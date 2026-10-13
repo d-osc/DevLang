@@ -6,6 +6,8 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "array_constructor": 'use "std/json"\nfn main(){\n let empty=new Array()\n empty.push("Dev")\n empty.unshift(42)\n print(json.stringify(empty))\n print(empty.length)\n let slots=new Array(3)\n print(json.stringify(slots))\n slots[0]=1\n slots[1]="Hi"\n slots[2]=true\n print(json.stringify(slots))\n print(json.stringify(slots.pop()))\n let mixed=new Array("Dev",42,true,null,{name:"test"})\n print(json.stringify(mixed))\n print(Array.isArray(mixed))\n mixed.reverse()\n print(json.stringify(mixed))\n print(json.stringify(mixed.toSpliced(1,2,"new")))\n print(json.stringify(new Array("single")))\n print(new Array(0).length)\n print(new Array(2.0).length)\n}\nmain()\n',
+    "array_constructor_boxed": 'use "std/json"\nfn main(){let xs=new Array(json.value(3));print(json.stringify(xs))}\nmain()\n',
     "new_constructors": 'use "std/json"\nfn Person(this: json.Value,name: str){this.name = name}\nfn main(){\n    let empty = new Object()\n    empty.name = "Dev"\n    print(empty.name)\n    let data = new Object({name:"Literal"})\n    print(data.name)\n    Person.prototype.greet = fn(this: json.Value): str{return this.name}\n    let p = new Person("Constructor")\n    print(p.greet())\n    print(p.constructor==Person)\n    print(new Person("Inline").greet())\n    let C = Person\n    print(new C("Alias").name)\n}\nmain()\n',
     "prototype_alias": 'use "std/json"\nfn main(){let O=Object;let o=O();let offset=3;O.defineProperty(o,"n",{get:fn(this:json.Value):i64{return offset}});print(o.n)}\nmain()\n',
     "prototype_direct": 'use "std/json"\nfn Person(this:json.Value,name:str){this.name=name}\nfn main(){\n Person.prototype.greet=fn(this:json.Value):str{return this.name}\n let p=Object.construct(Person,"Dev")\n print(p.greet())\n Object.prototype.common="root"\n print(p.common)\n Person.prototype=Object({newValue:7})\n let q=Object.construct(Person,"Next")\n print(q.newValue)\n}\nmain()\n',
@@ -387,6 +389,9 @@ print(y.inner.name)
 ''',
 }
 FAILURES = {
+    "array_constructor_negative": 'fn main(){let xs=new Array(-1);print(xs.length)}\nmain()\n',
+    "array_constructor_fraction": 'fn main(){let xs=new Array(1.5);print(xs.length)}\nmain()\n',
+    "array_constructor_limit": 'fn main(){let xs=new Array(1000001);print(xs.length)}\nmain()\n',
     "prototype_type": 'fn main(){let a=Object({n:1});let n:i32=a.n;print(n)}\nmain()\n',
     "prototype_frozen": 'fn main(){let a=Object({n:1}); let b=a;Object.freeze(a);b.n=2}\nmain()\n',
     "prototype_nonextensible": 'fn main(){let a=Object();Object.preventExtensions(a);a.n=2}\nmain()\n',

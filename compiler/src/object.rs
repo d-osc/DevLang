@@ -137,7 +137,7 @@ impl Emitter<'_> {
                 self.dynamic_unbox(result, &Type::Bool, span)
             }
             "toString" => self.dynamic_unbox(result, &Type::Str, span),
-            "keys" | "getOwnPropertyNames" | "values" | "entries" => {
+            "array" | "keys" | "getOwnPropertyNames" | "values" | "entries" => {
                 let element = if name == "keys" || name == "getOwnPropertyNames" {
                     Type::Str
                 } else {

@@ -606,13 +606,37 @@ impl Engine {
             | "fromEntries"
             | "toString"
             | "valueOf" => Some(1),
-            "object" | "create" | "assign" | "construct" => None,
+            "array" | "object" | "create" | "assign" | "construct" => None,
             _ => return Err(format!("unknown Object API '{name}'")),
         };
         if arity.is_some_and(|n| args.len() != n) {
             return Err(format!("wrong Object.{name} argument count"));
         }
         match name {
+            "array" => {
+                let values = if args.len() == 1 && args[0].ty().numeric() {
+                    let length = match &args[0] {
+                        Value::Int(n, _) => *n,
+                        Value::Float(n, _) if n.is_finite() && n.fract() == 0.0 => *n as i128,
+                        _ => return Err("Array length must be a non-negative integer".into()),
+                    };
+                    if !(0..=1_000_000).contains(&length) {
+                        return Err("Array length must be between 0 and 1000000".into());
+                    }
+                    vec![
+                        Value::Json(Arc::new(serde_json::Value::Null), object_type());
+                        length as usize
+                    ]
+                } else {
+                    args.into_iter()
+                        .map(|v| self.object_box(v))
+                        .collect::<Result<Vec<_>, _>>()?
+                };
+                Ok(Value::Vector(
+                    Arc::new(values),
+                    Type::Vector(Box::new(object_type())),
+                ))
+            }
             "static" => {
                 let ctor = self.object_api("constructor", vec![], span)?;
                 self.object_get(ctor, args[0].string()?, span)
@@ -958,4 +982,28 @@ impl Engine {
     }
 }
 
-fn object_hint(value:Value,hint:Option<&Type>)->Result<Value,String> {if let Some(t)=hint {convert(value,t,false)}else{Ok(value)}}
+fn object_hint(value: Value, hint: Option<&Type>) -> Result<Value, String> {
+    if let Some(t) = hint {
+        convert(value, t, false)
+    } else {
+        Ok(value)
+    }
+}
+
+impl Engine {
+    fn array_argument(
+        &mut self,
+        f: &mut Frame,
+        arg: &Expr,
+        element: &Type,
+    ) -> Result<Value, String> {
+        if matches!(element,Type::Record(n,_)|Type::Nominal(n) if n=="dev_dynamic_value"||n=="dev_dynamic_don_value")
+        {
+            let v = self.object_argument(f, arg)?;
+            let v = self.object_box(v)?;
+            convert(v, element, false)
+        } else {
+            self.eval(f, arg, Some(element))
+        }
+    }
+}

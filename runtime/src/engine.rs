@@ -1064,7 +1064,7 @@ impl Engine {
                         continue;
                     }
                     let old = self.eval(f, target, None)?;
-                    let rhs = self.eval(f, value, Some(&old.ty()))?;
+                    let rhs = if op=="=" && matches!(target.kind,ExprKind::Index(..)) {self.array_argument(f,value,&old.ty())?}else{self.eval(f,value,Some(&old.ty()))?};
                     let v = if op == "=" {
                         rhs
                     } else {
@@ -1518,7 +1518,7 @@ impl Engine {
         }
         drop(value);
         let item = if op == "push" || op == "unshift" {
-            Some(self.eval(f, &args[0], Some(&element))?)
+            Some(self.array_argument(f, &args[0], &element)?)
         } else {
             None
         };

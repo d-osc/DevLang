@@ -1,0 +1,25 @@
+use "std/json"
+fn main(){
+    let empty = new Array()
+    empty.push("Dev")
+    empty.unshift(42)
+    print(json.stringify(empty))
+    print(empty.length)
+    let slots = new Array(3)
+    print(json.stringify(slots))
+    slots[0] = 1
+    slots[1] = "Hi"
+    slots[2] = true
+    print(json.stringify(slots))
+    print(json.stringify(slots.pop()))
+    let mixed = new Array("Dev",42,true,null,{name:"test"})
+    print(json.stringify(mixed))
+    print(Array.isArray(mixed))
+    mixed.reverse()
+    print(json.stringify(mixed))
+    print(json.stringify(mixed.toSpliced(1,2,"new")))
+    print(json.stringify(new Array("single")))
+    print(new Array(0).length)
+    print(new Array(2.0).length)
+}
+main()

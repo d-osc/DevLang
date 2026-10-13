@@ -128,7 +128,7 @@ impl Engine {
             };
             let mut replacements = Vec::new();
             for arg in args.iter().skip(2) {
-                let value = self.eval(frame, arg, Some(element))?;
+                let value = self.array_argument(frame, arg, element)?;
                 if value.ty() != *element {
                     return Err("splice element type mismatch".into());
                 }
