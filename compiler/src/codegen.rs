@@ -363,7 +363,7 @@ fn generate_inner(
         } else if !module.statements.is_empty() {
             return Err(error(&module.path,Span{line:1,col:1},"imported modules contain declarations only; call their functions from the entry file"));
         }
-        if emitter.uses_dynamic {object_runtime_used=true;source.push_str(include_str!("dynamic.c"));source.push_str(crate::object::HELPERS);}
+        if emitter.uses_dynamic {object_runtime_used=true;source.push_str(include_str!("dynamic.c"));source.push_str(crate::object::HELPERS);source.push_str(include_str!("dynamic_array.c"));}
         if emitter.uses_templates { source.push_str(INTERPOLATION_HELPERS); }
         if emitter.uses_math {source.push_str(crate::js_math::HELPERS);}
         if emitter.uses_print {
@@ -1972,6 +1972,7 @@ impl Emitter<'_> {
         Ok(format!("((uint32_t)({}))", value.code))
     }
     fn call(&mut self, names: &[String], args: &[Expr], span: Span) -> Result<Value, String> {
+        if names.first().is_some_and(|n|n=="$gc"){if self.diagnostics.is_some(){return Ok(Value{code:"0".into(),ty:Type::Size{signed:false},lvalue:false});}return self.fail(span,"GC cycle collection is only available in the source runtime");}
         if names.first().is_some_and(|n|n=="$math"){return self.js_math_call(&names[1],args,span);}
         if names.first().is_some_and(|n|n=="$object") {return self.object_api_call(&names[1],args,span);}
         if let Some(value) = self.dynamic_call(names, args, span)? { return Ok(value); }

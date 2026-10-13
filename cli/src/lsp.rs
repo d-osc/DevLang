@@ -6,6 +6,8 @@ use dev_syntax::{
 use serde_json::{json, Value};
 #[path = "don_lsp.rs"]
 mod don_lsp;
+#[path="lsp_index.rs"]
+mod lsp_index;
 use std::{
     collections::HashMap,
     io::{BufRead, Write},
@@ -43,17 +45,14 @@ fn path(uri: &str) -> PathBuf {
 fn parsed(uri: &str, doc: &Document) -> Result<Module, String> {
     parser::parse(path(uri), &doc.text)
 }
-fn symbols(uri: &str, doc: &Document) -> Vec<Value> {
-    if is_don(uri, doc) { return don_lsp::symbols(&doc.text); }
-    let Ok(module) = parsed(uri, doc) else {
-        return vec![];
-    };
+fn module_symbols(doc: &Document, module: &Module) -> Vec<Value> {
     let mut result = Vec::new();
-    for f in module.functions {
+    for f in &module.functions {
         let r = range(&doc.text, f.span.line, f.span.col, 1);
-        result.push(json!({"name":f.name,"kind":12,"range":r,"selectionRange":r,"detail":format!("fn({}): {}",f.params.iter().map(|(n,t)| format!("{n}: {}",t.name())).collect::<Vec<_>>().join(", "),f.ret.name())}));
+        let parameters=f.params.iter().map(|(n,t)|format!("{n}: {}",t.name())).collect::<Vec<_>>();
+        result.push(json!({"signature":format!("{}({}): {}",f.name,parameters.join(", "),f.ret.name()),"parameters":parameters,"name":f.name,"kind":12,"range":r,"selectionRange":r,"detail":format!("fn({}): {}",f.params.iter().map(|(n,t)| format!("{n}: {}",t.name())).collect::<Vec<_>>().join(", "),f.ret.name())}));
     }
-    for d in module.definitions {
+    for d in &module.definitions {
         let r = range(&doc.text, d.span.line, d.span.col, 1);
         result.push(json!({"name":d.name,"kind":if d.enumeration {10} else {23},"range":r,"selectionRange":r,"detail":if d.enumeration {"enum"} else {"struct"}}));
     }
@@ -292,6 +291,7 @@ pub fn command(args: &[String]) -> Result<i32, String> {
     let mut input = stdin.lock();
     let mut out = stdout.lock();
     let mut docs = HashMap::<String, Document>::new();
+    let mut index=lsp_index::WorkspaceIndex::default();
     let mut initialized = false;
     let mut shutdown = false;
     while let Some(message) = receive(&mut input)? {
@@ -302,11 +302,11 @@ pub fn command(args: &[String]) -> Result<i32, String> {
             return Ok(if shutdown { 0 } else { 1 });
         }
         if method == "initialize" && !initialized {
-            initialized = true;
+            initialized = true;index.initialize(params);
             if let Some(id) = id {
                 send(
                     &mut out,
-                    &json!({"jsonrpc":"2.0","id":id,"result":{"capabilities":{"positionEncoding":"utf-16","textDocumentSync":{"openClose":true,"change":1},"completionProvider":{"triggerCharacters":["."]},"hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"documentFormattingProvider":true},"serverInfo":{"name":"DevLang + DON LSP","version":env!("CARGO_PKG_VERSION")}}}),
+                    &json!({"jsonrpc":"2.0","id":id,"result":{"capabilities":{"positionEncoding":"utf-16","textDocumentSync":{"openClose":true,"change":1},"completionProvider":{"triggerCharacters":["."]},"hoverProvider":true,"definitionProvider":true,"documentSymbolProvider":true,"workspaceSymbolProvider":true,"workspace":{"workspaceFolders":{"supported":true,"changeNotifications":true}},"documentFormattingProvider":true},"serverInfo":{"name":"DevLang + DON LSP","version":env!("CARGO_PKG_VERSION")}}}),
                 )?;
             }
             continue;
@@ -367,6 +367,8 @@ pub fn command(args: &[String]) -> Result<i32, String> {
                 )?;
                 publish_documents(&mut out, &docs)?;
             }
+            "workspace/didChangeWorkspaceFolders"=>index.folders_changed(params),
+            "workspace/didChangeWatchedFiles"=>{if let Some(changes)=params["changes"].as_array(){for change in changes{if let Some(uri)=change["uri"].as_str(){index.invalidate(uri);}}}},
             "initialized"
             | "$/cancelRequest"
             | "textDocument/didSave"
@@ -379,18 +381,18 @@ pub fn command(args: &[String]) -> Result<i32, String> {
                         if let Some(doc) = docs.get(uri).filter(|d| is_don(uri,d)) {
                             don_lsp::completion(&doc.text,&params["position"])
                         } else {
-                        let mut items = "fn let if else while for in return break continue struct enum match unsafe use export as true false null i64 i32 u64 f64 bool str Vec Map Ref Slice".split_whitespace().map(|s|json!({"label":s,"kind":14})).collect::<Vec<_>>();
-                        if let Some(doc)=docs.get(uri) { for symbol in symbols(uri,doc) { items.push(json!({"label":symbol["name"],"kind":if symbol["kind"]==12 {3} else {22},"detail":symbol["detail"]})); } }
-                        json!({"isIncomplete":false,"items":items})
+                        let imported=docs.get(uri).and_then(|doc|index.imported_completion(uri,doc,&params["position"],&docs));
+                        let mut items = "fn let const new Math Object Array if else while for in return break continue struct enum match unsafe use export as true false null i64 i32 u64 f64 bool str Vec Map Ref Slice".split_whitespace().map(|s|json!({"label":s,"kind":14})).collect::<Vec<_>>();
+                        if let Some(doc)=docs.get(uri) { for symbol in index.document(uri,doc) { items.push(json!({"label":symbol["name"],"kind":if symbol["kind"]==12 {3} else {22},"detail":symbol["detail"]})); } }
+                        json!({"isIncomplete":false,"items":imported.unwrap_or(items)})
                         }
                     }
-                    "textDocument/documentSymbol" => docs.get(uri).map(|d|json!(symbols(uri,d))).unwrap_or(json!([])),
+                    "workspace/symbol"=>index.workspace_symbols(params["query"].as_str().unwrap_or(""),&docs),
+                    "textDocument/documentSymbol" => docs.get(uri).map(|d|json!(index.document(uri,d))).unwrap_or(json!([])),
                     "textDocument/hover" | "textDocument/definition" => {
                         docs.get(uri).and_then(|doc| {
                             if is_don(uri,doc) { return Some(don_lsp::hover_or_definition(&doc.text,&params["position"],uri,method.ends_with("definition"))); }
-                            let name=word(&doc.text,&params["position"])?;
-                            let symbol=symbols(uri,doc).into_iter().find(|s|s["name"]==name)?;
-                            Some(if method.ends_with("definition") {json!({"uri":uri,"range":symbol["selectionRange"]})} else {json!({"contents":{"kind":"plaintext","value":format!("{} {}",name,symbol["detail"].as_str().unwrap_or(""))}})})
+                            Some(index.navigation(uri,doc,&params["position"],&docs,method.ends_with("definition")))
                         }).unwrap_or(Value::Null)
                     }
                     "textDocument/formatting" => {

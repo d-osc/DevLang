@@ -265,9 +265,11 @@ type TaskStatus = (
 #[derive(Debug)]
 pub(crate) struct TaskState {
     state: Mutex<TaskStatus>,
+    io:Option<Arc<IoFuture>>,
 }
 impl TaskState {
     fn ready(&self) -> bool {
+        if let Some(io)=&self.io{return io.ready();}
         // A concurrent join must not make polling wait on its mutex.
         let Ok(s) = self.state.try_lock() else {
             return false;
@@ -278,6 +280,7 @@ impl TaskState {
                 .is_some_and(std::thread::JoinHandle::is_finished)
     }
     fn join(&self) -> Result<Value, String> {
+        if let Some(io)=&self.io{return io.join();}
         let mut s = self.state.lock().map_err(|_| "task lock poisoned")?;
         if let Some(h) = s.0.take() {
             s.1 = Some(h.join().unwrap_or_else(|_| Err("task panicked".into())))
@@ -288,6 +291,7 @@ impl TaskState {
 pub struct Engine {
     object_prototype: Option<Value>,
     function_objects: HashMap<String,Arc<Mutex<ProtoObject>>>,
+    function_contexts:HashMap<String,std::sync::Weak<Value>>,
     module_dirs: HashMap<String, PathBuf>,
     libraries: Vec<PathBuf>,
     modules: HashMap<String, Loaded>,
@@ -312,7 +316,7 @@ impl Engine {
         module_dirs: HashMap<String, PathBuf>,
     ) -> Result<Self, String> {
         let mut e = Self {
-            object_prototype:None, function_objects:HashMap::new(),
+            object_prototype:None, function_objects:HashMap::new(),function_contexts:HashMap::new(),
             module_dirs,
             libraries: libraries.to_vec(),
             modules: HashMap::new(),
@@ -594,7 +598,13 @@ impl Engine {
         let (target, n) = self
             .resolve(key, name)
             .map_err(|e| self.located(key, span, e))?;
-        if target.starts_with("std/") && target != "std/fs/promises" {
+        if target=="std/fs/promises"{
+            let function=self.modules.get(&target).and_then(|m|m.functions.get(&n)).cloned().ok_or_else(||self.located(key,span,"unknown filesystem promise"))?;
+            if function.params.len()!=args.len(){return Err(self.located(key,span,"wrong argument count"));}
+            let args=args.into_iter().zip(&function.params).map(|(value,(_,t))|convert(value,t,false)).collect::<Result<Vec<_>,_>>()?;
+            return self.fs_promise(&n,args,function.ret.clone()).map_err(|e|self.located(key,span,e));
+        }
+        if target.starts_with("std/") {
             return self
                 .builtin(&target, &n, args, span)
                 .map_err(|e| self.located(key, span, e));
@@ -708,7 +718,7 @@ impl Engine {
                         }
                     }
                     let mut worker = Engine {
-                        object_prototype:None,function_objects:HashMap::new(),
+                        object_prototype:None,function_objects:HashMap::new(),function_contexts:HashMap::new(),
                         http: None,
                         servers: HashMap::new(),
                         responses: HashMap::new(),
@@ -809,7 +819,7 @@ impl Engine {
                     }
                 }
                 let mut worker = Engine {
-                        object_prototype:None,function_objects:HashMap::new(),
+                        object_prototype:None,function_objects:HashMap::new(),function_contexts:HashMap::new(),
                     http: None,
                     servers: HashMap::new(),
                     responses: HashMap::new(),
@@ -853,6 +863,7 @@ impl Engine {
             }).map_err(|e| format!("cannot start task: {e}"))?;
             return Ok(Value::Task(
                 Arc::new(TaskState {
+                    io:None,
                     state: Mutex::new((Some(handle), None)),
                 }),
                 Type::Task(r),
@@ -961,6 +972,7 @@ impl Engine {
         f.scopes.push(HashMap::new());
         let r = self.statements(f, stmts);
         f.scopes.pop();
+        self.collect_prototype_cycles(false);
         r
     }
     fn statements(&mut self, f: &mut Frame, stmts: &[Stmt]) -> Result<Flow, String> {
@@ -1479,15 +1491,15 @@ impl Engine {
             return Ok(Value::Int(len as i128, Type::Size { signed: false }));
         }
         if ["includes", "indexOf", "lastIndexOf"].contains(&op) {
-            if !(element.integer() || matches!(element, Type::Float(_) | Type::Bool | Type::Str)) {
+            if !(is_dynamic_array_element(&element) || element.integer() || matches!(element, Type::Float(_) | Type::Bool | Type::Str)) {
                 return Err("array search requires numeric, bool or str elements".into());
             }
-            let needle = self.eval(f, &args[0], Some(&element))?;
+            let needle = self.array_argument(f, &args[0], &element)?;
             if needle.ty() != element { return Err("array search value type mismatch".into()); }
             let items = match &value {Value::Vector(xs, _) => &xs[..], Value::Slice(xs, offset, n, _) => &xs[*offset..*offset+*n], _ => unreachable!()};
             let mut index = -1;
             for (i, item) in items.iter().enumerate() {
-                if matches!(self.binary("==", item.clone(), needle.clone())?, Value::Bool(true)) {
+                if if is_dynamic_array_element(&element){self.dynamic_array_equal(item,&needle,op=="includes")}else{matches!(self.binary("==", item.clone(), needle.clone())?,Value::Bool(true))} {
                     index = i as i128;
                     if op != "lastIndexOf" {break;}
                 }
@@ -1914,6 +1926,7 @@ impl Engine {
                     self.binary(op, left, right)?
                 }
                 ExprKind::Call(n, arguments) => {
+                    if n.first().is_some_and(|n|n=="$gc"){return object_hint(self.gc_api(&n[1])?,hint);}
                     if n.first().is_some_and(|n|n=="$math"){let values=arguments.iter().map(|a|self.eval(f,a,None)).collect::<Result<Vec<_>,_>>()?;return object_hint(self.js_math(&n[1],values)?,hint);}
                     if n.first().is_some_and(|n|n=="$object") {let values=arguments.iter().map(|arg|self.object_argument(f,arg)).collect::<Result<Vec<_>,_>>()?;return object_hint(self.object_api(&n[1],values,e.span)?,hint);}
                     let (target, name) = self.resolve(&f.module, n)?;
@@ -2441,3 +2454,9 @@ fn pattern_value(p: &Pattern, v: &Value, bindings: &mut HashMap<String, Value>) 
 }
 
 include!("js_math.rs");
+
+include!("dynamic_array.rs");
+
+include!("prototype_gc.rs");
+
+include!("io_pool.rs");

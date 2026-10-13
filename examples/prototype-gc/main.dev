@@ -1,0 +1,7 @@
+fn churn():i64 {
+ let keep=new Object({n:7});keep.self=keep
+ for i in 0..1000 {let garbage=new Object();garbage.self=garbage;if i%17==0{GC.collect()}}
+ return keep.self.n
+}
+fn main(){let a=spawn(fn():i64{return churn()});let b=spawn(fn():i64{return churn()});print(await(a)+await(b));GC.collect();print(GC.tracked()<20 as usize)}
+main()

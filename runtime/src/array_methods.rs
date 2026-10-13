@@ -40,6 +40,7 @@ impl Engine {
                 .ok_or_else(|| "array index out of bounds".into());
         }
         if op == "join" {
+            if is_dynamic_array_element(element){let sep=self.eval(frame,&args[0],Some(&Type::Str))?;let mut texts=Vec::new();for item in items{texts.push(self.dynamic_array_text(item,0,span)?);}return Ok(Value::Str(texts.join(sep.string()?)));}
             if *element != Type::Str {
                 return Err("join requires str elements".into());
             }
@@ -239,7 +240,7 @@ impl Engine {
             }
             Some(cb)
         } else {
-            if !(element.numeric() || *element == Type::Str) {
+            if !(is_dynamic_array_element(element) || element.numeric() || *element == Type::Str) {
                 return Err(
                     "default sort requires numeric or str elements; provide a comparator".into(),
                 );
@@ -274,7 +275,8 @@ impl Engine {
                         values.push(items[b].clone());
                         self.call(module, &[name.clone()], values, span)?
                             .integer()?
-                    } else {
+                    } else if is_dynamic_array_element(element){let x=self.dynamic_array_sort_text(&items[a],span)?;let y=self.dynamic_array_sort_text(&items[b],span)?;match x.cmp(&y){std::cmp::Ordering::Less=>-1,std::cmp::Ordering::Equal=>0,std::cmp::Ordering::Greater=>1}}
+                    else {
                         match (&items[a], &items[b]) {
                             (Value::Int(a, _), Value::Int(b, _)) => {
                                 if a < b {

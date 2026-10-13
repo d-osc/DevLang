@@ -27,16 +27,8 @@ fn object_data(value: Value) -> ProtoProperty {
         configurable: true,
     }
 }
-fn new_object(parent: Option<Value>) -> Value {
-    Value::PrototypeObject(
-        Arc::new(Mutex::new(ProtoObject {
-            properties: BTreeMap::new(),
-            parent,
-            extensible: true,
-        })),
-        object_type(),
-    )
-}
+fn new_object(parent:Option<Value>)->Value {let state=Arc::new(Mutex::new(ProtoObject{properties:BTreeMap::new(),parent,extensible:true}));prototype_register(&state);Value::PrototypeObject(state,object_type())}
+
 fn object_function(value: Value) -> Value {
     if matches!(value, Value::PrototypeFunction(..)) {
         value
@@ -97,6 +89,7 @@ impl Engine {
         let root = new_object(None);
         self.object_prototype = Some(root.clone());
         let state = self.object_state(&root).unwrap();
+        let _world=prototype_read();
         for name in ["constructor", "toString", "valueOf"] {
             let ret = if name == "toString" {
                 Type::Str
@@ -125,20 +118,13 @@ impl Engine {
             Value::PrototypeFunction(function,_)=>self.object_state(function),
             Value::Callable(module,name,context,_)=>{
                 let key=format!("{module}:{name}:{:p}",context.as_ref().map(Arc::as_ptr).unwrap_or(std::ptr::null()));
-                if let Some(state)=self.function_objects.get(&key) {return Ok(state.clone());}
-                let root=self.object_root();let prototype=if module=="$object_builtin" && name=="constructor" {root.clone()} else {new_object(Some(root.clone()))};
-                let prototype_state=self.object_state(&prototype)?;
-                let mut ctor=object_data(object_function(value.clone()));ctor.enumerable=false;
-                prototype_state.lock().map_err(|_|"object lock poisoned")?.properties.insert("constructor".into(),ctor);
-                let state=Arc::new(Mutex::new(ProtoObject{properties:BTreeMap::new(),parent:Some(root),extensible:true}));
-                let mut property=object_data(prototype);property.enumerable=false;property.configurable=false;if module=="$object_builtin" && name=="constructor" {property.writable=false;}
-                state.lock().unwrap().properties.insert("prototype".into(),property);
-                if module=="$object_builtin" && name=="constructor" {
-                    for name in ["assign","create","defineProperties","defineProperty","delete","entries","freeze","fromEntries","getOwnPropertyDescriptor","getOwnPropertyDescriptors","getOwnPropertyNames","groupBy","isExtensible","isFrozen","isSealed","keys","preventExtensions","seal","toString","valueOf","values","construct"] {
-                        let value=object_function(Value::Callable("$object_static".into(),name.into(),None,Type::Function(vec![],Box::new(object_type()))));let mut property=object_data(value);property.enumerable=false;state.lock().unwrap().properties.insert(name.into(),property);
-                    }
-                }
-                self.function_objects.insert(key,state.clone());Ok(state)
+                if let Some(state)=self.function_objects.get(&key){return Ok(state.clone());}
+                let root=self.object_root();let prototype=if module=="$object_builtin"&&name=="constructor"{root.clone()}else{new_object(Some(root.clone()))};let prototype_state=self.object_state(&prototype)?;
+                let state=Arc::new(Mutex::new(ProtoObject{properties:BTreeMap::new(),parent:Some(root),extensible:true}));prototype_register(&state);
+                let _world=prototype_read();let mut ctor=object_data(object_function(value.clone()));ctor.enumerable=false;prototype_state.lock().map_err(|_|"object lock poisoned")?.properties.insert("constructor".into(),ctor);
+                let mut property=object_data(prototype);property.enumerable=false;property.configurable=false;if module=="$object_builtin"&&name=="constructor"{property.writable=false;}state.lock().unwrap().properties.insert("prototype".into(),property);
+                if module=="$object_builtin"&&name=="constructor"{for name in ["assign","create","defineProperties","defineProperty","delete","entries","freeze","fromEntries","getOwnPropertyDescriptor","getOwnPropertyDescriptors","getOwnPropertyNames","groupBy","isExtensible","isFrozen","isSealed","keys","preventExtensions","seal","toString","valueOf","values","construct"]{let value=object_function(Value::Callable("$object_static".into(),name.into(),None,Type::Function(vec![],Box::new(object_type()))));let mut property=object_data(value);property.enumerable=false;state.lock().unwrap().properties.insert(name.into(),property);}}
+                if let Some(context)=context{self.function_contexts.insert(key.clone(),Arc::downgrade(context));}self.function_objects.insert(key,state.clone());Ok(state)
             }
             _=>Err("operation requires a prototype Object; construct with Object({...}) or Object.create()".into()),
         }
@@ -261,6 +247,9 @@ impl Engine {
         ) {
             return Ok(value);
         }
+        if matches!(value,Value::Array(..)|Value::Vector(..)|Value::Slice(..)){
+            let mut values=Vec::new();for item in object_sequence(&value)?{values.push(self.object_box(item)?);}return Ok(Value::PrototypeArray(Arc::new(values),object_type()));
+        }
         if matches!(value, Value::Callable(..)) {
             return Ok(object_function(value));
         }
@@ -331,6 +320,7 @@ impl Engine {
                 return Err(format!("object property '{key}' is read-only"));
             }
         }
+        let _world=prototype_read();
         let mut state = state.lock().map_err(|_| "object lock poisoned")?;
         if let Some(property) = state.properties.get_mut(key) {
             property.value = Some(value);
@@ -468,6 +458,7 @@ impl Engine {
             }
         }
         let state = self.object_state(object)?;
+        let _world=prototype_read();
         let mut state = state.lock().map_err(|_| "object lock poisoned")?;
         let old = state.properties.get(key).cloned();
         if old.is_none() && !state.extensible {
@@ -560,6 +551,7 @@ impl Engine {
     fn descriptor_value(&mut self, property: ProtoProperty) -> Result<Value, String> {
         let object = new_object(None);
         let state = self.object_state(&object)?;
+        let _world=prototype_read();
         let mut fields = state.lock().map_err(|_| "object lock poisoned")?;
         for (key, value) in [
             ("enumerable", Value::Bool(property.enumerable)),
@@ -742,7 +734,8 @@ impl Engine {
             }
             "delete" => {
                 let state = self.object_state(&args[0])?;
-                let mut state = state.lock().map_err(|_| "object lock poisoned")?;
+                let _world=prototype_read();
+        let mut state = state.lock().map_err(|_| "object lock poisoned")?;
                 let key = args[1].string()?;
                 if state.properties.get(key).is_some_and(|p| !p.configurable) {
                     return Ok(Value::Bool(false));
@@ -752,7 +745,8 @@ impl Engine {
             }
             "freeze" | "seal" | "preventExtensions" => {
                 let state = self.object_state(&args[0])?;
-                let mut state = state.lock().map_err(|_| "object lock poisoned")?;
+                let _world=prototype_read();
+        let mut state = state.lock().map_err(|_| "object lock poisoned")?;
                 state.extensible = false;
                 if name != "preventExtensions" {
                     for property in state.properties.values_mut() {

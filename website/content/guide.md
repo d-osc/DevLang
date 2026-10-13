@@ -865,7 +865,7 @@ if scores.contains("answer") { print(scores.get("answer")) }
 print(scores.remove("answer"))
 ```
 
-Methods คือ `set/get/contains/remove/len/clear` ถ้า get key ที่ไม่มีจะเกิด error Keys เป็น numeric/bool/str หรือ payload-free enum Values เป็น non-array values ไม่มี collection iterator ในปัจจุบัน
+Methods คือ `set/get/contains/remove/len/clear` ถ้า get key ที่ไม่มีจะเกิด error Keys เป็น numeric/bool/str หรือ payload-free enum Values เป็น non-array values รองรับ for เพื่อวนสมาชิก collection
 
 Hash lookup/update/remove คาดหวัง O(1) แต่ collision อาจเป็น O(n) และ mutation ของ shared COW storage ต้อง copy O(n) Hash deterministic และไม่ป้องกัน adversarial keys Native string keys ต้องคง bytes และ lifetime ตลอดที่อยู่ใน Map
 
@@ -1197,7 +1197,7 @@ Selectors อยู่ argument แรก Compiler options ใส่หลัง
 
 ## สิ่งที่ยังไม่มี
 
-Source ล่าสุดมี package manager แบบ path/Git, formatter, LSP เบื้องต้น และ native debugger integration แล้ว ดู [เครื่องมือพัฒนา](#/docs/tooling) รองรับ workspace และ SemVer Git tags แล้ว ส่วน general backtracking solver, workspace type checking และ interpreter debugger ยังไม่มี เช่นเดียวกับ coroutine event loop, async I/O, trait objects, literal/struct/slice patterns, inclusive/custom-step ranges และ iterator for collections
+Source ล่าสุดมี package manager แบบ path/Git, formatter, LSP เบื้องต้น และ native debugger integration แล้ว ดู [เครื่องมือพัฒนา](#/docs/tooling) รองรับ workspace และ SemVer Git tags แล้ว ส่วน general backtracking solver, workspace type checking และ interpreter debugger ยังไม่มี เช่นเดียวกับ coroutine event loop, async I/O, trait objects, literal/struct/slice patterns, inclusive/custom-step ranges
 
 Native `str` เป็น borrowed storage และ arbitrary foreign pointers ไม่ได้รับ lifetime proof Shared collection mutation อาจ copy O(n) Capturing raw C callbacks มี slot/lifetime limits ให้เลือก managed userdata API เมื่อเหมาะสม
 
@@ -1226,7 +1226,7 @@ Skill เน้น syntax จริง, explicit main invocation, การแ�
 
 `use "std/json"` ให้ source runtime อ่านและสร้าง JSON ได้โดยไม่ต้องใช้ C library รองรับ object, array, string, number, bool และ null รวมข้อมูลซ้อนกัน
 
-ใช้ชุดติดตั้ง v0.5.1 หรือ build ด้วย `cargo build --release -p dev-runtime -p dev-cli` Native compiler ยังไม่รองรับ module นี้
+ใช้ชุดติดตั้ง v0.5.1 หรือ build ด้วย `cargo build --release -p dev-runtime -p dev-cli` Native compiler รองรับ std/json แล้ว ส่วนการ parse เอกสาร DON ใช้ runtime
 
 
 ## DON-style object literals in DevLang

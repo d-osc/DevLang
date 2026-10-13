@@ -1,6 +1,6 @@
 # std/fs/promises
 
-filesystem operations บน worker threads ที่คืน Task<T>
+filesystem operations บน bounded pool 1–4 workers (64 queued jobs, 64 MiB arguments) ที่คืน Task<T>
 
 [กลับหน้ารวม module](index.md) · **โหมด:** ใช้ d run หรือ d FILE.dev ได้โดยไม่ต้องมี C compiler; native build ใช้ API นี้ไม่ได้
 

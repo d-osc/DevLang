@@ -21,7 +21,7 @@
 | [std/encoding](encoding.md) | แปลงข้อความและ bytes ตาม encoding |
 | [std/events](events.md) | ส่ง event ด้วย callback และ listener IDs |
 | [std/fs](fs.md) | อ่าน/เขียนไฟล์และจัดการ directories |
-| [std/fs/promises](fs-promises.md) | filesystem operations บน worker threads ที่คืน Task<T> |
+| [std/fs/promises](fs-promises.md) | filesystem operations บน bounded pool 1–4 workers (64 queued jobs, 64 MiB arguments) ที่คืน Task<T> |
 | [std/http](http.md) | HTTP/HTTPS client และ HTTP server callbacks |
 | [std/io](io.md) | อ่าน/เขียนข้อความบน console และไฟล์ UTF-8 |
 | [std/json](json.md) | JSON values, object literals และ typed accessors |

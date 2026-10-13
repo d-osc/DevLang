@@ -134,7 +134,7 @@ impl Emitter<'_> {
         }
         let location = self.location(span);
         if ["includes", "indexOf", "lastIndexOf"].contains(&op) {
-            if !(element.integer() || matches!(element, Type::Float(_) | Type::Bool | Type::Str)) {
+            if !(crate::dynamic::is_dynamic(&element) || element.integer() || matches!(element, Type::Float(_) | Type::Bool | Type::Str)) {
                 return self.fail(span, "array search requires numeric, bool or str elements");
             }
             let receiver = self.sequence_save(v);
@@ -143,7 +143,7 @@ impl Emitter<'_> {
             let needle = self.sequence_save(needle);
             let result = format!("dev_search_{}", self.next_var); self.next_var += 1;
             let item = format!("{}.data[{}.offset + dev_search_i]", receiver.code, receiver.code);
-            let equal = if element == Type::Str {format!("dev_switch_str_equal({item}, {})", needle.code)} else {format!("({item} == {})", needle.code)};
+            let equal = if crate::dynamic::is_dynamic(&element) {self.dynamic_enable(span)?;format!("dev_array_dynamic_equal({item}, {}, {}, {location})",needle.code,op=="includes")}else if element == Type::Str {format!("dev_switch_str_equal({item}, {})", needle.code)} else {format!("({item} == {})", needle.code)};
             let stop = if op == "lastIndexOf" {""} else {"break;"};
             self.prelude.push_str(&format!("int64_t {result} = -1;\nfor (size_t dev_search_i = 0; dev_search_i < {}.len; ++dev_search_i) {{ if ({equal}) {{ {result} = (int64_t)dev_search_i; {stop} }} }}\n", receiver.code));
             return Ok(Value {code: if op == "includes" {format!("({result} >= 0)")} else {result}, ty: if op == "includes" {Type::Bool} else {Type::Int {bits:64,signed:true}}, lvalue:false});

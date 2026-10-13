@@ -36,6 +36,8 @@ jobs:
         run: python scripts/smoke_don_objects.py --bin-dir target/release
       - name: Hosted native DON object parity
         run: python scripts/smoke_native_objects.py --bin-dir target/release
+      - name: Prototype collection and filesystem task regressions
+        run: python scripts/smoke_runtime_resources.py --bin-dir target/release
       - name: String interpolation parity
         run: python scripts/smoke_interpolation.py --bin-dir target/release
       - name: Canonical type annotation parity
@@ -54,6 +56,8 @@ jobs:
           executable = Path('target/release') / ('d.exe' if os.name == 'nt' else 'd')
           with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as output:
               output.write('DEVLANG_TEST_D=' + str(executable.resolve()) + '\n')
+      - name: Incremental language-server workspace navigation
+        run: python scripts/smoke_lsp_index.py --bin "${{ env.DEVLANG_TEST_D }}"
       - name: Package examples and dependency regressions
         run: python scripts/verify_package_examples.py --d "${{ env.DEVLANG_TEST_D }}"
       - name: Package Store validation and template

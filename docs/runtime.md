@@ -184,3 +184,17 @@ member types, and struct copies do not alias mutable nested arrays.
 Collections, function values, closures, traits, const generics and thread-backed tasks are documented in [advanced.md](advanced.md). Pure Dev execution continues to require no compiler.
 
 `then(task, next)` returns a continuation task without waiting in its caller; its worker still waits on an OS thread. `callback_context(f)` exposes a managed C userdata pair, with userdata last. Captured values are released with the owner; runtime weak owners diagnose expired context invocations. See [advanced.md](advanced.md) for trampoline storage lifetime and unsafe C contracts.
+
+## Prototype cycle collection / การเก็บวงจร object
+
+Source runtime collects unreachable prototype cycles through arrays, maps, references and closures. Automatic passes run at block boundaries after 256 new prototype allocations. `GC.collect(): usize` counts cleared prototype states, `GC.tracked()` counts registered live states and `GC.collections()` counts passes. Concurrent collection is best effort and may return zero when busy. Native prototype allocations still live until exit; cycles hidden in foreign resources or Task internals remain conservative roots.
+
+Runtime เก็บวงจร object ที่ไม่มีผู้ใช้งานได้แล้ว หรือเรียก GC.collect() เองได้ GC ใช้เฉพาะ source runtime ส่วน native ยังใช้ arena จนโปรแกรมจบ
+
+## Filesystem promise scheduling / การจัดคิว filesystem
+
+`std/fs/promises` runs blocking disk operations on 1–4 shared workers, with 64 queued jobs and a 64 MiB pending argument budget. Overflow returns a failed Task; await pending tasks before scheduling more. Repeated await returns the cached result. Returned file contents remain owned by callers. Ordinary async functions/spawn still use OS threads; this is not coroutine or nonblocking network I/O.
+
+fs/promises จำกัดจำนวน worker และขนาดคิว หากเต็ม Task จะคืน error ตอน await จึงควรรองานเดิมก่อนส่งเพิ่ม
+
+[Concurrent cycle collection example / ตัวอย่าง GC หลาย threads](#/examples/prototype-gc)

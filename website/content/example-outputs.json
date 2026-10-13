@@ -593,5 +593,15 @@
     "source_sha256": "fb3a4c59fdd1b39e433ca5b87ecf8b903fca4b0a7541d841aa8f7eeced0bcb6a",
     "validation_sha256": "02398dddc9af938f9c58c5d8c12071f5365d7c4200d5c40d63c914f6c07d55fb",
     "output": "5\n9\n1024\n8\n-1\n-1\n31\n1.0009765625\n16777216\n1\ntrue\ntrue\ntrue\n"
+  },
+  "dynamic-array-methods": {
+    "source_sha256": "ba467505922ddb43bc03dd8e61baf53affdd0c5f51bc4e43079f3a914c865294",
+    "validation_sha256": "968497abe5c40af9e9a2cb1fdce9a4ac222616f3ebe561494a0e7235971c940f",
+    "output": "true\n0\n3\nDev|42|true||0.10000000000000001\nDev,42,true,,0.10000000000000001\n1,10,2\n1,2,10\n[1,[2,3],4]\n1,2,3,4\n[1,2,3,4]\n1,2,3,4\n0\n1\nfalse\n[object Object],[object Object],[object Object]\nDev,Dev,[object Object]\ntrue\nDev\n"
+  },
+  "prototype-gc": {
+    "source_sha256": "d421f2c9f0b5307e44a3e6f122ca9cbf4a3fdd80f103788c8301ea4bd0e98e08",
+    "validation_sha256": "e0551b4d87a4530faac73493ee936e121d5346ccde44d473f084f50807d02209",
+    "output": "14\ntrue\n"
   }
 }

@@ -388,7 +388,7 @@
     "source": "fs-http.md",
     "sections": [],
     "name": "std/fs/promises",
-    "description": "filesystem operations บน worker threads ที่คืน Task<T>",
+    "description": "filesystem operations บน bounded pool 1–4 workers (64 queued jobs, 64 MiB arguments) ที่คืน Task<T>",
     "mode": "runtime",
     "example": "examples/modules-api/fs-promises/main.dev"
   },

@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { setupFileIcons } = require('./file-icons');
 let client;
+let fileWatcher;
 let starting;
 
 async function activate(context) {
@@ -54,11 +55,14 @@ async function activate(context) {
 
 async function startServer() {
     const command = vscode.workspace.getConfiguration('devlang').get('executablePath', 'd');
+    fileWatcher?.dispose();
+    fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.dev');
     client = new LanguageClient('devlang', 'DevLang', {
         command,
         args: ['lsp', '--stdio'],
         options: { cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath },
     }, {
+        synchronize: { fileEvents: fileWatcher },
         documentSelector: [{ scheme: 'file', language: 'devlang' }, { scheme: 'file', language: 'don' }, { scheme: 'untitled', language: 'don' }],
     });
     try {
@@ -68,6 +72,8 @@ async function startServer() {
     catch (error) { vscode.window.showErrorMessage(`DevLang language server failed: ${error.message}. Set devlang.executablePath to the latest d executable.`); }
 }
 async function deactivate() {
+    fileWatcher?.dispose();
+    fileWatcher = undefined;
     if (client) await client.stop();
 }
 module.exports = { activate, deactivate };

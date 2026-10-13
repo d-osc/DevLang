@@ -844,6 +844,9 @@ impl Expand {
                     self.expr(id, a, env)?;
                 }
                 self.raw_object_literals=saved_raw;
+                if names.len()==2&&names[0]=="GC"&&!self.module_aliases[id].contains("GC"){
+                    if !["collect","tracked","collections"].contains(&names[1].as_str()){return Err(error(&self.paths[id],span,"unknown GC method"));}if !args.is_empty(){return Err(error(&self.paths[id],span,"GC methods take no arguments"));}e.kind=ExprKind::Call(vec!["$gc".into(),names[1].clone()],vec![]);return Ok(());
+                }
                 if names.len()==2 && names[0]=="Math" && !self.module_aliases[id].contains("Math") {
                     let arity=crate::math_intrinsics::arity(&names[1]).ok_or_else(||error(&self.paths[id],span,"unknown Math method"))?;
                     if arity.is_some_and(|n|n!=args.len()){return Err(error(&self.paths[id],span,"wrong Math argument count"));}

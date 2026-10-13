@@ -114,10 +114,10 @@ execute code, invoke a C compiler, or write edited source to disk.
 
 Independent statement errors are collected, capped at 100. Parser errors and
 declaration/generic resolution errors still stop their phase at the first error.
-Runtime-only JSON files retain parser/unused checks but skip native semantic
-checks. This does not yet provide a persistent incremental workspace index,
-cross-file navigation, local-variable definition lookup, rename, signature help
-or semantic tokens. Unknown requests return protocol errors.
+JSON/DON programs receive frontend semantic checks. An incremental in-memory workspace index provides workspace symbol search and completion/definition/hover for physical imported modules. Unsaved documents override disk contents; file watchers invalidate cached entries. Math members have completion and hover. The index lasts for the server session, skips generated directories and symlinks, and caps scans at 10,000 files. Local-variable lookup, rename, signature help and semantic tokens remain unavailable. Unknown requests return protocol errors.
+
+รองรับการค้นหา symbol ทั้ง workspace และ completion/definition/hover ข้าม module ที่เป็นไฟล์ รวมถึงข้อมูลที่ยังไม่บันทึก index อยู่ในหน่วยความจำระหว่าง server ทำงาน ยังไม่มี rename, signature help และ semantic tokens.
+
 
 The extension is published as [`n-devs.devlang-language`](https://marketplace.visualstudio.com/items?itemName=n-devs.devlang-language).
 Install it from the Marketplace or with `code --install-extension n-devs.devlang-language`.

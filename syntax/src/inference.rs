@@ -36,6 +36,7 @@ impl Expand {
             }),
             ExprKind::Bool(_) => Type::Bool,
             ExprKind::String(_) => Type::Str,
+            ExprKind::Call(n, _) if n.first().is_some_and(|n|n=="$gc") => Type::Size{signed:false},
             ExprKind::Call(n, _) if n.first().is_some_and(|n|n=="$math") => Type::Float(64),
             ExprKind::Call(n, _) if n.as_slice() == ["$interpolate"] => Type::Str,
             ExprKind::Call(n,_) if n.first().is_some_and(|s|s=="$object") => match n.get(1).map(String::as_str) {

@@ -1610,5 +1610,29 @@
       "d examples/math-reference/main.dev",
       "d build examples/math-reference/main.dev -o out/math-reference.exe"
     ]
+  },
+  {
+    "id": "dynamic-array-methods",
+    "title": "Dynamic Array Methods",
+    "category": "Collections",
+    "path": "examples/dynamic-array-methods/main.dev",
+    "description": "Search, text conversion, stable sorting and nested flattening / ค้นหา เรียง และแปลง array หลายชนิด",
+    "doc": "array-reference",
+    "commands": [
+      "d examples/dynamic-array-methods/main.dev",
+      "d build examples/dynamic-array-methods/main.dev -o out/example.exe"
+    ]
+  },
+  {
+    "id": "prototype-gc",
+    "title": "Prototype Cycle Collection",
+    "category": "Runtime",
+    "path": "examples/prototype-gc/main.dev",
+    "description": "Collect unreachable cycles while preserving live objects across workers / เก็บวงจร object ที่ไม่มีผู้ใช้งาน",
+    "doc": "runtime-reference",
+    "commands": [
+      "d examples/prototype-gc/main.dev"
+    ],
+    "mode": "runtime"
   }
 ]

@@ -18,6 +18,7 @@ impl Engine {
             if !args.is_empty() {
                 return Err("toString expects no arguments".into());
             }
+            if is_dynamic_array_element(element){let mut text=Vec::new();for item in items{text.push(self.dynamic_array_text(item,0,base.span)?);}return Ok(Value::Str(text.join(",")));}
             if !(element.numeric() || matches!(element, Type::Str | Type::Bool)) {
                 return Err("toString requires numeric, bool or str elements".into());
             }
@@ -31,6 +32,7 @@ impl Engine {
         }
         if op == "flat" {
             let depth = array_flat_depth(args)?;
+            if is_dynamic_array_element(element){let mut out=Vec::new();for item in items{self.dynamic_array_flatten(item,depth,&mut out)?;}return Ok(Value::Vector(Arc::new(out),vector));}
             fn flatten(value: &Value, depth: usize, out: &mut Vec<Value>) {
                 if depth > 0 {
                     match value {

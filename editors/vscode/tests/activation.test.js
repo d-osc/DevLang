@@ -5,10 +5,10 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 test('startup configures icons without starting LSP; opening DevLang starts once', async () => {
-    let opened, restart, icons = 0, formatter = 0, executable = 'd', disposed = 0;
+    let opened, restart, icons = 0, formatter = 0, executable = 'd', disposed = 0, watchersDisposed = 0;
     const starts = [];
     const vscode = {
-        workspace: { textDocuments: [], getConfiguration: () => ({ get: () => executable }),
+        workspace: { createFileSystemWatcher: pattern => { assert.equal(pattern, '**/*.dev'); return { dispose() { watchersDisposed++; } }; }, textDocuments: [], getConfiguration: () => ({ get: () => executable }),
             onDidOpenTextDocument: listener => { opened = listener; return {}; } },
         languages: { registerDocumentFormattingEditProvider: () => { formatter++; return {}; } },
         commands: { registerCommand: (id, callback) => { restart = callback; return {}; } },
@@ -21,6 +21,7 @@ test('startup configures icons without starting LSP; opening DevLang starts once
         }
         async start() { starts.push(this.command); }
         async dispose() { disposed++; }
+        async stop() {}
         getFeature() { return { clear() {} }; }
     }
     const module = { exports: {} };
@@ -41,5 +42,6 @@ test('startup configures icons without starting LSP; opening DevLang starts once
     assert.deepEqual(starts, ['d']);
     executable = 'new-d';
     await restart();
-    assert.deepEqual(starts, ['d', 'new-d']); assert.equal(disposed, 1);
+    assert.deepEqual(starts, ['d', 'new-d']); assert.equal(disposed, 1); assert.equal(watchersDisposed, 1);
+    await module.exports.deactivate(); assert.equal(watchersDisposed, 2);
 });

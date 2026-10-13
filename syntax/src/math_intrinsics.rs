@@ -24,3 +24,6 @@ pub fn constant(name: &str) -> Option<&'static str> {
         _ => None,
     }
 }
+
+pub const METHODS:&[&str]=&["abs","acos","acosh","asin","asinh","atan","atan2","atanh","cbrt","ceil","clz32","cos","cosh","exp","expm1","f16round","floor","fround","log","log10","log1p","log2","max","min","pow","random","round","sign","sin","sinh","sqrt","tan","tanh","trunc"];
+pub const CONSTANTS:&[&str]=&["E","LN2","LN10","LOG10E","LOG2E","PI","SQRT1_2","SQRT2"];

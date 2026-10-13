@@ -79,12 +79,13 @@ impl Emitter<'_> {
             }));
         }
         if op == "join" {
-            if *element != Type::Str {
+            if *element != Type::Str && !crate::dynamic::is_dynamic(element) {
                 return self.fail(span, "join requires str elements");
             }
             let sep = self.expr(&args[0], Some(&Type::Str))?;
             self.compatible(&sep, &Type::Str, args[0].span)?;
             let sep = self.sequence_save(sep);
+            if crate::dynamic::is_dynamic(element){self.dynamic_enable(span)?;self.uses_templates=true;let id=self.next_var;self.next_var+=1;let text=format!("dev_dynamic_join_{id}");self.prelude.push_str(&format!("const char **{text}={r}.len?malloc({r}.len*sizeof(const char*)):NULL;if({r}.len&&!{text})abort();for(size_t dev_join_i_{id}=0;dev_join_i_{id}<{r}.len;++dev_join_i_{id}){text}[dev_join_i_{id}]=dev_array_dynamic_text({r}.data[{r}.offset+dev_join_i_{id}],{},0);const char *dev_join_out_{id}=dev_array_join({text},{r}.len,{});free({text});\n",self.location(span),sep.code));return Ok(Value{code:format!("dev_join_out_{id}"),ty:Type::Str,lvalue:false});}
             self.uses_templates = true;
             return Ok(Value {
                 code: format!(
@@ -337,7 +338,7 @@ impl Emitter<'_> {
             }
             Some(self.sequence_save(cb))
         } else {
-            if !(element.numeric() || *element == Type::Str) {
+            if !(crate::dynamic::is_dynamic(element) || element.numeric() || *element == Type::Str) {
                 return self.fail(
                     span,
                     "default sort requires numeric or str elements; provide a comparator",
@@ -358,6 +359,7 @@ impl Emitter<'_> {
         let b = format!("{v}.data[dev_sort_b_{id}]");
         let compare = if let Some(cb) = callback {
             format!("{}.call({}.context,{a},{b})", cb.code, cb.code)
+        } else if crate::dynamic::is_dynamic(element) {self.dynamic_enable(span)?;format!("dev_array_dynamic_compare({a},{b},{})",self.location(span))
         } else if *element == Type::Str {
             format!("strcmp({a},{b})")
         } else if matches!(element, Type::Float(_)) {

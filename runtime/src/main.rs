@@ -127,6 +127,7 @@ fn run() -> Result<i32, String> {
     let loaded = start.elapsed();
     let executed = Instant::now();
     let result = engine.run();
+    engine.collect_prototype_cycles(true);
     if timings {
         eprintln!(
             "runtime: load {:.3} ms, execute {:.3} ms",

@@ -81,9 +81,9 @@ Data descriptor ใช้ `value` กับ `writable` ส่วน accessor ใ
 
 ## Serialization and limits / การแปลงข้อมูลและข้อจำกัด
 
-JSON/DON serialization evaluates own enumerable getters and omits function properties and inherited properties. Names are sorted deterministically. Missing descriptors use null; DevLang has no JavaScript undefined. Native callback arguments currently support scalar types and json.Value/don.Value. Prototype allocations in native programs live until process exit; reference cycles in the source runtime are not collected by a tracing garbage collector. This is prototype inheritance with DevLang's strict types, not full JavaScript compatibility.
+JSON/DON serialization evaluates own enumerable getters and omits function properties and inherited properties. Names are sorted deterministically. Missing descriptors use null; DevLang has no JavaScript undefined. Native callback arguments currently support scalar types and json.Value/don.Value. Prototype allocations in native programs live until process exit; the source runtime collects unreachable prototype cycles through arrays, maps, references and closures. GC.collect() requests a pass. Cycles hidden in foreign resources or Task internals remain conservative roots. This is prototype inheritance with DevLang's strict types, not full JavaScript compatibility.
 
-JSON/DON แปลงเฉพาะ own enumerable property โดยเรียก getter และไม่รวม function หรือ property ที่สืบทอดมา ชื่อเรียงลำดับแน่นอน ไม่มี undefined แบบ JavaScript Native callback รองรับ scalar และ json.Value/don.Value ในขณะนี้ allocation ของ native prototype อยู่จนโปรแกรมจบ ส่วนวงจร reference ใน runtime ยังไม่มี tracing GC
+JSON/DON แปลงเฉพาะ own enumerable property โดยเรียก getter และไม่รวม function หรือ property ที่สืบทอดมา ชื่อเรียงลำดับแน่นอน ไม่มี undefined แบบ JavaScript Native callback รองรับ scalar และ json.Value/don.Value ในขณะนี้ allocation ของ native prototype อยู่จนโปรแกรมจบ runtime เก็บวงจร prototype ผ่าน array/map/reference/closure ได้แล้ว ใช้ GC.collect() ขอเก็บเองได้ แต่ cycle ผ่าน foreign resource หรือภายใน Task ยังเก็บแบบ conservative
 
 ## Constructor syntax / Syntax constructor
 

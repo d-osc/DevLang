@@ -57,6 +57,7 @@ impl Emitter<'_> {
                     format!("dev_interpolate(\"%llu\",(unsigned long long){item})")
                 }
                 Type::Float(_) => format!("dev_interpolate(\"%.17g\",(double){item})"),
+                t if crate::dynamic::is_dynamic(t)=>{self.dynamic_enable(span)?;format!("dev_array_dynamic_text({item},{},0)",self.location(span))},
                 _ => return self.fail(span, "toString requires numeric, bool or str elements"),
             };
             self.uses_templates = true;
@@ -217,6 +218,10 @@ impl Emitter<'_> {
         })
     }
     fn emit_flat_item(&mut self, ty: &Type, access: &str, depth: usize, out: &str, helper: &str) {
+        if depth>0 && crate::dynamic::is_dynamic(ty){
+            self.uses_dynamic=true;let id=self.next_var;self.next_var+=1;
+            self.prelude.push_str(&format!("dev_dynamic_value dev_dynamic_flat_{id}=dev_array_dynamic_flat({access},{depth},{});for(size_t dev_dynamic_flat_i_{id}=0;dev_dynamic_flat_i_{id}<dev_dynamic_node_of(dev_dynamic_flat_{id})->data.list.len;++dev_dynamic_flat_i_{id}){{{helper}_push(&{out},dev_dynamic_node_of(dev_dynamic_flat_{id})->data.list.values[dev_dynamic_flat_i_{id}]);}}\n",self.location(Span::default())));return;
+        }
         if depth > 0 {
             let (inner, len, item) = match ty {
                 Type::Vector(t) | Type::Slice(t) => (

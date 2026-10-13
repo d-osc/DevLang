@@ -22,7 +22,7 @@ main()
 
 `new Array()` สร้าง `Vec<json.Value>` ว่าง หากส่งตัวเลขตัวเดียวจะหมายถึงความยาว ตั้งแต่ 0 ถึง 1,000,000 และต้องไม่มีเศษ แต่ละช่องเป็น null หากส่งค่าที่ไม่ใช่ตัวเลขตัวเดียวจะได้สมาชิกหนึ่งตัว ส่วนหลาย argument จะเรียงเป็นสมาชิกตามลำดับ ใช้ `[3]` หรือ `Vec<i64>(3)` หากต้องการเลข 3 เพียงสมาชิกเดียว
 
-The constructor is available in both the source runtime and hosted native compiler. Dynamic array insertion (`push`, `unshift`, `splice`, `toSpliced` and index assignment) boxes values into json.Value. Callbacks use `json.Value` parameters and JSON accessors such as `json.int(value)`. Typed array methods retain their type requirements: default numeric sort/search and scalar toString/join require suitable typed elements. Arrays are dense; missing entries are null, not JavaScript holes or undefined. These arrays keep DevLang Vec copy-on-write semantics.
+The constructor is available in both the source runtime and hosted native compiler. Dynamic array insertion (`push`, `unshift`, `splice`, `toSpliced` and index assignment) boxes values into json.Value. Callbacks use `json.Value` parameters and JSON accessors such as `json.int(value)`. Dynamic arrays support includes/indexOf/lastIndexOf, join/toString, flat and stable sort. Default dynamic sort compares text lexicographically; use a comparator for numeric order. Object search compares identity and flat preserves it. Typed array methods retain their type requirements: default numeric sort/search and scalar toString/join require suitable typed elements. Arrays are dense; missing entries are null, not JavaScript holes or undefined. These arrays keep DevLang Vec copy-on-write semantics.
 
 รองรับทั้ง runtime และ native สมาชิกเป็น json.Value จึงเขียน callback โดยระบุ parameter ชนิด json.Value และอ่านค่าผ่าน json.int เป็นต้น method ที่กำหนดชนิดสมาชิกไว้ยังคงข้อกำหนดเดิม ไม่มีช่องว่างแบบ JavaScript holes หรือ undefined และใช้ copy-on-write เช่นเดียวกับ Vec ของ DevLang
 
@@ -337,3 +337,5 @@ flat ใช้กับชุดข้อมูลชนิดเดียวก
 Array.isArray ตรวจ DON array ได้ แต่เมธอดแก้ข้อมูลชุดนี้ยังไม่รองรับ DON array หลายชนิด
 
 [Full example / ตัวอย่างเต็ม](#/examples/array-basic)
+
+[Dynamic array search, sort and flat example / ตัวอย่าง dynamic array](#/examples/dynamic-array-methods)
