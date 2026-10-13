@@ -2,12 +2,12 @@ use "std/json"
 fn Person(this: json.Value,name: str){this.name = name}
 fn main(){
     Person.prototype.greet = fn(this: json.Value): str{return this.name}
-    let p = Object.construct(Person,"Dev")
+    let p = new Person("Dev")
     print(p.greet())
     Object.prototype.common = "root"
     print(p.common)
-    Person.prototype = Object({newValue:7})
-    let q = Object.construct(Person,"Next")
+    Person.prototype = new Object({newValue:7})
+    let q = new Person("Next")
     print(q.newValue)
 }
 main()

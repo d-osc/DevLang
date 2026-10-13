@@ -570,18 +570,18 @@
     "output": "4\n4\n1,2,3,4\ntrue\nfalse\n2,3\n1,9,8,7,4\n1,2,3,4\n1,9,8,6,4\n1,9,8,7,4\n4\n1,1,9,8\n1,2,3,4\n2\ntrue,false\nHello,Dev\ntrue\nfalse\nfalse\n"
   },
   "object-prototype": {
-    "source_sha256": "d62da870c3314aaf11f3292c7941f68af666b483ca4c9a5d3ed339c6bd70684f",
-    "validation_sha256": "90fb73948d9fbcf681a68ef19fd788bd5408672f20eb728a04ec4aed108c10a9",
+    "source_sha256": "74e9f433d24e24fb1ba42ba516e2cb35c3b6121bd26b05c516a0fe797739dab9",
+    "validation_sha256": "65871b3fa826e1c3095095a2234f8bcbb9d2583e47e1c9672ca94719bfc8fa88",
     "output": "Hello Dev\ntrue\n{\"age\":18,\"name\":\"Dev\"}\nprototype\nupdated\nage,name\ntrue\ntrue\nfalse\n{\"age\":18,\"name\":\"Dev\"}\n{\"even\":[2,4],\"odd\":[1,3]}\n[object Object]\n"
   },
   "object-descriptors": {
-    "source_sha256": "8c0335208492dcfff259757e893b40f5d9dd9fc022778e26c0e42445d0be9171",
-    "validation_sha256": "e3debb0d516465c567dc05b846a041756644b56cb2effe18afa840b6f4dd8dde",
+    "source_sha256": "16f3c832bff371ee4598b042de70d546991948aa44093b701664de03a2dd52f8",
+    "validation_sha256": "69b6af887fd3220ac82a20b8b9af6c50bd681c36e72ed28fef174fb7ce837ffc",
     "output": "11\n15\ncount,total\ncount,hidden,total\n{\"count\":15,\"total\":25}\ntrue\ntrue\nfalse\nfalse\n17\ntrue\n17\n0\ncount\n2\n"
   },
   "object-direct": {
-    "source_sha256": "5e8994ce1cf0da1658a213e46a41cbdcebb75424ab6afea4c20dc8a7d4ede0ac",
-    "validation_sha256": "9c3868f3e4902fd16545ba3d62d07e21d98d59744031c6636e98ce17404eee6a",
+    "source_sha256": "164bc9c85906fb49ba74d4c4b9cf9d52bada3e04a317e80231c394b9d7c48cb1",
+    "validation_sha256": "3dffa44f57f1b7ef57dc00f81aba3540131943f580da5842d37ecc11a42524c1",
     "output": "Dev\nroot\n7\n"
   }
 }

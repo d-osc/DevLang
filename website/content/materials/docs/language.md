@@ -870,4 +870,4 @@ Array.isArray ตรวจ DON array ได้ แต่เมธอดแก้
 
 ## Prototype objects
 
-`Object({...})` creates a shared mutable object. `Object.create(proto)` inherits properties, and `Object.construct(fn, ...args)` invokes a constructor with an explicit first `this: json.Value` parameter. Function prototypes can be updated at runtime. This API is supported in the source runtime and hosted native compiler. Plain DON literals and anonymous record methods keep their existing value behavior. See [Object Reference](object-reference.md) for all methods, descriptors and limitations.
+`new Object({...})` creates a shared mutable object. `Object.create(proto)` inherits properties, and `new Constructor(...args)` invokes a constructor with an explicit first `this: json.Value` parameter. Function prototypes can be updated at runtime. This API is supported in the source runtime and hosted native compiler. Plain DON literals and anonymous record methods keep their existing value behavior. See [Object Reference](object-reference.md) for all methods, descriptors and limitations.

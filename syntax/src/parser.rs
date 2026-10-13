@@ -992,6 +992,17 @@ impl Parser {
                 kind: ExprKind::Bool(s == "true"),
                 span,
             },
+            Kind::Word(s) if s == "new" => {
+                let mut names=vec![self.ident()?];
+                while self.eat(".") {names.push(self.ident()?);}
+                self.expect("(")?;
+                let mut args=self.expression_arguments()?;
+                let call=if names.as_slice()==["Object"] {vec!["Object".into()]} else {
+                    args.insert(0,Expr{span,kind:ExprKind::Name(names)});
+                    vec!["Object".into(),"construct".into()]
+                };
+                Expr{span,kind:ExprKind::Call(call,args)}
+            }
             Kind::Word(s) if s == "fn" => {
                 self.expect("(")?;
                 let mut params = vec![];

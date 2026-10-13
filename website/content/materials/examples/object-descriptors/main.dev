@@ -1,6 +1,6 @@
 use "std/json"
 fn main() {
-    let obj = Object({count:1})
+    let obj = new Object({count:1})
     let offset = 10
     Object.defineProperties(obj,{
             total:{get:fn(this: json.Value): i64 {return this.count+offset},set:fn(this: json.Value,n: i64){this.count = n-offset},enumerable:true,configurable:true}

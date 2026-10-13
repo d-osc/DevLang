@@ -1,8 +1,8 @@
 # Object Reference / คู่มือ Object
 
-DevLang supports shared prototype objects in both the source runtime and hosted native compiler. Plain DON literals remain data values. Use `Object({...})` for mutable object identity and prototype inheritance.
+DevLang supports shared prototype objects in both the source runtime and hosted native compiler. Plain DON literals remain data values. Use `new Object({...})` for mutable object identity and prototype inheritance.
 
-DevLang รองรับ object ที่มี identity ร่วมกันและสืบทอด prototype ทั้ง runtime และ native compiler ใช้ `Object({...})` เมื่อต้องการพฤติกรรมนี้ ส่วน DON literal ปกติยังเป็นข้อมูล
+DevLang รองรับ object ที่มี identity ร่วมกันและสืบทอด prototype ทั้ง runtime และ native compiler ใช้ `new Object({...})` เมื่อต้องการพฤติกรรมนี้ ส่วน DON literal ปกติยังเป็นข้อมูล
 
 ```dev
 use "std/json"
@@ -13,7 +13,7 @@ fn main() {
         writable: true
         configurable: true
     })
-    let person = Object.construct(Person, "Dev")
+    let person = new Person("Dev")
     print(person.greet())
     print(person.constructor == Person)
     let alias = person
@@ -29,7 +29,7 @@ Method, getter, setter และ constructor ระบุ `this: json.Value` เ
 
 | API | Behavior / การทำงาน |
 | --- | --- |
-| `Object(data)` | Create an object; an existing prototype object keeps its identity / สร้าง object หรือคืน identity เดิม |
+| `new Object(data)` | Create an object; an existing prototype object keeps its identity / สร้าง object หรือคืน identity เดิม |
 | `Object.prototype` | Shared root prototype / prototype หลักที่ใช้ร่วมกัน |
 | `fnName.prototype` | Constructor prototype; can be replaced / prototype ของ constructor |
 | `object.constructor` | Inherited constructor function / ฟังก์ชัน constructor ที่สืบทอดมา |
@@ -61,7 +61,7 @@ Method, getter, setter และ constructor ระบุ `this: json.Value` เ
 ```dev
 use "std/json"
 fn main() {
-    let counter = Object({ count: 1 })
+    let counter = new Object({ count: 1 })
     Object.defineProperty(counter, "double", {
         get: fn(this: json.Value): i64 { return this.count * 2 }
         set: fn(this: json.Value, value: i64) { this.count = value / 2 }
@@ -85,6 +85,10 @@ JSON/DON serialization evaluates own enumerable getters and omits function prope
 
 JSON/DON แปลงเฉพาะ own enumerable property โดยเรียก getter และไม่รวม function หรือ property ที่สืบทอดมา ชื่อเรียงลำดับแน่นอน ไม่มี undefined แบบ JavaScript Native callback รองรับ scalar และ json.Value/don.Value ในขณะนี้ allocation ของ native prototype อยู่จนโปรแกรมจบ ส่วนวงจร reference ใน runtime ยังไม่มี tracing GC
 
+## Constructor syntax / Syntax constructor
+
+`new Object()` creates an empty object; `new Object({...})` initializes properties. `new Person(args)` creates an instance using `Person.prototype` and calls `Person(this, args)`. Constructor aliases and module-qualified names such as `new lib.Person(args)` are supported. Parentheses are required. Existing `Object(...)` and `Object.construct(...)` calls remain compatible.
+
 ## Direct updates
 
 ```dev
@@ -92,7 +96,7 @@ use "std/json"
 fn Person(this: json.Value, name: str) { this.name = name }
 fn main() {
     Person.prototype.greet = fn(this: json.Value): str { return this.name }
-    let p = Object.construct(Person, "Dev")
+    let p = new Person("Dev")
     print(p.greet())
     Object.prototype.common = "root"
     print(p.common)

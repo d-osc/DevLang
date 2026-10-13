@@ -6,7 +6,7 @@ fn main() {
             writable: true
             configurable: true
     })
-    let person = Object.construct(Person, "Dev")
+    let person = new Person("Dev")
     print(person.greet())
     print(person.constructor == Person)
     Object.assign(person, {age: 18})
