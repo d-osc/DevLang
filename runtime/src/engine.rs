@@ -578,6 +578,7 @@ impl Engine {
         args: Vec<Value>,
         span: Span,
     ) -> Result<Value, String> {
+        if name.first().is_some_and(|n|n=="$math"){return self.js_math(&name[1],args);}
         if key=="$object_builtin" {return self.object_builtin(name,args,span);}
         if name.first().is_some_and(|n|n=="$object") {return self.object_api(&name[1],args,span);}
         if name == ["$interpolate"] {
@@ -1913,6 +1914,7 @@ impl Engine {
                     self.binary(op, left, right)?
                 }
                 ExprKind::Call(n, arguments) => {
+                    if n.first().is_some_and(|n|n=="$math"){let values=arguments.iter().map(|a|self.eval(f,a,None)).collect::<Result<Vec<_>,_>>()?;return object_hint(self.js_math(&n[1],values)?,hint);}
                     if n.first().is_some_and(|n|n=="$object") {let values=arguments.iter().map(|arg|self.object_argument(f,arg)).collect::<Result<Vec<_>,_>>()?;return object_hint(self.object_api(&n[1],values,e.span)?,hint);}
                     let (target, name) = self.resolve(&f.module, n)?;
                     let params = self
@@ -2437,3 +2439,5 @@ fn pattern_value(p: &Pattern, v: &Value, bindings: &mut HashMap<String, Value>) 
         }
     }
 }
+
+include!("js_math.rs");

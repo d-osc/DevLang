@@ -1,0 +1,18 @@
+fn main() {
+    print(Math.abs(-5))
+    print(Math.sqrt(81))
+    print(Math.pow(2, 10))
+    print(Math.max(2, 8, 3, -1))
+    print(Math.min(2, 8, 3, -1))
+    print(Math.round(-1.5))
+    print(Math.clz32(1))
+    print(Math.f16round(1.0004882812500002))
+    print(Math.fround(16777217))
+    print(Math.sin(Math.PI / 2))
+    print(Math.E > 2.7)
+    let sample = Math.random()
+    print(sample >= 0.0 && sample < 1.0)
+    let invalid = Math.sqrt(-1)
+    print(invalid != invalid)
+}
+main()

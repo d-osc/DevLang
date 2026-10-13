@@ -871,3 +871,7 @@ Array.isArray ตรวจ DON array ได้ แต่เมธอดแก้
 ## Prototype objects
 
 `new Object({...})` creates a shared mutable object. `Object.create(proto)` inherits properties, and `new Constructor(...args)` invokes a constructor with an explicit first `this: json.Value` parameter. Function prototypes can be updated at runtime. This API is supported in the source runtime and hosted native compiler. Plain DON literals and anonymous record methods keep their existing value behavior. See [Object Reference](object-reference.md) for all methods, descriptors and limitations.
+
+## Math namespace
+
+`Math.sqrt(81)`, `Math.sin(Math.PI / 2)` and `Math.max(1, 2, 3)` work without an import in the source runtime and hosted native compiler. See [Math Reference](math-reference.md) for all functions, constants and numeric behavior.

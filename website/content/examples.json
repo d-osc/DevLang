@@ -1598,5 +1598,17 @@
       "d examples/array-constructor/main.dev",
       "d build examples/array-constructor/main.dev -o out/array-constructor.exe"
     ]
+  },
+  {
+    "id": "math-reference",
+    "title": "Math reference",
+    "category": "Basic libraries",
+    "path": "examples/math-reference/main.dev",
+    "description": "Math functions, constants, rounding and random",
+    "doc": "math-reference",
+    "commands": [
+      "d examples/math-reference/main.dev",
+      "d build examples/math-reference/main.dev -o out/math-reference.exe"
+    ]
   }
 ]

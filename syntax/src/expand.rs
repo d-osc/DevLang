@@ -790,6 +790,10 @@ impl Expand {
                     self.expr(id, a, env)?;
                 }
             }
+            ExprKind::Name(names) if names.len()==2 && names[0]=="Math" && !self.module_aliases[id].contains("Math") => {
+                let text=crate::math_intrinsics::constant(&names[1]).ok_or_else(||error(&self.paths[id],span,"unknown Math constant"))?;
+                e.kind=ExprKind::Cast(Box::new(Expr{span,kind:ExprKind::Number(text.into())}),Type::Float(64));return Ok(());
+            }
             ExprKind::Name(names) if names.len()==2 && names[0]=="Object" && names[1]!="prototype" => {
                 e.kind=ExprKind::Call(vec!["$object".into(),"static".into()],vec![Expr {span,kind:ExprKind::String(names[1].clone())}]);return Ok(());
             }
@@ -840,6 +844,12 @@ impl Expand {
                     self.expr(id, a, env)?;
                 }
                 self.raw_object_literals=saved_raw;
+                if names.len()==2 && names[0]=="Math" && !self.module_aliases[id].contains("Math") {
+                    let arity=crate::math_intrinsics::arity(&names[1]).ok_or_else(||error(&self.paths[id],span,"unknown Math method"))?;
+                    if arity.is_some_and(|n|n!=args.len()){return Err(error(&self.paths[id],span,"wrong Math argument count"));}
+                    e.kind=ExprKind::Call(vec!["$math".into(),names[1].clone()],args.clone());return Ok(());
+                }
+
                 if names.len() == 1 && ["ref", "deref"].contains(&names[0].as_str()) {
                     if args.len() != 1 {
                         return Err(error(

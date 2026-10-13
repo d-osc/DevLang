@@ -274,6 +274,7 @@ pub fn build(options: &Options, modules: &[Generated]) -> Result<BuildResult, St
                 .args(&objects)
                 .args(&options.links)
                 .args(&options.ldflags)
+                .args(if !cfg!(target_os="windows") && modules.iter().any(|m|m.source.contains("DEV_MATH_RUNTIME")){vec!["-lm"]}else{vec![]})
                 .arg("-o")
                 .arg(&temporary))
         };
@@ -358,6 +359,7 @@ fn build_single(
             .arg(work.join(format!("{}.c", module.name)))
             .args(&options.links)
             .args(&options.ldflags)
+                .args(if !cfg!(target_os="windows") && modules.iter().any(|m|m.source.contains("DEV_MATH_RUNTIME")){vec!["-lm"]}else{vec![]})
             .arg("-o")
             .arg(&temporary))?;
         let bytes = std::fs::read(&temporary).map_err(|e| e.to_string())?;

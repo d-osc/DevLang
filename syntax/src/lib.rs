@@ -10,3 +10,5 @@ pub mod parser;
 pub mod safety;
 
 mod const_check;
+
+pub mod math_intrinsics;

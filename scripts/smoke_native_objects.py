@@ -6,6 +6,8 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "math_order": 'fn side(n:i64):i64 {print(n);return n}\nfn main(){print(Math.max(side(1),side(2),side(3)));print(Math.min(side(4),side(5)))}\nmain()\n',
+    "math_reference": 'fn main(){\n print(Math.abs((Math.abs(-3))-(3.0))<0.000000000001) // abs\n print(Math.abs((Math.acos(1))-(0.0))<0.000000000001) // acos\n print(Math.abs((Math.acosh(1))-(0.0))<0.000000000001) // acosh\n print(Math.abs((Math.asin(0))-(0.0))<0.000000000001) // asin\n print(Math.abs((Math.asinh(0))-(0.0))<0.000000000001) // asinh\n print(Math.abs((Math.atan(0))-(0.0))<0.000000000001) // atan\n print(Math.abs((Math.atan2(1,0))-(Math.PI/2))<0.000000000001) // atan2\n print(Math.abs((Math.atanh(0))-(0.0))<0.000000000001) // atanh\n print(Math.abs((Math.cbrt(27))-(3.0))<0.000000000001) // cbrt\n print(Math.abs((Math.ceil(1.1))-(2.0))<0.000000000001) // ceil\n print(Math.abs((Math.clz32(1))-(31.0))<0.000000000001) // clz32\n print(Math.abs((Math.cos(0))-(1.0))<0.000000000001) // cos\n print(Math.abs((Math.cosh(0))-(1.0))<0.000000000001) // cosh\n print(Math.abs((Math.exp(0))-(1.0))<0.000000000001) // exp\n print(Math.abs((Math.expm1(0))-(0.0))<0.000000000001) // expm1\n print(Math.abs((Math.f16round(1.0004882812500002))-(1.0009765625))<0.000000000001) // f16round\n print(Math.abs((Math.floor(-1.1))-(-2.0))<0.000000000001) // floor\n print(Math.abs((Math.fround(16777217))-(16777216.0))<0.000000000001) // fround\n print(Math.abs((Math.log(Math.E))-(1.0))<0.000000000001) // log\n print(Math.abs((Math.log10(100))-(2.0))<0.000000000001) // log10\n print(Math.abs((Math.log1p(0))-(0.0))<0.000000000001) // log1p\n print(Math.abs((Math.log2(8))-(3.0))<0.000000000001) // log2\n print(Math.abs((Math.max(1,8,-2))-(8.0))<0.000000000001) // max\n print(Math.abs((Math.min(1,8,-2))-(-2.0))<0.000000000001) // min\n print(Math.abs((Math.pow(2,10))-(1024.0))<0.000000000001) // pow\n print(Math.abs((Math.round(-1.5))-(-1.0))<0.000000000001) // round\n print(Math.abs((Math.sign(-2))-(-1.0))<0.000000000001) // sign\n print(Math.abs((Math.sin(Math.PI/2))-(1.0))<0.000000000001) // sin\n print(Math.abs((Math.sinh(0))-(0.0))<0.000000000001) // sinh\n print(Math.abs((Math.sqrt(9))-(3.0))<0.000000000001) // sqrt\n print(Math.abs((Math.tan(0))-(0.0))<0.000000000001) // tan\n print(Math.abs((Math.tanh(0))-(0.0))<0.000000000001) // tanh\n print(Math.abs((Math.trunc(-1.9))-(-1.0))<0.000000000001) // trunc\n\n print(Math.clz32(-1)==0.0)\n print(Math.clz32(4294967296)==32.0)\n print(Math.clz32(-4294967295)==31.0)\n print(Math.f16round(1.00048828125)==1.0)\n print(Math.f16round(1.00146484375)==1.001953125)\n print(Math.f16round(0.0000000298023223876953125)==0.0)\n print(Math.f16round(0.00000008940696716308594)==0.00000011920928955078125)\n print(Math.f16round(65519)==65504.0)\n print(Math.f16round(65520)>65504.0)\n print(Math.atan2(Math.round(-0.5),-1)<0.0)\n print(Math.atan2(Math.min(0.0,-0.0),-1)<0.0)\n print(Math.atan2(Math.max(0.0,-0.0),-1)>0.0)\n print(Math.min()>0.0)\n print(Math.max()<0.0)\n let nan=Math.sqrt(-1)\n print(nan!=nan)\n let inf=Math.log(0)\n print(inf<0.0)\n let odd=Math.pow(-1,Math.exp(1000))\n print(odd!=odd)\n let r=Math.random()\n print(r>=0.0&&r<1.0)\n print(Math.LN2==Math.log(2))\n print(Math.LN10==Math.log(10))\n print(Math.abs(Math.SQRT2*Math.SQRT1_2-1.0)<0.000000000001)\n let power=Math.pow(1,nan)\n print(power!=power)\n print(Math.pow(nan,0)==1.0)\n print(Math.atan2(Math.sign(-0.0),-1)<0.0)\n let minimum=Math.min(1,nan)\n print(minimum!=minimum)\n let maximum=Math.max(1,nan)\n print(maximum!=maximum)\n print(Math.abs(Math.expm1(0.0000000000000001)-0.0000000000000001)<0.000000000000000000000000000001)\n}\nmain()\n',
     "array_constructor": 'use "std/json"\nfn main(){\n let empty=new Array()\n empty.push("Dev")\n empty.unshift(42)\n print(json.stringify(empty))\n print(empty.length)\n let slots=new Array(3)\n print(json.stringify(slots))\n slots[0]=1\n slots[1]="Hi"\n slots[2]=true\n print(json.stringify(slots))\n print(json.stringify(slots.pop()))\n let mixed=new Array("Dev",42,true,null,{name:"test"})\n print(json.stringify(mixed))\n print(Array.isArray(mixed))\n mixed.reverse()\n print(json.stringify(mixed))\n print(json.stringify(mixed.toSpliced(1,2,"new")))\n print(json.stringify(new Array("single")))\n print(new Array(0).length)\n print(new Array(2.0).length)\n}\nmain()\n',
     "array_constructor_boxed": 'use "std/json"\nfn main(){let xs=new Array(json.value(3));print(json.stringify(xs))}\nmain()\n',
     "new_constructors": 'use "std/json"\nfn Person(this: json.Value,name: str){this.name = name}\nfn main(){\n    let empty = new Object()\n    empty.name = "Dev"\n    print(empty.name)\n    let data = new Object({name:"Literal"})\n    print(data.name)\n    Person.prototype.greet = fn(this: json.Value): str{return this.name}\n    let p = new Person("Constructor")\n    print(p.greet())\n    print(p.constructor==Person)\n    print(new Person("Inline").greet())\n    let C = Person\n    print(new C("Alias").name)\n}\nmain()\n',
@@ -449,6 +451,17 @@ fn make(name:str):json.Value { return {inner:{name:name}} }
 fn copy(x:json.Value):json.Value { return x }
 fn read(x:json.Value):str { return x.inner.name }
 ''',encoding='utf-8',newline='\n')
+        math_errors = {
+            'math_type': 'fn main(){print(Math.sin("wrong"))}\nmain()\n',
+            'math_arity': 'fn main(){print(Math.pow(2))}\nmain()\n',
+            'math_unknown': 'fn main(){print(Math.nope(2))}\nmain()\n',
+            'math_constant': 'fn main(){print(Math.MISSING)}\nmain()\n',
+        }
+        for name,code in math_errors.items():
+            source=root/(name+'.dev');source.write_text(code,encoding='utf-8')
+            for command in [[str(folder/('devrun'+suffix)),str(source),'--engine',engine] for engine in ['auto','ast']] + [[str(folder/('devc'+suffix)),'check',str(source)]]:
+                result=run(command);assert result.returncode!=0 and 'Math' in result.stderr,(name,result.stderr)
+            print('PASS:',name)
         const_errors = {
             'const_splice': 'const xs=Vec<i64>(1);xs.splice(0,1)',
             'const_delete': 'const xs=Vec<i64>(1);xs.delete(0)',
@@ -543,6 +556,10 @@ fn read(x:json.Value):str { return x.inner.name }
                 assert len({r.stdout for r in results})==1,(name,[(r.stdout,r.stderr) for r in results])
                 if name == 'prototype':
                     assert results[0].stdout.splitlines()==['Hello Dev','true','{"age":18,"name":"Dev"}','prototype','updated','age,name','true','true','false','{"age":18,"name":"Dev"}','{"even":[2,4],"odd":[1,3]}','[object Object]'],results[0].stdout
+                if name == 'math_order':
+                    assert results[0].stdout.splitlines()==['1','2','3','3','4','5','4'],results[0].stdout
+                if name == 'math_reference':
+                    assert results[0].stdout.splitlines()==['true']*60,results[0].stdout
                 if name == 'array_basic_managed':
                     assert results[0].stdout.splitlines()==['1','1','2','3','1','2','1','1','2','3','4','3','3','1','2','1,9,3','9,3','1,2,1,2','1,2','1,2','1,2','8','','0'],results[0].stdout
                 if name == 'array_basic':

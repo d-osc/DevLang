@@ -221,3 +221,5 @@ mod tests {
 }
 
 mod object;
+
+mod js_math;

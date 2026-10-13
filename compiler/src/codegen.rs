@@ -287,6 +287,7 @@ fn generate_inner(
             loop_depth: 0,
             uses_print: false,
             uses_templates: false,
+            uses_math: false,
             uses_dynamic: false,
             uses_refs: false,
             unsafe_depth: 0,
@@ -364,6 +365,7 @@ fn generate_inner(
         }
         if emitter.uses_dynamic {object_runtime_used=true;source.push_str(include_str!("dynamic.c"));source.push_str(crate::object::HELPERS);}
         if emitter.uses_templates { source.push_str(INTERPOLATION_HELPERS); }
+        if emitter.uses_math {source.push_str(crate::js_math::HELPERS);}
         if emitter.uses_print {
             source.push_str("#include <stdio.h>\n");
         }
@@ -436,6 +438,7 @@ pub(crate) struct Emitter<'a> {
     pub(crate) loop_depth: usize,
     pub(crate) uses_print: bool,
     pub(crate) uses_templates: bool,
+    pub(crate) uses_math: bool,
     pub(crate) uses_dynamic: bool,
     pub(crate) uses_refs: bool,
     pub(crate) unsafe_depth: usize,
@@ -1969,6 +1972,7 @@ impl Emitter<'_> {
         Ok(format!("((uint32_t)({}))", value.code))
     }
     fn call(&mut self, names: &[String], args: &[Expr], span: Span) -> Result<Value, String> {
+        if names.first().is_some_and(|n|n=="$math"){return self.js_math_call(&names[1],args,span);}
         if names.first().is_some_and(|n|n=="$object") {return self.object_api_call(&names[1],args,span);}
         if let Some(value) = self.dynamic_call(names, args, span)? { return Ok(value); }
         if names == ["$interpolate"] {

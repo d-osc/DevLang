@@ -588,5 +588,10 @@
     "source_sha256": "5643334c8fdf0763c610e2b5faa3c8ae773322636e85ba0cafd4e4a1324986b7",
     "validation_sha256": "15e4fb9c18bd40105a181c077c2eceafecbd194d4ed273b4fe5831bc1f9c8d86",
     "output": "[42,\"Dev\"]\n2\n[null,null,null]\n[1,\"Hi\",true]\ntrue\n[\"Dev\",42,true,null,{\"name\":\"test\"}]\ntrue\n[{\"name\":\"test\"},null,true,42,\"Dev\"]\n[{\"name\":\"test\"},\"new\",42,\"Dev\"]\n[\"single\"]\n0\n2\n"
+  },
+  "math-reference": {
+    "source_sha256": "fb3a4c59fdd1b39e433ca5b87ecf8b903fca4b0a7541d841aa8f7eeced0bcb6a",
+    "validation_sha256": "02398dddc9af938f9c58c5d8c12071f5365d7c4200d5c40d63c914f6c07d55fb",
+    "output": "5\n9\n1024\n8\n-1\n-1\n31\n1.0009765625\n16777216\n1\ntrue\ntrue\ntrue\n"
   }
 }
