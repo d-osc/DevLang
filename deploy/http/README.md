@@ -118,3 +118,76 @@ The bundled `examples/production-http/main.dev` is a minimal loopback starter wi
 GET `/healthz`, GET `/`, 404 and 405 responses. Its health route checks listener
 responsiveness only; extend readiness checks for application dependencies. It is
 not a business application with authentication or durable storage.
+
+## Windows production service
+
+Windows supervision now places each worker in a Job Object **before it starts**.
+The defaults enforce a 384 MiB committed-memory limit across the worker tree,
+at most 8 processes and a 50% CPU hard rate (percentage of the machine's CPU
+capacity). `--job-memory-mib`, `--job-processes` and `--cpu-percent` configure these.
+RSS polling remains a separate early-warning/restart budget. Committed memory
+and RSS measure different things. Closing the job or abruptly terminating the
+supervisor kills the worker and descendants. Limit/assignment failures stop the
+supervisor; it never falls back to an uncontained worker.
+
+```powershell
+python scripts/smoke_windows_job.py
+python scripts/smoke_http_supervisor.py --bin-dir target/release
+```
+
+The kernel regression provokes allocation/process denial and forcibly terminates
+an owner process to verify both its worker and grandchild exit. This was exercised
+on Windows locally and is included in Windows CI. It does not qualify every
+Windows version, service-wrapper policy or an arbitrary FFI application.
+
+Prepare a dedicated deployment folder on the **production host**, for example:
+
+```text
+C:\ProgramData\DevLangHttp\
+  devlang-http.exe          WinSW wrapper from official releases
+  devlang-http.xml          supplied Windows Service configuration
+  bin\devrun.exe
+  scripts\serve_http.py
+  scripts\soak_http_server.py
+  scripts\windows_job.py
+  app\main.dev             starter or your complete app/modules
+  data\                    writable app state
+  logs\                    writable rotating logs
+```
+
+Use [official WinSW releases](https://github.com/winsw/winsw/releases) and match
+its executable/configuration naming. The supplied XML selects **LocalService**,
+automatic delayed startup, two service-level recovery attempts then stop, and
+bounded wrapper logs. Configure its absolute Python executable path for the
+production installation before use. Python and its libraries must be readable
+by LocalService. Keep code/binaries read-only to this account; allow Modify only
+on data/logs. The following setup is for a new dedicated folder, in an elevated
+PowerShell on the deployment host:
+
+```powershell
+icacls "C:\ProgramData\DevLangHttp" /inheritance:r /grant:r "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" "*S-1-5-19:(OI)(CI)RX"
+icacls "C:\ProgramData\DevLangHttp\data" /grant:r "*S-1-5-19:(OI)(CI)M"
+icacls "C:\ProgramData\DevLangHttp\logs" /grant:r "*S-1-5-19:(OI)(CI)M"
+Set-Location C:\ProgramData\DevLangHttp
+.\devlang-http.exe install
+.\devlang-http.exe start
+.\devlang-http.exe status
+# Maintenance:
+.\devlang-http.exe stop
+.\devlang-http.exe uninstall
+```
+
+The service profile is prepared; it has **not** been installed or boot-tested on
+this development machine. Verify service start/stop, recovery and reboot on the
+production host. Keep ports 3000/8080 loopback/private and run the TLS ingress as
+a separate supervised service. Job Objects provide resource/process containment,
+not a complete security sandbox. Service restarts still interrupt requests and
+lose in-memory state. Persist application data under `--cwd` or external storage.
+
+References: [Microsoft Job Objects](https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects),
+[WinSW service configuration](https://github.com/winsw/winsw/blob/v3/docs/xml-config-file.md).
+
+ภาษาไทย: เพิ่ม Windows Job Object ที่บังคับ memory/process/CPU limits จริง
+พร้อมเก็บ process ลูกเมื่อ supervisor ตาย และเตรียม Windows Service แบบ
+LocalService แล้ว แต่ยังไม่ได้ติดตั้ง service ลงเครื่องพัฒนานี้ ต้องตรวจ
+startup/reboot/recovery บนเครื่อง production และตั้ง TLS แยกต่างหาก

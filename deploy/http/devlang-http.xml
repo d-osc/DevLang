@@ -1,0 +1,22 @@
+<!-- WinSW configuration. Rename the wrapper executable devlang-http.exe.
+     Configure the absolute Python path before installing on the production host. -->
+<service>
+  <id>DevLangHttp</id>
+  <name>DevLang HTTP</name>
+  <description>Supervised DevLang source HTTP worker with Windows Job limits.</description>
+  <executable>C:\Python314\python.exe</executable>
+  <arguments>"%BASE%\scripts\serve_http.py" --runtime "%BASE%\bin\devrun.exe" --file "%BASE%\app\main.dev" --cwd "%BASE%\data" --health http://127.0.0.1:3000/healthz --max-rss-mib 256 --job-memory-mib 384 --job-processes 8 --cpu-percent 50 --log "%BASE%\logs\worker.log"</arguments>
+  <workingdirectory>%BASE%</workingdirectory>
+  <env name="PYTHONUNBUFFERED" value="1" />
+  <env name="PYTHONDONTWRITEBYTECODE" value="1" />
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <stoptimeout>15 sec</stoptimeout>
+  <serviceaccount><username>NT AUTHORITY\LocalService</username></serviceaccount>
+  <onfailure action="restart" delay="10 sec" />
+  <onfailure action="restart" delay="30 sec" />
+  <onfailure action="none" />
+  <resetfailure>1 hour</resetfailure>
+  <logpath>%BASE%\logs</logpath>
+  <log mode="roll-by-size"><sizeThreshold>1024</sizeThreshold><keepFiles>3</keepFiles></log>
+</service>

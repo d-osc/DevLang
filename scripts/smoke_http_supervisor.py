@@ -42,7 +42,7 @@ main()
             finally:c.close()
         def healthy(process):
             for _ in range(100):
-                assert process.poll() is None,'supervisor exited before recovery'
+                assert process.poll() is None,(root/'events').read_text(encoding='utf-8')
                 try:
                     if request('/healthz')==(200,b'ok'):return
                 except OSError:pass
@@ -78,6 +78,13 @@ main()
         for extra in [['--health','http://example.com/'],['--interval','nan'],['--health',f'http://127.0.0.1:0/'],['--runtime',str(root/'missing')]]:
             bad=subprocess.run(base+extra,capture_output=True,text=True,timeout=10)
             assert bad.returncode!=0,bad
+        # A separate data directory must be writable while source stays elsewhere.
+        data=root/'data';data.mkdir()
+        original=source.read_text(encoding='utf-8')
+        source.write_text('use "std/fs"\nfs.writeFileSync("marker.txt","ok")\n'+original,encoding='utf-8')
+        located=subprocess.run(base+['--cwd',str(data),'--run-seconds','1.5'],capture_output=True,text=True,timeout=10)
+        assert located.returncode==0 and (data/'marker.txt').read_text()=='ok',located
+        assert not (root/'marker.txt').exists()
         # Validate the shipped starter on an isolated port using its real source.
         starter=(ROOT/'examples/production-http/main.dev').read_text(encoding='utf-8').replace('listenOn(3000,','listenOn('+str(port)+',')
         source.write_text(starter,encoding='utf-8')

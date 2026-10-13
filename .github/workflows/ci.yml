@@ -38,6 +38,9 @@ jobs:
       - name: Live HTTP ingress protections
         if: runner.os == 'Linux'
         run: python scripts/smoke_http_ingress.py --bin-dir target/release
+      - name: Windows kernel worker containment
+        if: runner.os == 'Windows'
+        run: python scripts/smoke_windows_job.py
       - name: HTTP worker supervision and recovery
         run: python scripts/smoke_http_supervisor.py --bin-dir target/release
       - name: Rust tests
