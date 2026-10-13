@@ -660,6 +660,8 @@ with mixed types are not supported by these methods.
 | `toVec()` | Array, Vec, Slice | New Vec containing visible elements / สำเนาเป็น Vec |
 | `concat(other)` | Array, Vec, Slice | New Vec; other is Array, Vec or Slice of the same type |
 | `toReversed()` | Array, Vec, Slice | New Vec in reverse order / กลับลำดับโดยไม่แก้ต้นฉบับ |
+| `sort(comparator?)` | Writable Vec | Stable ascending order or custom comparison; returns void |
+| `toSorted(comparator?)` | Array, Vec, Slice | New stably sorted Vec; original preserved |
 | `join(separator)` | Array, Vec, Slice of str | str; explicit str separator / รวมข้อความ |
 | `map(callback)` | Array, Vec, Slice | Vec of callback results / แปลงสมาชิก |
 | `filter(predicate)` | Array, Vec, Slice | Vec containing matching elements / กรองสมาชิก |
@@ -714,8 +716,57 @@ remain allocated until process exit, as with string interpolation.
 unique Vec push/pop are amortized O(1). Fixed-array receivers currently convert
 through a temporary Vec, including at; do not assume zero-allocation access.
 
-ยังไม่มี sort, splice, flat/flatMap, callback index/array arguments, หรือ find ที่คืน
+ยังไม่มี splice, flat/flatMap, callback index/array arguments, หรือ find ที่คืน
 optional value; ใช้ findIndex แล้วตรวจ -1 ก่อนเข้าถึงสมาชิก ไม่มี JavaScript coercion
 หรือ undefined และไม่ใช่ API ของไฟล์ .don โดยตรง
 
 [Full runnable example / ตัวอย่างเต็ม](#/examples/array-methods)
+
+
+## Array Sort / เรียงลำดับสมาชิก
+
+`sort()` sorts a writable Vec and returns void. `toSorted()` accepts Array, Vec
+or Slice and returns a new Vec; it preserves its receiver. Both support an
+optional comparator `fn(a: T, b: T): i64`. A negative result puts a first, zero
+means equal, and a positive result puts b first. Capturing closures are supported.
+
+```dev
+fn main() {
+    const values = [10, 2, 1]
+    let ascending = values.toSorted()
+    print(ascending.at(0)) // 1; numeric ordering, not string ordering
+    let descending = values.toSorted(fn(a: i64, b: i64): i64 {
+        return a < b ? 1 : (a > b ? -1 : 0)
+    })
+    print(descending.at(0)) // 10
+    let mutable = values.toVec()
+    mutable.sort()
+    print(mutable.at(0)) // 1
+    print(["zebra", "apple"].toSorted().join(",")) // apple,zebra
+}
+main()
+```
+
+Default ordering is ascending numeric order or case-sensitive UTF-8 byte order
+for str. Floats place NaNs after all numbers; NaNs compare equal, and signed zeros
+compare equal. Other element types, including bool, records and Ref, need a
+comparator. Return i64, not bool. Use comparisons as above rather than subtraction
+when signed integer subtraction might overflow. Comparators should define a
+consistent ordering and avoid side effects.
+
+Both implementations use stable bottom-up merge sort: equal elements retain
+their original order, O(n log n) comparisons and O(n) additional storage. Sort
+works on a separate buffer, preserving earlier Vec copies and Slice snapshots.
+Empty and single-element inputs are valid. Comparator evaluation happens once;
+its function is invoked for comparisons. There is no locale-aware collation,
+JavaScript type coercion or heterogeneous DON-array sorting. Native str has its
+ordinary C-string semantics. These methods are available in current source after
+v0.5.1, in source runtime and hosted native modes.
+
+`sort()` เรียง Vec ที่แก้ไขได้และคืน void ส่วน `toSorted()` สร้าง Vec ใหม่จาก Array,
+Vec หรือ Slice โดยไม่แก้ต้นฉบับ ค่าเริ่มต้นเรียงตัวเลขจากน้อยไปมาก และ string ตาม byte
+UTF-8 แบบแยกตัวพิมพ์ใหญ่เล็ก ถ้าต้องการเรียงตามเงื่อนไขอื่นให้ส่ง comparator ที่คืน i64:
+ติดลบให้ a มาก่อน, ศูนย์เท่ากัน, บวกให้ b มาก่อน ข้อมูลที่เท่ากันจะคงลำดับเดิม
+ใช้ได้ทั้ง runtime/native แต่ยังไม่รองรับ DON array ที่มีหลายชนิด
+
+[Full runnable example / ตัวอย่างเต็ม](#/examples/array-sort)

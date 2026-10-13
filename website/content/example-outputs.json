@@ -548,5 +548,10 @@
     "source_sha256": "79b89ce7dffb34e3acda258fc4f280661c3c31da655699e1cc6b81e0f2dfbaa0",
     "validation_sha256": "5fdbd08466943b358c077d5b341bc34bf8dce671371000238b59e18f588c11c7",
     "output": "2\n2\n2\n8\ntrue\ntrue\n1\n3\n2\n3\n5\n2\n0\n2\n1\nHello Dev\nDev\ntrue\nfalse\n-1\n10\n3\n"
+  },
+  "array-sort": {
+    "source_sha256": "e408d89bb56ec35e1bb86ec18cf3f018d6dc99637a289b47c8f6f67a67e89f4b",
+    "validation_sha256": "c3095d24f133984582d86ccf6815e8ddd3942fb0df0b06008ac7aca9c2b98870",
+    "output": "-3\n1\n2\n2\n10\n10\n10\n-3\n10\napple,banana,zebra\n1\n0\n7\n"
   }
 }

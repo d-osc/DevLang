@@ -165,14 +165,14 @@ impl Expand {
                 };
                 match op.as_str() {
                     "len" | "$iter_len" => Type::Size { signed: false },
-                    "clear" | "push" | "set" | "unshift" | "reverse" | "forEach" => Type::Void,
+                    "clear" | "push" | "set" | "unshift" | "reverse" | "sort" | "forEach" => Type::Void,
                     "contains" | "remove" | "includes" | "some" | "every" => Type::Bool,
                     "indexOf" | "lastIndexOf" | "findIndex" | "findLastIndex" => Type::i64(),
                     "join" => Type::Str,
                     "at" | "shift" => {
                         if let Type::Vector(t) | Type::Slice(t) | Type::Array(t, _) = t {self.concrete(&t)} else {return Ok(None);}
                     }
-                    "concat" | "toVec" | "toReversed" | "filter" => {
+                    "concat" | "toVec" | "toReversed" | "toSorted" | "filter" => {
                         if let Type::Vector(t) | Type::Slice(t) | Type::Array(t, _) = t {Type::Vector(t)} else {return Ok(None);}
                     }
                     "map" | "reduce" => {

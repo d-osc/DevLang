@@ -73,7 +73,7 @@ impl Emitter<'_> {
         span: Span,
     ) -> Result<Value, String> {
         let previous = self.writing;
-        self.writing = ["push", "pop", "clear", "set", "remove", "shift", "unshift", "reverse"].contains(&op);
+        self.writing = ["push", "pop", "clear", "set", "remove", "shift", "unshift", "reverse", "sort"].contains(&op);
         let mut v = self.expr(base, None)?;
         if crate::dynamic::is_dynamic(&v.ty) && (op == "len" || op == "$iter_len") && args.is_empty() {
             return Ok(Value {code: format!("{}({}, {})", if op == "$iter_len" {"dev_dynamic_array_len"} else {"dev_dynamic_len"}, v.code, self.location(span)), ty: Type::Size {signed:false}, lvalue:false});
@@ -89,7 +89,7 @@ impl Emitter<'_> {
                 self.prelude.push_str(&format!("{};\nmemcpy({temporary}, {}, sizeof({temporary}));\n", crate::codegen::declaration(&v.ty, &temporary), v.code));
             }
             if op == "len" && args.is_empty() {return Ok(Value {code: count.to_string(), ty: Type::Size {signed:false}, lvalue:false});}
-            if !["slice","includes","indexOf","lastIndexOf","at","concat","toVec","toReversed","join","map","filter","reduce","forEach","some","every","findIndex","findLastIndex"].contains(&op) {return self.fail(span, "fixed arrays support read-only methods; use Vec for mutation methods");}
+            if !["slice","includes","indexOf","lastIndexOf","at","concat","toVec","toReversed","toSorted","join","map","filter","reduce","forEach","some","every","findIndex","findLastIndex"].contains(&op) {return self.fail(span, "fixed arrays support read-only methods; use Vec for mutation methods");}
             let ty = Type::Vector(inner);
             let name = self.collection(&ty);
             v = self.owned(Value {code: format!("{name}_make({temporary}, {count})"), ty, lvalue:false});
@@ -104,7 +104,7 @@ impl Emitter<'_> {
         };
         let element = self.resolve_collection_element(inner);
         let name = self.collection(&v.ty);
-        if ["at","concat","toVec","toReversed","join","shift","unshift","reverse","map","filter","reduce","forEach","some","every","findIndex","findLastIndex"].contains(&op) {
+        if ["at","concat","toVec","toReversed","toSorted","join","shift","unshift","reverse","sort","map","filter","reduce","forEach","some","every","findIndex","findLastIndex"].contains(&op) {
             return self.array_method(v, &element, op, args, span);
         }
         let count = match op {

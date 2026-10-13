@@ -1391,9 +1391,12 @@ impl Engine {
         op: &str,
         args: &[Expr],
     ) -> Result<Value, String> {
+        let resolved;
+        let base=if op=="sort" {resolved=self.sort_target(f,base)?; &resolved} else {base};
         let iteration=op=="$iter_len";
         let op=if iteration {"len"} else {op};
         let mut value = self.eval(f, base, None)?;
+        let fixed_array=matches!(value,Value::Array(..));
         if let Value::Json(node, _) = &value {
             if (op == "len" || op == "$iter_len") && args.is_empty() {
                 let array = node.as_array().ok_or("collection iteration requires an array")?;
@@ -1412,6 +1415,16 @@ impl Engine {
             return Err("collection method requires Vec or Slice".into());
         };
         let element = self.resolve_collection_element(inner)?;
+        if op=="sort" || op=="toSorted" {
+            if op=="sort" && (fixed_array || !matches!(ty,Type::Vector(_))) {return Err("sort requires a writable Vec; use toSorted for Array or Slice".into());}
+            let sorted=self.array_sort(f,value,&element,args,base.span)?;
+            if op=="sort" {
+                if !matches!(ty,Type::Vector(_)) {return Err("sort requires a writable Vec; use toSorted for Array or Slice".into());}
+                *self.writable(f,base)?.ok_or("sort requires a writable Vec")?=sorted;
+                return Ok(Value::Void);
+            }
+            return Ok(sorted);
+        }
         if ["at","concat","toVec","toReversed","join","map","filter","reduce","forEach","some","every","findIndex","findLastIndex"].contains(&op) {
             return self.array_method(f, value, &element, op, args, base.span);
         }

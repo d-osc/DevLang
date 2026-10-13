@@ -951,7 +951,7 @@ impl Expand {
                 if names.len() >= 2
                     && [
                         "set", "get", "contains", "remove", "push", "pop", "len", "slice", "clear", "includes", "indexOf", "lastIndexOf",
-                        "at", "concat", "toVec", "toReversed", "join", "shift", "unshift", "reverse",
+                        "at", "concat", "toVec", "toReversed", "sort", "toSorted", "join", "shift", "unshift", "reverse",
                         "map", "filter", "reduce", "forEach", "some", "every", "findIndex", "findLastIndex",
                     ]
                     .contains(&names.last().unwrap().as_str())

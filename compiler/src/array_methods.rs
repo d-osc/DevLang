@@ -7,6 +7,9 @@ impl Emitter<'_> {
         args: &[Expr],
         span: Span,
     ) -> Result<Value, String> {
+        if op == "sort" || op == "toSorted" {
+            return self.array_sort(value, element, op, args, span);
+        }
         let arity = match op {
             "toVec" | "toReversed" | "shift" | "reverse" => 0,
             "reduce" => 2,
@@ -267,5 +270,108 @@ impl Emitter<'_> {
         };
         self.prelude.push_str(&format!("{iterator} {{ {body} }}\n"));
         Ok(output)
+    }
+}
+
+impl Emitter<'_> {
+    fn array_sort(
+        &mut self,
+        value: Value,
+        element: &Type,
+        op: &str,
+        args: &[Expr],
+        span: Span,
+    ) -> Result<Value, String> {
+        if args.len() > 1 {
+            return self.fail(span, "sort expects zero arguments or one comparator");
+        }
+        let vector = Type::Vector(Box::new(element.clone()));
+        let helper = self.collection(&vector);
+        let target = if op == "sort" {
+            if !value.lvalue || !matches!(value.ty, Type::Vector(_)) {
+                return self.fail(
+                    span,
+                    "sort requires a writable Vec; use toSorted for Array or Slice",
+                );
+            }
+            let name = format!("dev_sort_target_{}", self.next_var);
+            self.next_var += 1;
+            self.prelude.push_str(&format!(
+                "{} *{name}=&({});\n",
+                c_type(&value.ty),
+                value.code
+            ));
+            Some(name)
+        } else {
+            None
+        };
+        let value = if let Some(target) = &target {
+            Value {
+                code: format!("(*{target})"),
+                ty: value.ty,
+                lvalue: false,
+            }
+        } else {
+            value
+        };
+        let receiver = self.sequence_save(value);
+        let callback = if let Some(arg) = args.first() {
+            let cb = self.expr(arg, None)?;
+            let Type::Function(params, ret) = &cb.ty else {
+                return self.fail(span, "sort comparator must be a Dev function");
+            };
+            if params.len() != 2
+                || params
+                    .iter()
+                    .any(|p| self.resolve_collection_element(p) != *element)
+                || **ret != Type::i64()
+            {
+                return self.fail(span, "sort comparator requires fn(T, T): i64");
+            }
+            Some(self.sequence_save(cb))
+        } else {
+            if !(element.numeric() || *element == Type::Str) {
+                return self.fail(
+                    span,
+                    "default sort requires numeric or str elements; provide a comparator",
+                );
+            }
+            None
+        };
+        let r = &receiver.code;
+        let output = self.owned(Value {
+            code: format!("{helper}_make({r}.len ? {r}.data+{r}.offset : NULL,{r}.len)"),
+            ty: vector.clone(),
+            lvalue: false,
+        });
+        let id = self.next_var;
+        self.next_var += 1;
+        let v = &output.code;
+        let a = format!("{v}.data[dev_sort_a_{id}]");
+        let b = format!("{v}.data[dev_sort_b_{id}]");
+        let compare = if let Some(cb) = callback {
+            format!("{}.call({}.context,{a},{b})", cb.code, cb.code)
+        } else if *element == Type::Str {
+            format!("strcmp({a},{b})")
+        } else if matches!(element, Type::Float(_)) {
+            format!("({a}!={a} ? ({b}!={b} ? 0 : 1) : ({b}!={b} ? -1 : ({a}<{b} ? -1 : ({a}>{b} ? 1 : 0))))")
+        } else {
+            format!("({a}<{b} ? -1 : ({a}>{b} ? 1 : 0))")
+        };
+        let ct = c_type(element);
+        self.prelude.push_str(&format!("if ({v}.len>1) {{\n{ct} *dev_sort_buf_{id}=({ct} *)malloc({v}.len*sizeof({ct}));if(!dev_sort_buf_{id})abort();\nfor(size_t dev_sort_w_{id}=1;dev_sort_w_{id}<{v}.len;) {{\nfor(size_t dev_sort_start_{id}=0;dev_sort_start_{id}<{v}.len;) {{\nsize_t dev_sort_mid_{id}=dev_sort_start_{id}+({v}.len-dev_sort_start_{id}<dev_sort_w_{id}?{v}.len-dev_sort_start_{id}:dev_sort_w_{id});\nsize_t dev_sort_end_{id}=dev_sort_mid_{id}+({v}.len-dev_sort_mid_{id}<dev_sort_w_{id}?{v}.len-dev_sort_mid_{id}:dev_sort_w_{id});\nsize_t dev_sort_a_{id}=dev_sort_start_{id},dev_sort_b_{id}=dev_sort_mid_{id},dev_sort_out_{id}=dev_sort_start_{id};\nwhile(dev_sort_a_{id}<dev_sort_mid_{id} && dev_sort_b_{id}<dev_sort_end_{id}) {{int64_t dev_sort_cmp_{id}={compare};dev_sort_buf_{id}[dev_sort_out_{id}++]=dev_sort_cmp_{id}<=0 ? {v}.data[dev_sort_a_{id}++] : {v}.data[dev_sort_b_{id}++];}}\nwhile(dev_sort_a_{id}<dev_sort_mid_{id})dev_sort_buf_{id}[dev_sort_out_{id}++]={v}.data[dev_sort_a_{id}++];\nwhile(dev_sort_b_{id}<dev_sort_end_{id})dev_sort_buf_{id}[dev_sort_out_{id}++]={v}.data[dev_sort_b_{id}++];\ndev_sort_start_{id}=dev_sort_end_{id};}}\nmemcpy({v}.data,dev_sort_buf_{id},{v}.len*sizeof({ct}));if(dev_sort_w_{id}>{v}.len/2)break;dev_sort_w_{id}*=2;}}\nfree(dev_sort_buf_{id});}}\n"));
+        if let Some(target) = target {
+            let keep = self.manage(&vector, v, true);
+            let drop = self.manage(&vector, &format!("(*{target})"), false);
+            self.prelude
+                .push_str(&format!("{keep}{drop}*{target}={v};\n"));
+            Ok(Value {
+                code: "((void)0)".into(),
+                ty: Type::Void,
+                lvalue: false,
+            })
+        } else {
+            Ok(output)
+        }
     }
 }

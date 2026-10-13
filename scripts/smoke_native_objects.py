@@ -6,6 +6,9 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "array_sort_target": 'fn index():i64 {print("index once");return 0}\nfn main() {\n    let nested=Vec<Vec<i64>>(Vec<i64>(3,1,2))\n    nested[index()].sort()\n    print(nested[0].at(0))\n}\nmain()\n',
+    "array_sort": 'fn main() {\n    const values = [10, 2, 1, 2, -3]\n    let sorted = values.toSorted()\n    for n in sorted { print(n) }\n    print(values.at(0))\n    let descending = values.toSorted(fn(a: i64, b: i64): i64 {\n        return a < b ? 1 : (a > b ? -1 : 0)\n    })\n    print(descending.at(0))\n    let queue = values.toVec()\n    let snapshot = queue.slice(0, 5)\n    queue.sort()\n    print(queue.at(0))\n    print(snapshot.at(0))\n    let words = ["zebra", "apple", "banana"].toSorted()\n    print(words.join(","))\n    let view = values[1..4].toSorted()\n    print(view.at(0))\n    let empty = Vec<i64>()\n    empty.sort()\n    print(empty.len())\n    print([7].toSorted().at(0))\n}\nmain()\n',
+    "array_sort_managed": 'fn main() {\n    let xs=Vec<Ref<i64>>(ref(21),ref(10),ref(22),ref(11),ref(23))\n    let snapshot=xs.slice(0,5)\n    let divisor=ref(10)\n    xs.sort(fn(a:Ref<i64>,b:Ref<i64>):i64 {return deref(a)/deref(divisor)-deref(b)/deref(divisor)})\n    for n in xs {print(deref(n))}\n    print(deref(snapshot.at(0)))\n    let zero=xs.toSorted(fn(a:Ref<i64>,b:Ref<i64>):i64 {return 0})\n    for n in zero {print(deref(n))}\n    let asc=Vec<i64>(9223372036854775807,-9223372036854775808,0)\n    asc.sort()\n    print(asc.at(0))\n    print(asc.at(-1))\n    let floats=Vec<f64>(2.5,-1.5,0.0)\n    floats.sort()\n    print(floats.at(0))\n}\nmain()\n',
     "array_callbacks_order": 'fn receive():[i64;3] {print("receiver");return [1,2,3]}\nfn reducer():fn(i64,i64):i64 {print("callback");return fn(a:i64,b:i64):i64 {print(b);return a+b}}\nfn seed():i64 {print("initial");return 10}\nfn predicate(n:i64):bool {print(n);return n==2}\nfn main() {\n    print(receive().reduce(reducer(),seed()))\n    let xs=[1,2,3]\n    print(xs.some(predicate))\n    print(xs.every(predicate))\n    print(xs.findIndex(predicate))\n    print(xs.findLastIndex(predicate))\n}\nmain()\n',
     "array_methods": 'fn main() {\n    const values = [1, 2, 3, 2]\n    print(values.at(-1))\n    let doubled = values.map(fn(n: i64): i64 { return n * 2 })\n    print(doubled.at(0))\n    let even = values.filter(fn(n: i64): bool { return n % 2 == 0 })\n    print(even.len())\n    print(values.reduce(fn(sum: i64, n: i64): i64 { return sum + n }, 0))\n    print(values.some(fn(n: i64): bool { return n > 2 }))\n    print(values.every(fn(n: i64): bool { return n > 0 }))\n    print(values.findIndex(fn(n: i64): bool { return n == 2 }))\n    print(values.findLastIndex(fn(n: i64): bool { return n == 2 }))\n    values[1..3].forEach(fn(n: i64) { print(n) })\n    let combined = values.concat([4, 5])\n    print(combined.at(-1))\n    let reversed = values.toReversed()\n    print(reversed.at(0))\n    let queue = values.toVec()\n    queue.unshift(0)\n    print(queue.shift())\n    queue.reverse()\n    print(queue.at(0))\n    print(values.at(0))\n    const words = ["Hello", "Dev"]\n    print(words.join(" "))\n    print(words[1..2].join("-"))\n    let empty = Vec<i64>()\n    print(empty.every(fn(n: i64): bool { return n > 0 }))\n    print(empty.some(fn(n: i64): bool { return n > 0 }))\n    print(empty.findIndex(fn(n: i64): bool { return true }))\n    print(empty.reduce(fn(a: i64, b: i64): i64 { return a + b }, 10))\n    let multiplier = 3\n    print(values.map(fn(n: i64): i64 { return n * multiplier }).at(0))\n}\nmain()\n',
     "array_methods_managed": 'fn main() {\n    let refs=[ref(1),ref(2)]\n    let xs=refs.toVec()\n    let snapshot=xs.slice(0,2)\n    xs.unshift(ref(3))\n    print(deref(xs.shift()))\n    xs.reverse()\n    print(deref(xs.at(0)))\n    print(deref(snapshot.at(0)))\n    let more=xs.concat(refs)\n    print(deref(more.at(-1)))\n    let offset=ref(10)\n    let mapped=refs.map(fn(x:Ref<i64>):Ref<i64> {return ref(deref(x)+deref(offset))})\n    print(deref(mapped.at(0)))\n    let filtered=mapped.filter(fn(x:Ref<i64>):bool {return deref(x)>11})\n    print(deref(filtered.at(0)))\n    let total=[1,2,3].reduce(fn(a:Ref<i64>,n:i64):Ref<i64> {return ref(deref(a)+n)},ref(0))\n    print(deref(total))\n    let names=[1,2].map(fn(n:i64):str {return "value ${n}"})\n    print(names.join(","))\n    let nested=[1,2].map(fn(n:i64):Vec<i64> {return Vec<i64>(n)})\n    print(nested.at(1).at(0))\n    let empty=Vec<str>()\n    print(empty.join("-"))\n}\nmain()\n',
@@ -430,6 +433,7 @@ fn read(x:json.Value):str { return x.inner.name }
             'const_method_key': "const p={name:'Dev',get:fn():str {return this.name}}\np['name']='Other'",
             'this_key_mutation': "let p={name:'Dev',change:fn() {this['name']='Other'}}",
             'this_mutation': 'let x={n:1,change:fn() {this.n=2}}',
+            'const_sort': 'const xs=Vec<i64>(2,1);xs.sort()',
             'const_reverse': 'const x=Vec<i64>(1);x.reverse()',
             'const_shift': 'const x=Vec<i64>(1);x.shift()',
             'const_unshift': 'const x=Vec<i64>();x.unshift(1)',
@@ -450,6 +454,11 @@ fn read(x:json.Value):str { return x.inner.name }
             'ternary_type': "print(true ? 1 : 'wrong')",
         }
         method_errors = {
+            'sort_array': 'let xs=[1,2];xs.sort()',
+            'sort_default_ref': 'let xs=Vec<Ref<i64>>(ref(1));xs.sort()',
+            'sort_callback_type': 'let xs=[1,2];xs.toSorted(fn(a:i64,b:i64):bool {return a<b})',
+            'sort_callback_param': 'let xs=[1,2];xs.toSorted(fn(a:i32,b:i32):i64 {return 0})',
+            'sort_arity': 'let xs=[1,2];xs.toSorted(1,2)',
             'map_void': 'let xs=[1,2];xs.map(fn(n:i64) {})',
             'map_parameter': 'let xs=[1,2];xs.map(fn(n:str):str {return n})',
             'filter_result': 'let xs=[1,2];xs.filter(fn(n:i64):i64 {return n})',
@@ -500,6 +509,12 @@ fn read(x:json.Value):str { return x.inner.name }
             else:
                 assert all(r.returncode==0 for r in results),(name,[(r.stdout,r.stderr) for r in results])
                 assert len({r.stdout for r in results})==1,(name,[(r.stdout,r.stderr) for r in results])
+                if name == 'array_sort_target':
+                    assert results[0].stdout.splitlines()==['index once','1'],results[0].stdout
+                if name == 'array_sort':
+                    assert results[0].stdout.splitlines()==['-3','1','2','2','10','10','10','-3','10','apple,banana,zebra','1','0','7'],results[0].stdout
+                if name == 'array_sort_managed':
+                    assert results[0].stdout.splitlines()==['10','11','21','22','23','21','10','11','21','22','23','-9223372036854775808','9223372036854775807','-1.5'],results[0].stdout
                 if name == 'array_callbacks_order':
                     assert results[0].stdout.splitlines()==['receiver','callback','initial','1','2','3','16','1','2','true','1','false','1','2','1','3','2','1'],results[0].stdout
                 if name == 'array_methods':

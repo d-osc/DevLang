@@ -1,0 +1,24 @@
+fn main() {
+    const values = [10, 2, 1, 2, -3]
+    let sorted = values.toSorted()
+    for n in sorted { print(n) }
+    print(values.at(0))
+    let descending = values.toSorted(fn(a: i64, b: i64): i64 {
+        return a < b ? 1 : (a > b ? -1 : 0)
+    })
+    print(descending.at(0))
+    let queue = values.toVec()
+    let snapshot = queue.slice(0, 5)
+    queue.sort()
+    print(queue.at(0))
+    print(snapshot.at(0))
+    let words = ["zebra", "apple", "banana"].toSorted()
+    print(words.join(","))
+    let view = values[1..4].toSorted()
+    print(view.at(0))
+    let empty = Vec<i64>()
+    empty.sort()
+    print(empty.len())
+    print([7].toSorted().at(0))
+}
+main()
