@@ -1670,5 +1670,18 @@
       "d examples/object-aggregates/functions.dev",
       "d build examples/object-aggregates/functions.dev -o out/example.exe"
     ]
+  },
+  {
+    "id": "web-api",
+    "title": "Web API / ตัวอย่าง REST API",
+    "category": "HTTP",
+    "path": "examples/web-api/main.dev",
+    "description": "JSON routes, POST validation, health check and HTTP errors / รับส่ง JSON และตรวจข้อมูล",
+    "doc": "runtime-reference",
+    "mode": "runtime",
+    "commands": [
+      "d examples/web-api/main.dev",
+      "d examples/web-api/main.dev -- serve"
+    ]
   }
 ]

@@ -1,0 +1,81 @@
+use "std/http"
+use "std/json"
+use "std/args"
+use "std/strings"
+
+fn send(res: http.ServerResponse, status: i64, body: json.Value) {
+    res.writeHead(status, Map<str,str>())
+    res.end(json.stringify(body))
+}
+
+fn handle(req: http.IncomingMessage, res: http.ServerResponse) {
+    res.setHeader("Content-Type", "application/json; charset=utf-8")
+    res.setHeader("Cache-Control", "no-store")
+
+    if req.url == "/healthz" {
+        if req.method != "GET" {
+            res.setHeader("Allow", "GET")
+            send(res, 405, { error: "Method not allowed" })
+            return
+        }
+        send(res, 200, { status: "ok" })
+        return
+    }
+    if req.url == "/api/users" {
+        if req.method != "GET" {
+            res.setHeader("Allow", "GET")
+            send(res, 405, { error: "Method not allowed" })
+            return
+        }
+        let users = json.array()
+        users = json.push(users, { id: 1, name: "Dev" })
+        users = json.push(users, { id: 2, name: "Nina" })
+        send(res, 200, { data: users, count: 2 })
+        return
+    }
+    if req.url == "/api/greet" {
+        if req.method != "POST" {
+            res.setHeader("Allow", "POST")
+            send(res, 405, { error: "Method not allowed" })
+            return
+        }
+        if !json.valid(req.body) {
+            send(res, 400, { error: "Invalid JSON" })
+            return
+        }
+        let body = json.parse(req.body)
+        if json.kind(body) != "object" || !json.has(body, "name") {
+            send(res, 400, { error: "Expected an object with name" })
+            return
+        }
+        let value = json.get(body, "name")
+        if json.kind(value) != "string" {
+            send(res, 400, { error: "name must be a string" })
+            return
+        }
+        let name = json.string(value)
+        if strings.len(name) == 0 as usize || strings.len(name) > 100 as usize {
+            send(res, 400, { error: "name must contain 1..100 UTF-8 bytes" })
+            return
+        }
+        send(res, 200, { message: "Hello ${name}" })
+        return
+    }
+    send(res, 404, { error: "Route not found" })
+}
+
+fn main(): void {
+    if args.len() == 0 as usize {
+        print("Run: d examples/web-api/main.dev -- serve")
+        return
+    }
+    if args.get(0) != "serve" {
+        print("Run: d examples/web-api/main.dev -- serve")
+        return
+    }
+    let server = http.createServer(handle)
+    server.listenOn(3000, "127.0.0.1")
+    print("Web API: http://127.0.0.1:3000")
+}
+
+main()

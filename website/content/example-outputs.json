@@ -618,5 +618,10 @@
     "source_sha256": "c3668e3cfdb4f04faefd37a34e0fad74dbb7de97d70ca100d3df5ee72f190d05",
     "validation_sha256": "38b9b8db85d8b25b50bdad88e3b252464df0f958270fdf0a52f31f514edc1a0f",
     "output": "7\n8\n12\ntrue\n14\ntrue\n13\n"
+  },
+  "web-api": {
+    "source_sha256": "72aabb9afec7d8684ada6726d0ae86404f7b765a20b306d0b6fa04c1347409de",
+    "validation_sha256": "abd861c65116df2578a6f4f089d70afef2b6d09606d7d4d32c60ad1bd920df91",
+    "output": "Run: d examples/web-api/main.dev -- serve\n"
   }
 }
