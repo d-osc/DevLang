@@ -115,7 +115,32 @@ impl Engine {
             if a.is_null() || b.is_null() {
                 return a.is_null() && b.is_null();
             }
-            if let (Some(x), Some(y)) = (a.as_f64(), b.as_f64()) {
+            if a.is_number() && b.is_number() {
+                if let (Some(x), Some(y)) = (a.as_i64(), b.as_i64()) {
+                    return x == y;
+                }
+                if let (Some(x), Some(y)) = (a.as_u64(), b.as_u64()) {
+                    return x == y;
+                }
+                let integer_float = |n: &serde_json::Value, f: f64| {
+                    if !f.is_finite() || f.fract() != 0.0 {
+                        return false;
+                    }
+                    if let Some(n) = n.as_i64() {
+                        f >= -9223372036854775808.0 && f < 9223372036854775808.0 && f as i64 == n
+                    } else if let Some(n) = n.as_u64() {
+                        f >= 0.0 && f < 18446744073709551616.0 && f as u64 == n
+                    } else {
+                        false
+                    }
+                };
+                if !a.is_f64() {
+                    return integer_float(a, b.as_f64().unwrap());
+                }
+                if !b.is_f64() {
+                    return integer_float(b, a.as_f64().unwrap());
+                }
+                let (x, y) = (a.as_f64().unwrap(), b.as_f64().unwrap());
                 return x == y || (nan_equal && x.is_nan() && y.is_nan());
             }
             if let (Some(x), Some(y)) = (a.as_str(), b.as_str()) {
