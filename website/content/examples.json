@@ -1438,5 +1438,19 @@
       "d build examples/object-methods/main.dev --release -o out/object-methods.exe"
     ],
     "notes": "Current source build after v0.5.1. this is a read-only snapshot. Outer-local captures, detached methods and method replacement are not supported."
+  },
+  {
+    "id": "object-keys",
+    "title": "Object with methods: person[key]",
+    "category": "พื้นฐาน",
+    "path": "examples/object-keys/main.dev",
+    "description": "อ่านและแก้ data field ผ่าน string key / Computed data field access",
+    "doc": "don",
+    "mode": "both",
+    "commands": [
+      "d examples/object-keys/main.dev",
+      "d build examples/object-keys/main.dev --release -o out/object-keys.exe"
+    ],
+    "notes": "Current source build after v0.5.1. Fixed data fields only; method calls use dot syntax. const and this remain read-only."
   }
 ]

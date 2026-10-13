@@ -815,6 +815,46 @@ impl Emitter<'_> {
                 Ok(format!("{decl} = {};\n{retain}", v.code))
             }
             Stmt::Assign { target, op, value } => {
+                if let ExprKind::Index(base, key) = &target.kind {
+                    if let ExprKind::Name(names) = &base.kind {
+                        if names.len() == 1 {
+                            if let Some(variable) = self.variable(&names[0]) {
+                                if let Type::Record(name, fields) = &variable.ty {
+                                    if name.starts_with("anonymous_object_") {
+                                        let fields = fields.clone();
+                                        let key_value = self.expr(key, Some(&Type::Str))?;
+                                        self.compatible(&key_value, &Type::Str, key.span)?;
+                                        let key_value = self.dynamic_save(key_value);
+                                        let mut code = String::new();
+                                        let mut valid = false;
+                                        let mut last_error = None;
+                                        for (field, _) in fields {
+                                            let stmt = Stmt::Assign { target: Expr {kind: ExprKind::Field(base.clone(), field.clone()), span: target.span}, op: op.clone(), value: value.clone() };
+                                            let saved = self.prelude.clone();
+                                            let start = self.temporaries.len();
+                                            let body = match self.statement(&stmt) {
+                                                Ok(body) => {valid=true; body},
+                                                Err(err) => {
+                                                    self.prelude = saved;
+                                                    self.temporaries.truncate(start);
+                                                    last_error = Some(err);
+                                                    format!("dev_dynamic_error(\"object field type mismatch\", {});\n", self.location(target.span))
+                                                }
+                                            };
+                                            code.push_str(&format!("{}if(dev_switch_str_equal({}, {})) {{\n{body}}} ", if code.is_empty() {""} else {"else "}, key_value.code, c_string(&field)));
+                                        }
+                                        if !valid { if let Some(err) = last_error {return Err(err);} }
+                                        // Enable the common located runtime error helper.
+                                        self.dynamic_enable(target.span)?;
+
+                                        code.push_str(&format!("{}{{ dev_dynamic_error(\"unknown object data field\", {}); }}\n", if code.is_empty() {""} else {"else "}, self.location(target.span)));
+                                        return Ok(code);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 if let Some(result) = self.dynamic_assignment(target, op, value)? { return Ok(result); }
                 self.writing = true;
                 let t_result = self.expr(target, None);
@@ -1661,6 +1701,13 @@ impl Emitter<'_> {
             }
             ExprKind::Index(inner, index) => {
                 let v = self.expr(inner, None)?;
+                if matches!(&v.ty, Type::Record(n, _) if n.starts_with("anonymous_object_")) {
+                    let v = self.dynamic_box(v, expr.span)?;
+                    let v = self.dynamic_save(v);
+                    let key = self.expr(index, Some(&Type::Str))?;
+                    self.compatible(&key, &Type::Str, index.span)?;
+                    return self.dynamic_index(v, key, expr.span);
+                }
                 if crate::dynamic::is_dynamic(&v.ty) { let v = self.dynamic_save(v); let i = self.expr(index, None)?; return self.dynamic_index(v, i, expr.span); }
                 let i = self.expr(index, None)?;
                 if let Type::Vector(t) | Type::Slice(t) = &v.ty {

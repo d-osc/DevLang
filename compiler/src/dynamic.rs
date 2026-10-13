@@ -57,7 +57,7 @@ fn value(code: String, t: Type) -> Value {
 }
 
 impl Emitter<'_> {
-    fn dynamic_enable(&mut self, span: Span) -> Result<(), String> {
+    pub(crate) fn dynamic_enable(&mut self, span: Span) -> Result<(), String> {
         if !self.hosted {
             return self.fail(span, "DON objects require hosted allocation");
         }

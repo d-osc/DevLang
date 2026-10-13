@@ -6,6 +6,22 @@ import tempfile
 from pathlib import Path
 
 CASES = {
+    "method_object_keys": """fn key():str {print('key once');return 'name'}
+fn main() {
+  let person={name:'Dev',age:18,greet:fn():str {return "Hello ${this.name}"}}
+  let x='name'
+  print(person[x])
+  person[key()]='Alice'
+  print(person.greet())
+  x='age'
+  person[x]+=2
+  print(person[x])
+  const snapshot=person
+  print(snapshot['name'])
+}
+main()
+""",
+
     "object_methods": """use "std/json"
 fn main() {
   let user={name:'Dev',age:18,
@@ -287,6 +303,9 @@ print(y.inner.name)
 ''',
 }
 FAILURES = {
+    "method_key_missing": "let p={name:'Dev',age:18,greet:fn() {print(this.name)}}\nprint(p['missing'])",
+    "method_key_wrong_type": "let p={name:'Dev',age:18,greet:fn() {print(this.name)}}\np['age']='wrong'",
+
     "missing": "let x={a:1}\nprint(x.missing)",
     "bounds": "let x={a:[1]}\nprint(x.a[1])",
     "negative": "let x={a:[1]}\nprint(x.a[-1])",
@@ -327,6 +346,8 @@ fn copy(x:json.Value):json.Value { return x }
 fn read(x:json.Value):str { return x.inner.name }
 ''',encoding='utf-8',newline='\n')
         const_errors = {
+            'const_method_key': "const p={name:'Dev',get:fn():str {return this.name}}\np['name']='Other'",
+            'this_key_mutation': "let p={name:'Dev',change:fn() {this['name']='Other'}}",
             'this_mutation': 'let x={n:1,change:fn() {this.n=2}}',
             'const_assign': 'const x=1\nx=2',
             'const_compound': 'const x=1\nx+=2',
@@ -373,6 +394,8 @@ fn read(x:json.Value):str { return x.inner.name }
             else:
                 assert all(r.returncode==0 for r in results),(name,[(r.stdout,r.stderr) for r in results])
                 assert len({r.stdout for r in results})==1,(name,[(r.stdout,r.stderr) for r in results])
+                if name == 'method_object_keys':
+                    assert results[0].stdout.splitlines() == ['Dev','key once','Hello Alice','20','Alice'],results[0].stdout
                 if name == 'object_methods':
                     assert results[0].stdout.splitlines() == ['Hello Dev','20','Hello Dev','Hello Other','{"age":18,"name":"Other"}','Other','18'],results[0].stdout
                 if name == 'switch':

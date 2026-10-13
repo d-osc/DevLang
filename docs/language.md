@@ -549,3 +549,33 @@ is not supported on method objects. Use Vec instead of fixed array data fields.
 Detached method values are not supported yet. `json.stringify` serializes data
 fields only. A `.don` data document cannot contain functions or `this`.
 See [ตัวอย่างเต็ม / Full example](#/examples/object-methods).
+
+## Computed data field access on method objects
+
+```dev
+fn main() {
+    let person = {
+        name: "Dev"
+        age: 18
+        greet: fn(): str { return "Hello ${this.name}" }
+    }
+    let x = "name"
+    print(person[x])
+    person[x] = "Alice"
+    print(person.greet())
+    x = "age"
+    person[x] += 1
+    print(person[x])
+}
+main()
+```
+
+ใช้ string เลือก data field ได้ทั้งอ่านและแก้ค่า แม้ object จะมี methods
+Key expressions are evaluated once. Missing data fields and incompatible writes
+report an error. Field types remain fixed; new fields cannot be inserted.
+`const` and read-only `this` reject writes. Methods still use `person.greet()`;
+computed method calls and detached methods are not supported.
+Writes currently target a local object directly (`person[key] = value`);
+writes through computed chains or temporary objects are not supported yet.
+Available in current source after v0.5.1 in both runtime and hosted native builds.
+See [ตัวอย่างเต็ม / Full example](#/examples/object-keys).

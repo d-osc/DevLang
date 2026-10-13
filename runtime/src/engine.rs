@@ -1028,6 +1028,17 @@ impl Engine {
                     return Ok(Flow::Return(v));
                 }
                 Stmt::Assign { target, op, value } => {
+                    let rewritten = if let ExprKind::Index(base, key) = &target.kind {
+                        if let ExprKind::Name(names) = &base.kind {
+                            let object = names.len() == 1 && f.scopes.iter().rev().find_map(|s| s.get(&names[0]))
+                                .is_some_and(|v| matches!(v, Value::Record(_, Type::Record(n, _)) if n.starts_with("anonymous_object_")));
+                            if object {
+                                let key = self.eval(f, key, Some(&Type::Str))?.string()?.to_string();
+                                Some(Expr { kind: ExprKind::Index(base.clone(), Box::new(Expr {kind: ExprKind::String(key), span: target.span})), span: target.span })
+                            } else { None }
+                        } else { None }
+                    } else { None };
+                    let target = rewritten.as_ref().unwrap_or(target);
                     if self.json_assign(f, target, op, value)? {
                         continue;
                     }
@@ -1213,9 +1224,13 @@ impl Engine {
                 }
                 ExprKind::Index(base, index) => {
                     let root = path(engine, frame, base, access)?;
-                    let index = usize::try_from(engine.eval(frame, index, None)?.integer()?)
-                        .map_err(|_| engine.located(&frame.module, expr.span, "invalid index"))?;
-                    access.push(Access::Index(index));
+                    let value = engine.eval(frame, index, None)?;
+                    if let Value::Str(key) = value { access.push(Access::Field(key)); }
+                    else {
+                        let index = usize::try_from(value.integer()?)
+                            .map_err(|_| engine.located(&frame.module, expr.span, "invalid index"))?;
+                        access.push(Access::Index(index));
+                    }
                     Ok(root)
                 }
                 _ => Err(engine.located(
@@ -1922,6 +1937,14 @@ impl Engine {
                         } else {
                             Ok(value)
                         };
+                    }
+                    if let Value::Record(fields, Type::Record(name, _)) = &a {
+                        if name.starts_with("anonymous_object_") {
+                            let key = index.string()?;
+                            let value = fields.iter().find(|(field, _)| field == key)
+                                .map(|(_, value)| value.clone()).ok_or("unknown object data field")?;
+                            return if let Some(t) = hint { convert(value, t, false) } else { Ok(value) };
+                        }
                     }
                     let i = index.integer()?;
                     let i = usize::try_from(i).map_err(|_| "negative or excessive index")?;

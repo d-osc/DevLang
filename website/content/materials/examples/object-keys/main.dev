@@ -1,0 +1,15 @@
+fn main() {
+    let person = {
+        name: "Dev"
+        age: 18
+        greet: fn(): str { return "Hello ${this.name}" }
+    }
+    let x = "name"
+    print(person[x])
+    person[x] = "Alice"
+    print(person.greet())
+    x = "age"
+    person[x] += 1
+    print(person[x])
+}
+main()
