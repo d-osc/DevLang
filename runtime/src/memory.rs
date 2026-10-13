@@ -125,7 +125,7 @@ unsafe fn read_mode(p: usize, t: &Type, volatile: bool) -> Result<Value, String>
                 return Err("null native str".into());
             }
             Value::Str(
-                unsafe { CStr::from_ptr(s as *const i8) }
+                unsafe { CStr::from_ptr(s as *const std::ffi::c_char) }
                     .to_str()
                     .map_err(|_| "invalid UTF-8 native str")?
                     .into(),
