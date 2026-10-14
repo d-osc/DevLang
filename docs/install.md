@@ -4,14 +4,14 @@ Offline installers include `d`, the compiler, source runtime, standard library a
 
 ## Windows x86_64
 
-Download `devlang-setup-v0.5.2-windows-x86_64.exe`, double-click it, and click **Install**. Everything is embedded in this single file; no extraction or additional downloads are needed. Open a new terminal and run `d --help`. The default directory is `%LOCALAPPDATA%\Programs\DevLang`; the installer adds it to your user PATH and registers DevLang in Windows Installed apps. Windows 10/11 x86_64 with the built-in .NET Framework and Windows PowerShell is supported.
+Download `devlang-setup-v0.5.3-windows-x86_64.exe`, double-click it, and click **Install**. Everything is embedded in this single file; no extraction or additional downloads are needed. Open a new terminal and run `d --help`. The default directory is `%LOCALAPPDATA%\Programs\DevLang`; the installer adds it to your user PATH and registers DevLang in Windows Installed apps. Windows 10/11 x86_64 with the built-in .NET Framework and Windows PowerShell is supported.
 
 The ZIP installer remains available: extract all files and open `install.cmd`.
 
 Custom or unattended installation:
 
 ```powershell
-.\devlang-setup-v0.5.2-windows-x86_64.exe --silent --prefix "C:\Tools\DevLang" --log "install.log"
+.\devlang-setup-v0.5.3-windows-x86_64.exe --silent --prefix "C:\Tools\DevLang" --log "install.log"
 ```
 
 The EXE also accepts `--no-path` and `--no-registration`. For the ZIP installer:
@@ -30,15 +30,15 @@ For a custom location, pass the same `-Prefix` when uninstalling. Restart the te
 
 ## Windows ARM64
 
-Download `devlang-setup-v0.5.2-windows-arm64.zip`, extract it and run `install.cmd` on Windows 11 ARM64. The included d/devc/devrun binaries are native ARM64. The single-file GUI EXE is currently provided only for x86_64.
+Download `devlang-setup-v0.5.3-windows-arm64.zip`, extract it and run `install.cmd` on Windows 11 ARM64. The included d/devc/devrun binaries are native ARM64. The single-file GUI EXE is currently provided only for x86_64.
 
 ## Linux x86_64 and ARM64
 
 Requires Python 3.9+, glibc 2.39+ and libgcc. Download the `.py` installer and run:
 
 ```sh
-python3 devlang-setup-v0.5.2-linux-x86_64.py
-# On ARM64 instead use devlang-setup-v0.5.2-linux-arm64.py
+python3 devlang-setup-v0.5.3-linux-x86_64.py
+# On ARM64 instead use devlang-setup-v0.5.3-linux-arm64.py
 export PATH="$HOME/.local/bin:$PATH"
 d --help
 ```
@@ -58,6 +58,6 @@ These installers are not digitally signed.
 Build release installers from the repository's prepared `dist` packages:
 
 ```sh
-python scripts/build_installers.py --version v0.5.2
-python scripts/build_installers.py --version v0.5.2 --windows-exe
+python scripts/build_installers.py --version v0.5.3
+python scripts/build_installers.py --version v0.5.3 --windows-exe
 ```

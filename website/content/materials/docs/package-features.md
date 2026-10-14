@@ -17,10 +17,16 @@ scripts: {
 
 ```sh
 d task
+d start
+d run start -- argument
+d check
+d format
 d task start -- argument
 d task check
 d task format
 ```
+
+Scripts can be invoked as `d NAME` or `d run NAME` (also `--run` / `-r`). A bare `d check` or `d format` runs the matching script when declared; `d check FILE.dev` keeps the built-in checker. Explicit `.dev` paths run source. Other built-in command names remain reserved; use `d task NAME` or `d run NAME` for collisions.
 
 Array scripts launch an executable directly and forward arguments literally. `d` resolves to the running CLI. String scripts use the platform shell (`cmd` on Windows, `sh` elsewhere); argument forwarding requires an array. Scripts run in the package directory with `.dev/bin` added to PATH and preserve exit status. Installation never executes lifecycle scripts automatically.
 

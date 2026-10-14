@@ -73,6 +73,10 @@ def main():
         assert notifications[1]["version"] == 2 and not notifications[1]["diagnostics"]
         assert source.read_text(encoding="utf-8") == disk
 
+        equality = 'let name: str = "Dev"\nprint(name == "Dev")\nprint(name != "Other")\n'
+        notifications = run(binary, [start, opened(uri, equality), *end])
+        assert not notifications[0]["diagnostics"], notifications
+
         # Semantic ranges use UTF-16 columns, including non-BMP text before the error.
         notifications = run(binary, [start, opened(uri, 'print("😀"); print(missing)'), *end])
         error = semantic(notifications[0]["diagnostics"])[0]

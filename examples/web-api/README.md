@@ -1,6 +1,21 @@
 # DevLang Web API
 
-Run from the repository root with the current CLI/runtime:
+This directory is a runnable `package.don` project. With the current CLI/runtime:
+
+```powershell
+cd examples/web-api
+d start
+# Equivalent:
+d run start
+# Run the configured package entry directly:
+d run -- serve
+```
+
+`d format` formats `main.dev`; `d format-check` checks formatting without changing it.
+`src/` is reserved for local modules. HTTP/JSON are built-in runtime modules, so
+`dependencies` is empty and no package install is required.
+
+Or run from the repository root:
 
 ```powershell
 d examples/web-api/main.dev -- serve

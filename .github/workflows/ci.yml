@@ -92,6 +92,8 @@ jobs:
         run: python scripts/smoke_store_integration.py --d "${{ env.DEVLANG_TEST_D }}"
       - name: Package resolver, scripts, policies and offline cache
         run: python scripts/smoke_package_features.py --d "${{ env.DEVLANG_TEST_D }}"
+      - name: Package script shortcuts and arguments
+        run: python scripts/smoke_script_shortcuts.py --bin "${{ env.DEVLANG_TEST_D }}"
       - name: Contextual peers, frozen install and global launchers
         run: python scripts/smoke_package_contexts.py --d "${{ env.DEVLANG_TEST_D }}"
       - name: Package Store UI regressions

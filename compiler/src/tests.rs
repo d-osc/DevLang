@@ -147,7 +147,7 @@ fn reject_invalid_programs_without_codegen_panics() {
         ("fn main() { print(1.5 & 2.0) }", "integers"),
         ("fn main() { let x = 1.5; x %= 2 }", "integers"),
         ("fn main() { print(true + false) }", "numeric"),
-        ("fn main() { print(\"a\" == \"b\") }", "string contents"),
+        ("fn main() { print(\"a\" < \"b\") }", "str supports"),
         ("fn f(x i32) {}\nfn main() { f() }", "arguments"),
         ("fn main() { other.f() }", "unknown module"),
         ("fn main() { let x = 1; x = true }", "expected i64"),

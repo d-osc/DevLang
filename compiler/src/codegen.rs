@@ -1611,6 +1611,25 @@ impl Emitter<'_> {
                     self.prelude.push_str(&format!("const char *{second} = {};\n", b.code));
                     return Ok(Value { code: format!("dev_interpolate(\"%s%s\", {first}, {second})"), ty: Type::Str, lvalue: false });
                 }
+                if comparison && a.ty == Type::Str && b.ty == Type::Str {
+                    if op != "==" && op != "!=" {
+                        return self.fail(expr.span, "str supports == and !=");
+                    }
+                    // Sequence operand evaluation before calling the C helper.
+                    let first = format!("dev_equal_a_{}", self.next_var);
+                    self.next_var += 1;
+                    let second = format!("dev_equal_b_{}", self.next_var);
+                    self.next_var += 1;
+                    self.prelude.push_str(&left_prefix);
+                    self.prelude.push_str(&format!("const char *{first} = {};\n", a.code));
+                    self.prelude.push_str(&right_prefix);
+                    self.prelude.push_str(&format!("const char *{second} = {};\n", b.code));
+                    return Ok(Value {
+                        code: format!("{}dev_switch_str_equal({first}, {second})", if op == "!=" { "!" } else { "" }),
+                        ty: Type::Bool,
+                        lvalue: false,
+                    });
+                }
                 if crate::dynamic::is_dynamic(&a.ty) || crate::dynamic::is_dynamic(&b.ty) {
                     self.prelude.push_str(&left_prefix); let a = self.dynamic_save(a);
                     self.prelude.push_str(&right_prefix); let result=self.dynamic_binary(op,a,b,literal(right),expr.span)?;return self.object_expected(result,expected,expr.span);
@@ -1640,12 +1659,6 @@ impl Emitter<'_> {
                     if comparison {
                         if !a.ty.scalar() && !matches!(a.ty, Type::Enum(..)) {
                             return self.fail(expr.span, "comparison requires scalar values");
-                        }
-                        if a.ty == Type::Str && switch_comparison {
-                            return Ok(Value { code: format!("dev_switch_str_equal({}, {})", a.code, b.code), ty: Type::Bool, lvalue: false });
-                        }
-                        if a.ty == Type::Str {
-                            return self.fail(expr.span, "compare string contents through C strcmp; str equality is not defined");
                         }
                         if a.ty == Type::Bool && op != "==" && op != "!=" {
                             return self.fail(expr.span, "bool supports == and !=");

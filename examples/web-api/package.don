@@ -1,0 +1,16 @@
+// Run from this directory: d start
+version: '1.0.0'
+package: {
+  name: 'web_api_example'
+  entry: 'main.dev'
+  modules: 'src'
+}
+
+scripts: {
+  start: ['d', 'run', 'main.dev', '--', 'serve']
+  format: ['d', 'fmt', 'main.dev']
+  'format-check': ['d', 'fmt', '--check', 'main.dev']
+}
+
+// HTTP and JSON are built into the runtime; no external packages needed.
+dependencies: {}

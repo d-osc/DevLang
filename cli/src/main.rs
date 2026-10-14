@@ -8,8 +8,8 @@ mod unused;
 
 const HELP: &str = "Dev Lang
 
-  d FILE.dev [-- arguments]                 Run source with the runtime
-  d run|--run|-r FILE.dev [-- arguments]     Run source with the runtime
+  d FILE.dev|SCRIPT [-- arguments]                 Run source with the runtime
+  d run|--run|-r FILE.dev|SCRIPT [-- arguments]     Run source with the runtime
   d build|--build|-b FILE.dev [options]      Compile a native program
   d compiler|--compiler|-c FILE.dev [options]  Alias for build
   d -e|--eval 'print(40 + 2)'               Run inline source
@@ -162,6 +162,27 @@ fn run() -> Result<i32, String> {
         let selected =
             packages::select_project(&env::current_dir().map_err(|e| e.to_string())?, &name)?;
         env::set_current_dir(selected).map_err(|e| e.to_string())?;
+    }
+    // Explicit source paths and commands with file/options keep their built-in meaning.
+    let run_alias = matches!(selector, "run" | "--run" | "-r");
+    let script_index = usize::from(run_alias);
+    if let Some(name) = args.get(script_index).and_then(|a| a.to_str()) {
+        let reserved = matches!(selector, "new" | "pkg" | "fmt" | "lsp" | "debug" | "don" | "exec" | "task" | "help" | "build" | "compiler" | "emit");
+        let bare_builtin = matches!(selector, "check" | "format")
+            && args.get(1).is_none_or(|a| a == "--");
+        let candidate = !name.starts_with('-') && !name.ends_with(".dev")
+            && !name.contains('/') && !name.contains('\\')
+            && !std::path::Path::new(name).is_file();
+        if candidate && (run_alias || (!reserved && (!matches!(selector, "check" | "format") || bare_builtin))) {
+            if let Some(project) = packages::root(&env::current_dir().map_err(|e| e.to_string())?) {
+                if packages::manifest(&project)?.scripts.contains_key(name) {
+                    let values = args[script_index..].iter().map(|a| a.to_str()
+                        .map(str::to_owned).ok_or("script arguments must be UTF-8"))
+                        .collect::<Result<Vec<_>, _>>()?;
+                    return packages::task(&values);
+                }
+            }
+        }
     }
     if matches!(selector, "new" | "pkg" | "fmt" | "lsp" | "debug" | "don" | "exec" | "task") {
         let values = args

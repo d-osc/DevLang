@@ -36,7 +36,7 @@ DevLang ยังเป็นภาษาในช่วงพัฒนา ไ�
 
 ## Windows x86_64 และ ARM64
 
-Release ปัจจุบันคือ **v0.5.2** สำหรับ x86_64 ดาวน์โหลดตัวติดตั้ง `.exe` จากหน้า Download เปิดไฟล์ แล้วกด **Install** ตัวติดตั้งรวม `d`, `devc`, `devrun`, stdlib และ examples พร้อมเพิ่ม user PATH ติดตั้งโดยไม่ต้องใช้สิทธิ์ administrator
+Release ปัจจุบันคือ **v0.5.3** สำหรับ x86_64 ดาวน์โหลดตัวติดตั้ง `.exe` จากหน้า Download เปิดไฟล์ แล้วกด **Install** ตัวติดตั้งรวม `d`, `devc`, `devrun`, stdlib และ examples พร้อมเพิ่ม user PATH ติดตั้งโดยไม่ต้องใช้สิทธิ์ administrator
 
 โฟลเดอร์เริ่มต้นคือ `%LOCALAPPDATA%\Programs\DevLang` เปิด terminal ใหม่หลังติดตั้ง
 
@@ -48,19 +48,19 @@ d --eval 'print(40 + 2)'
 
 ใน PowerShell ใช้ single quotes สำหรับ argument ของ `--eval` ได้ เก็บ source เป็น UTF-8 และตั้งชื่อ `main.dev`
 
-สำหรับ Windows 11 ARM64 ใช้ `devlang-setup-v0.5.2-windows-arm64.zip` แตกไฟล์แล้วเปิด `install.cmd` ชุดนี้มี binary ARM64 จริง ส่วน GUI EXE มีเฉพาะ x86_64
+สำหรับ Windows 11 ARM64 ใช้ `devlang-setup-v0.5.3-windows-arm64.zip` แตกไฟล์แล้วเปิด `install.cmd` ชุดนี้มี binary ARM64 จริง ส่วน GUI EXE มีเฉพาะ x86_64
 
 ## Linux x86_64 และ ARM64
 
 รัน offline installer ด้วย Python 3.9 ขึ้นไป ชุด binary Linux x86_64 ต้องการ glibc 2.39 ขึ้นไป
 
 ```sh
-python3 devlang-setup-v0.5.2-linux-x86_64.py
+python3 devlang-setup-v0.5.3-linux-x86_64.py
 export PATH="$HOME/.local/bin:$PATH"
 d --help
 ```
 
-สำหรับ ARM64 ใช้ `devlang-setup-v0.5.2-linux-arm64.py` แทน
+สำหรับ ARM64 ใช้ `devlang-setup-v0.5.3-linux-arm64.py` แทน
 
 ติดตั้งใน `~/.local/share/devlang` และสร้าง symlink ใน `~/.local/bin` หากต้องการใช้ถาวร ให้เพิ่ม PATH ในการตั้งค่า shell ของคุณ
 
@@ -282,8 +282,7 @@ main()
 `default` ไม่บังคับ และถ้ามีต้องอยู่ท้ายสุด ไม่มี fallthrough จึงไม่ต้องใส่ `break`
 Switch evaluates its subject once and runs the first matching case. Case values
 use ordinary equality rules and are checked in source order. String cases compare
-contents in both engines, including native switch. Standalone native str equality
-remains unchanged. Case bodies require
+contents in both engines, including native switch. Case bodies require
 braces. Default is optional, may appear once, and must be last. There is no
 fallthrough. `break` and `continue` keep their existing enclosing-loop meaning;
 they are not needed to end a case. Use `match` for enum payload patterns.
@@ -376,7 +375,7 @@ print(values[0] + values[1])
 print(sizeof(values))
 ```
 
-`str[index]` คืน UTF-8 byte (`u8`) ไม่ใช่ Unicode character และแก้ byte ของ string ไม่ได้ String equality ด้วย `==` ไม่รองรับ ให้ใช้ C `strcmp` ผ่าน FFI เมื่อจำเป็น หรือออกแบบข้อมูลเป็นชนิดอื่น
+`str[index]` คืน UTF-8 byte (`u8`) ไม่ใช่ Unicode character และแก้ byte ของ string ไม่ได้ `str` เปรียบเทียบเนื้อหาด้วย `==` และ `!=` ได้ทั้ง runtime และ native compiler แต่ไม่รองรับ `<`, `<=`, `>` และ `>=`; native ใช้ string แบบ C จึงเปรียบเทียบถึง NUL ตัวแรก ส่วน runtime เปรียบเทียบ string เต็มค่า
 
 Runtime เป็นเจ้าของ string bytes ส่วน native `str` ยืม C storage ต้องรักษา lifetime ถ้าใช้ค่าจาก library โดยเฉพาะ pointer ที่คืนจาก buffer ชั่วคราว `\0` ทำให้การพิมพ์แบบ C หยุดก่อนข้อความท้าย
 

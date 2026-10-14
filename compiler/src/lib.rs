@@ -35,6 +35,19 @@ mod tests {
         )
     }
     #[test]
+    fn web_api_example_has_no_editor_errors() {
+        let diagnostics = errors(include_str!("../../examples/web-api/main.dev"));
+        assert!(diagnostics.is_empty(), "{diagnostics:?}");
+    }
+
+    #[test]
+    fn string_equality_checks_but_ordering_and_mixed_types_do_not() {
+        assert!(errors("let a: str = \"hello\"\nprint(a == \"hello\")\nprint(a != \"world\")").is_empty());
+        assert!(!errors("print(\"a\" < \"b\")").is_empty());
+        assert!(!errors("print(\"1\" == 1)").is_empty());
+    }
+
+    #[test]
     fn core_modules_have_valid_editor_signatures() {
         for module in [
             "net", "path", "os", "stream", "url", "module", "process", "events", "buffer", "dgram",

@@ -104,7 +104,7 @@ fn main() {
 main()
 ```
 
-`str[index]` reads a UTF-8 **byte** as `u8`, not a Unicode character. String bytes cannot be assigned. String equality is deliberately undefined; call C `strcmp` for content comparison. Strings and `null` follow C lifetime and NUL-termination rules; embedded `\0` truncates ordinary C string output.
+`str[index]` reads a UTF-8 **byte** as `u8`, not a Unicode character. String bytes cannot be assigned. `str` supports content comparison with `==` and `!=` in the runtime and native compiler; ordering operators are unsupported. Strings and `null` follow C lifetime and NUL-termination rules; embedded `\0` truncates native string comparisons and ordinary C string output, while runtime equality compares the entire string.
 
 ### String concatenation
 
@@ -186,8 +186,7 @@ main()
 `default` ไม่บังคับ และถ้ามีต้องอยู่ท้ายสุด ไม่มี fallthrough จึงไม่ต้องใส่ `break`
 Switch evaluates its subject once and runs the first matching case. Case values
 use ordinary equality rules and are checked in source order. String cases compare
-contents in both engines, including native switch. Standalone native str equality
-remains unchanged. Case bodies require
+contents in both engines, including native switch. Case bodies require
 braces. Default is optional, may appear once, and must be last. There is no
 fallthrough. `break` and `continue` keep their existing enclosing-loop meaning;
 they are not needed to end a case. Use `match` for enum payload patterns.
