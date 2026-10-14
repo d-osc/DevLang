@@ -623,5 +623,10 @@
     "source_sha256": "72aabb9afec7d8684ada6726d0ae86404f7b765a20b306d0b6fa04c1347409de",
     "validation_sha256": "abd861c65116df2578a6f4f089d70afef2b6d09606d7d4d32c60ad1bd920df91",
     "output": "Run: d examples/web-api/main.dev -- serve\n"
+  },
+  "export-interop": {
+    "source_sha256": "1cf89d9717df0af7459e0ccae39d65834d2d21e4bb49c30f2b10914311370c50",
+    "validation_sha256": "5e315820ba6f5d6269c89fa76ca8afbe8397e48509d37e7b889d4a05561126f7",
+    "output": "42\n42\n12.5\ntrue\nDevLang Math\n"
   }
 }

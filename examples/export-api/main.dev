@@ -1,0 +1,11 @@
+use "api.dev" as math
+
+fn main(): void {
+    print(math.devmath_add(20, 22))
+    print(math.twice(21))
+    print(math.devmath_scale(2.5, 5.0))
+    print(math.devmath_positive(7))
+    print(math.devmath_name())
+}
+
+main()

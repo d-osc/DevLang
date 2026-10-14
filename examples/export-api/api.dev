@@ -1,0 +1,22 @@
+// Ordinary functions are callable by direct DevLang importers too.
+fn twice(value: i32): i32 {
+    return value * 2
+}
+
+// Export keeps these exact names as native C ABI symbols.
+export fn devmath_add(a: i32, b: i32): i32 {
+    return a + b
+}
+
+export fn devmath_scale(value: f64, factor: f64): f64 {
+    return value * factor
+}
+
+export fn devmath_positive(value: i32): bool {
+    return value > 0
+}
+
+// The returned literal has static storage in native builds.
+export fn devmath_name(): str {
+    return "DevLang Math"
+}

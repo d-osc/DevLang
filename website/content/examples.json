@@ -1683,5 +1683,17 @@
       "d examples/web-api/main.dev",
       "d examples/web-api/main.dev -- serve"
     ]
+  },
+  {
+    "id": "export-interop",
+    "title": "Export interoperability: C++ / Rust / Go",
+    "category": "FFI",
+    "path": "examples/export-api/main.dev",
+    "description": "One DevLang library called from C++, Rust and Go / เรียก export ผ่าน C ABI พร้อมตัวอย่างครบทุกภาษา",
+    "doc": "export-interop",
+    "commands": [
+      "d examples/export-api/main.dev",
+      "d build examples/export-api/api.dev --lib --release --cc clang --ar llvm-ar -o out/export-api/libdevmath.a"
+    ]
   }
 ]
