@@ -215,3 +215,7 @@ python scripts/smoke_export_interop.py --d target/release/d.exe --languages c,cp
 ## Reverse direction
 
 ดู [นำ C++, Rust และ Go เข้ามาเรียกใน DevLang](import-interop.md) สำหรับ DLL/shared libraries, `extern fn`, `--ffi-lib` และ native linking ที่ทดสอบจริง
+
+## Python / .NET / Node.js
+
+ดู [Python, C#/.NET และ JavaScript/TypeScript](managed-interop.md) สำหรับ native consumers และ JSON process workers ที่เรียกจาก DevLang runtime

@@ -1,0 +1,28 @@
+use "std/args"
+use "std/child_process"
+use "std/encoding"
+use "std/json"
+use "std/result"
+
+fn main(): void {
+    if args.len() == 0 as usize {
+        result.raise("Pass the worker executable followed by its arguments")
+    }
+    let arguments = Vec<str>()
+    for i in 1..(args.len() as i64) {
+        arguments.push(args.get(i as usize))
+    }
+    let options = child_process.options()
+    options.timeoutMs = 5000
+    options.maxBuffer = 65536
+    options.input = encoding.encode(json.stringify({a: 20, b: 22, name: "โลก"}), "utf8")
+    let output = child_process.execFileSync(args.get(0), arguments, options)
+    if !output.success {
+        result.raise("Worker failed: " + encoding.decode(output.stderr, "utf8"))
+    }
+    let response = json.parse(encoding.decode(output.stdout, "utf8"))
+    print(json.int(json.get(response, "sum")))
+    print(json.string(json.get(response, "message")))
+}
+
+main()

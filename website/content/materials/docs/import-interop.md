@@ -212,3 +212,7 @@ python scripts/smoke_import_interop.py --d target/release/d.exe --languages cpp,
 ใช้ `--cc`, `--cxx` เพื่อเลือก toolchain และ `--report out/import-interop.json` เพื่อบันทึกเวอร์ชันและผลลัพธ์ Library/executable ถูก build ในโฟลเดอร์ชั่วคราว และ test จะล้มเหลวถ้า compile/link/run ไม่ผ่านหรือ output ไม่ตรงกัน
 
 ดูทิศทางกลับกันที่ [Export ไป C++, Rust และ Go](export-interop.md) ดาวน์โหลดโค้ดครบสองทิศทางจากหน้า Examples → Export interoperability
+
+## Python / .NET / Node.js
+
+ดู [Python, C#/.NET และ JavaScript/TypeScript](managed-interop.md) สำหรับ native consumers และ JSON process workers ที่เรียกจาก DevLang runtime

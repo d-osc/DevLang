@@ -52,6 +52,22 @@ jobs:
       - name: Import C++ and Rust into DevLang on Windows
         if: runner.os == 'Windows'
         run: python scripts/smoke_import_interop.py --d target/release/d.exe --languages cpp,rust
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+      - name: Prepare typed Node consumers and verified native SDK
+        run: |
+          npm install --global typescript@5.9.3
+          python examples/export-api/managed/prepare_node_sdk.py --output out/node-sdk
+      - name: Python, .NET, JavaScript and TypeScript interoperability on Linux
+        if: runner.os == 'Linux'
+        run: python scripts/smoke_managed_interop.py --d target/release/d --cc gcc --ar ar --node-sdk out/node-sdk
+      - name: Python, .NET, JavaScript and TypeScript interoperability on Windows
+        if: runner.os == 'Windows'
+        run: python scripts/smoke_managed_interop.py --d target/release/d.exe --node-sdk out/node-sdk
       - name: Live HTTP ingress protections
         if: runner.os == 'Linux'
         run: python scripts/smoke_http_ingress.py --bin-dir target/release

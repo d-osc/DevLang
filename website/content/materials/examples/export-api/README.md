@@ -52,3 +52,7 @@ See [the complete interoperability guide](../../docs/export-interop.md) for all 
 ## Import foreign libraries into DevLang
 
 The [reverse direction](imports/README.md) uses the same DevLang caller with C++, Rust or Go shared libraries. See [the import guide](../../docs/import-interop.md) for runtime and native examples.
+
+## Python, C#/.NET and JavaScript/TypeScript
+
+See [managed runtime examples](managed/README.md) for ctypes, PInvoke, Node-API and reverse JSON process workers.

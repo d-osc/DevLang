@@ -20,9 +20,10 @@ GROUPS = {
     'เริ่มต้น': ['intro', 'cheat-sheet', 'install', 'layout', 'cli', 'tooling', 'packages'],
     'พื้นฐานภาษา': ['variables', 'types', 'operators', 'loops', 'functions', 'strings-arrays', 'array-reference', 'object-reference', 'math-reference', 'modules'],
     'ข้อมูลและ abstraction': ['structs', 'enums-match', 'references', 'collections', 'generics', 'closures'],
-    'ระบบและ interoperability': ['module-api-intro', 'tasks', 'sync', 'safety', 'ffi', 'export-interop', 'import-interop', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'don-editor', 'fs-http', 'node-core', 'limitations', 'ai'],
+    'ระบบและ interoperability': ['module-api-intro', 'tasks', 'sync', 'safety', 'ffi', 'export-interop', 'import-interop', 'managed-interop', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'don-editor', 'fs-http', 'node-core', 'limitations', 'ai'],
 }
 REFERENCES = {
+    'managed-interop': ('Python / C# / Node.js interoperability', 'docs/managed-interop.md'),
     'import-interop': ('Import interoperability · C++ / Rust / Go', 'docs/import-interop.md'),
     'export-interop': ('Export interoperability · C++ / Rust / Go', 'docs/export-interop.md'),
     'math-reference': ('Math Reference', 'docs/math-reference.md'),
@@ -192,7 +193,7 @@ def main():
         folder = file.parent
         # Include imported sources and C dependencies in snapshot freshness checks.
         package = [file] if folder.name == 'howto' or folder == REPO / 'examples' else sorted(
-            p for p in folder.rglob('*') if p.is_file() and p.suffix in ('.dev', '.c', '.cpp', '.rs', '.go', '.h'))
+            p for p in folder.rglob('*') if p.is_file() and p.suffix in (('.dev', '.c', '.cpp', '.rs', '.go', '.h') + tuple(item.get('extra_extensions', []))))
         for root in item.get('package_roots', []):
             package.extend(sorted(p for p in (REPO / root).rglob('*') if p.is_file()
                                   and p.suffix in ('.dev', '.c', '.cpp', '.rs', '.go', '.h', '.py', '.don', '.toml')))
@@ -243,7 +244,7 @@ def main():
         validation = 'native frontend + compiled executable' if item.get('mode') == 'native' else (
             'runtime auto + AST' if item.get('mode') == 'runtime' else 'native frontend + runtime auto + AST')
         dependencies = [dict(path=p.relative_to(REPO).as_posix(), code=p.read_text(encoding='utf-8'))
-                        for p in package if p != file and p.suffix in ('.dev', '.c', '.cpp', '.rs', '.go', '.h', '.don', '.toml')
+                        for p in package if p != file and p.suffix in (('.dev', '.c', '.cpp', '.rs', '.go', '.h', '.don', '.toml') + tuple(item.get('extra_extensions', [])))
                         and (not item.get('package_roots') or item.get('project_root'))]
         examples.append(dict(item, code=file.read_text(encoding='utf-8'), output=output,
                              validation=validation, files=dependencies, download='downloads/' + slug + '.zip'))
@@ -259,7 +260,7 @@ def main():
         folder = (REPO / example['path']).parent
         with zipfile.ZipFile(downloads / (example['id'] + '.zip'), 'w', zipfile.ZIP_DEFLATED) as archive:
             files = [REPO / example['path']] if folder.name == 'howto' or folder == REPO / 'examples' else [
-                p for p in folder.rglob('*') if p.is_file() and p.suffix in ('.dev', '.c', '.cpp', '.rs', '.go', '.h', '.md')]
+                p for p in folder.rglob('*') if p.is_file() and p.suffix in (('.dev', '.c', '.cpp', '.rs', '.go', '.h', '.md') + tuple(example.get('extra_extensions', [])))]
             for root in example.get('package_roots', []):
                 files.extend(p for p in (REPO / root).rglob('*') if p.is_file()
                              and p.suffix in ('.dev', '.c', '.cpp', '.rs', '.go', '.h', '.py', '.md', '.don', '.toml'))

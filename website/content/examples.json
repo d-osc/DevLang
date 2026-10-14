@@ -1686,14 +1686,21 @@
   },
   {
     "id": "export-interop",
-    "title": "Export interoperability: C++ / Rust / Go",
+    "title": "Cross-language interoperability",
     "category": "FFI",
     "path": "examples/export-api/main.dev",
-    "description": "Bidirectional C ABI with C++, Rust and Go / เรียกข้ามภาษาทั้งนำเข้าและส่งออก พร้อมคู่มือและตัวอย่างครบ",
+    "description": "C++ / Rust / Go / Python / C# / JavaScript / TypeScript: native consumers and reverse calls / เชื่อมต่อข้ามภาษาพร้อม source ครบ",
     "doc": "export-interop",
     "commands": [
       "d examples/export-api/main.dev",
       "d build examples/export-api/api.dev --lib --release --cc clang --ar llvm-ar -o out/export-api/libdevmath.a"
+    ],
+    "extra_extensions": [
+      ".py",
+      ".js",
+      ".ts",
+      ".cs",
+      ".csproj"
     ]
   }
 ]

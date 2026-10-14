@@ -626,7 +626,7 @@
   },
   "export-interop": {
     "source_sha256": "1cf89d9717df0af7459e0ccae39d65834d2d21e4bb49c30f2b10914311370c50",
-    "validation_sha256": "e5855f23b3644e2f811d291faa8ec8bbeeb9c26ab44cb924363527a8415da466",
+    "validation_sha256": "bdc949d80d569908835c15250d041d759e591b4154fb141f21b24629e25108bd",
     "output": "42\n42\n12.5\ntrue\nDevLang Math\n"
   }
 }
