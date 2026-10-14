@@ -7,7 +7,7 @@ See [the complete import guide](../../../docs/import-interop.md) for all build c
 Verified on Windows x86_64 with C++/Rust and WSL Linux x86_64 with C++/Rust/Go. Each library was tested in runtime auto, AST and native builds. Runtime tests use an empty compiler PATH. Go on Windows is not covered.
 
 ```sh
-python scripts/smoke_import_interop.py --d target/release/d
+python scripts/smoke_import_interop.py --d target/release/d --cc gcc --cxx g++
 # Windows:
 python scripts/smoke_import_interop.py --d target/release/d.exe --languages cpp,rust
 ```

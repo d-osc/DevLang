@@ -201,8 +201,8 @@ String ในตัวอย่างเป็น literal ที่มี lifeti
 ## Reproduce regression checks
 
 ```sh
-# Linux: all four consumers; requires rustc, go, clang and llvm-ar
-python scripts/smoke_export_interop.py --d target/release/d
+# Linux: all four consumers; requires rustc, go, GCC/G++ and GNU ar
+python scripts/smoke_export_interop.py --d target/release/d --cc gcc --cxx g++ --ar ar
 
 # Windows: C, C++ and Rust
 python scripts/smoke_export_interop.py --d target/release/d.exe --languages c,cpp,rust

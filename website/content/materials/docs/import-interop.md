@@ -203,7 +203,7 @@ false
 
 ```sh
 # Linux: C++, Rust and Go, all three DevLang modes
-python scripts/smoke_import_interop.py --d target/release/d
+python scripts/smoke_import_interop.py --d target/release/d --cc gcc --cxx g++
 
 # Windows: C++ and Rust, all three DevLang modes
 python scripts/smoke_import_interop.py --d target/release/d.exe --languages cpp,rust
