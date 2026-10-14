@@ -48,3 +48,7 @@ An `export fn` runs normally in the source runtime; creating a native library fo
 ## C++, Rust and Go
 
 See [the complete interoperability guide](../../docs/export-interop.md) for all consumer sources, platform-specific build commands, ABI constraints and verified toolchain versions. `main.cpp`, `main.rs` and `go/main.go` all call the same `api.dev`.
+
+## Import foreign libraries into DevLang
+
+The [reverse direction](imports/README.md) uses the same DevLang caller with C++, Rust or Go shared libraries. See [the import guide](../../docs/import-interop.md) for runtime and native examples.

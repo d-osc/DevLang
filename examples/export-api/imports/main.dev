@@ -1,0 +1,16 @@
+// Load exactly one implementation with --ffi-lib (runtime) or --link (native).
+extern fn foreign_add(a: i32, b: i32): i32
+extern fn foreign_scale(value: f64, factor: f64): f64
+extern fn foreign_positive(value: i32): bool
+
+fn main(): void {
+    unsafe {
+        print(foreign_add(20, 22))
+        print(foreign_scale(2.5, 5.0))
+        print(foreign_positive(7))
+        print(foreign_positive(-7))
+        print(foreign_add(-20, -22))
+    }
+}
+
+main()

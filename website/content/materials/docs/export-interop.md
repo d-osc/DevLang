@@ -211,3 +211,7 @@ python scripts/smoke_export_interop.py --d target/release/d.exe --languages c,cp
 ใช้ `--cc`, `--cxx`, `--ar` เพื่อเลือก toolchain และ `--report out/export-interop.json` เพื่อเก็บ compiler versions กับผลลัพธ์ การไม่มี compiler ที่ระบุหรือ output ไม่ตรงจะทำให้ test ล้มเหลว ไม่มีการ skip ภาษาเงียบ ๆ
 
 ดาวน์โหลดโค้ดครบทุกภาษาได้จาก [ตัวอย่าง export](../examples/export-api/README.md) หรือหน้า Examples → Export interoperability
+
+## Reverse direction
+
+ดู [นำ C++, Rust และ Go เข้ามาเรียกใน DevLang](import-interop.md) สำหรับ DLL/shared libraries, `extern fn`, `--ffi-lib` และ native linking ที่ทดสอบจริง

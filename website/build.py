@@ -20,9 +20,10 @@ GROUPS = {
     'เริ่มต้น': ['intro', 'cheat-sheet', 'install', 'layout', 'cli', 'tooling', 'packages'],
     'พื้นฐานภาษา': ['variables', 'types', 'operators', 'loops', 'functions', 'strings-arrays', 'array-reference', 'object-reference', 'math-reference', 'modules'],
     'ข้อมูลและ abstraction': ['structs', 'enums-match', 'references', 'collections', 'generics', 'closures'],
-    'ระบบและ interoperability': ['module-api-intro', 'tasks', 'sync', 'safety', 'ffi', 'export-interop', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'don-editor', 'fs-http', 'node-core', 'limitations', 'ai'],
+    'ระบบและ interoperability': ['module-api-intro', 'tasks', 'sync', 'safety', 'ffi', 'export-interop', 'import-interop', 'callbacks', 'hardware', 'stdlib', 'basic-libs', 'data-libs', 'system-libs', 'control-libs', 'storage-libs', 'secure-network', 'json', 'don', 'don-editor', 'fs-http', 'node-core', 'limitations', 'ai'],
 }
 REFERENCES = {
+    'import-interop': ('Import interoperability · C++ / Rust / Go', 'docs/import-interop.md'),
     'export-interop': ('Export interoperability · C++ / Rust / Go', 'docs/export-interop.md'),
     'math-reference': ('Math Reference', 'docs/math-reference.md'),
     'object-reference': ('Object Reference', 'docs/object-reference.md'),

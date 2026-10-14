@@ -1689,7 +1689,7 @@
     "title": "Export interoperability: C++ / Rust / Go",
     "category": "FFI",
     "path": "examples/export-api/main.dev",
-    "description": "One DevLang library called from C++, Rust and Go / เรียก export ผ่าน C ABI พร้อมตัวอย่างครบทุกภาษา",
+    "description": "Bidirectional C ABI with C++, Rust and Go / เรียกข้ามภาษาทั้งนำเข้าและส่งออก พร้อมคู่มือและตัวอย่างครบ",
     "doc": "export-interop",
     "commands": [
       "d examples/export-api/main.dev",
