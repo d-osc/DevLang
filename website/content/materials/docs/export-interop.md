@@ -7,7 +7,7 @@
 | Platform | Consumers | Toolchain |
 | --- | --- | --- |
 | Windows x86_64 | C, C++, Rust | Clang 18.1.7, Rust 1.91.0 MSVC |
-| WSL Ubuntu Linux x86_64 | C, C++, Go | GCC/G++ 13.3.0, Go 1.22.2, CGO_ENABLED=1 |
+| WSL Ubuntu Linux x86_64 | C, C++, Rust, Go | GCC/G++ 13.3.0, Rust 1.98.1, Go 1.22.2, CGO_ENABLED=1 |
 
 ผลจากการ compile/link/run โปรแกรมจริง ไม่ใช่เพียงตรวจ syntax; ไม่ได้หมายความว่า Go บน Windows หรือทุก ABI ถูกทดสอบแล้ว ระบบ CI ทดสอบ C/C++/Rust บน Windows และ C/C++/Rust/Go บน Linux เพิ่มเติม
 
