@@ -32,18 +32,21 @@ impl Number {
             Self::Void => Value::Void,
         }
     }
+    #[inline(always)]
     fn integer(self) -> i128 {
         match self {
             Self::Int(n) => n,
             _ => unreachable!("verified numeric plan"),
         }
     }
+    #[inline(always)]
     fn float(self) -> f64 {
         match self {
             Self::Float(n) => n,
             _ => unreachable!("verified numeric plan"),
         }
     }
+    #[inline(always)]
     fn boolean(self) -> bool {
         match self {
             Self::Bool(n) => n,
@@ -125,6 +128,7 @@ impl Kind {
             bits,
         }
     }
+    #[inline(always)]
     fn normalize(self, n: i128) -> i128 {
         let Self::Int { mask, sign, .. } = self else {
             unreachable!()
@@ -136,6 +140,7 @@ impl Kind {
             n
         }
     }
+    #[inline(always)]
     fn unary(self, op: u8, n: Number) -> Number {
         match (self, op) {
             (Self::Int { .. }, b'-') => Number::Int(self.normalize(-n.integer())),
@@ -145,6 +150,7 @@ impl Kind {
             _ => unreachable!("verified unary operator"),
         }
     }
+    #[inline(always)]
     fn binary(self, op: Op, a: Number, b: Number) -> Result<Number, &'static str> {
         use Op::*;
         Ok(match self {
@@ -219,6 +225,15 @@ enum Instruction {
         kind: Kind,
         op: Op,
     },
+    /// Integers of at most 64 bits, computed in a machine word.
+    Fast {
+        dst: usize,
+        a: usize,
+        b: usize,
+        op: Op,
+        shift: u32,
+        signed: bool,
+    },
     Cast {
         dst: usize,
         src: usize,
@@ -252,6 +267,18 @@ enum Instruction {
     },
     Return(usize),
     Fail(&'static str),
+}
+// Slots are allocated by the builder and every workspace is cloned from
+// `initial`, so each index is in range by construction.
+#[inline(always)]
+fn slot(numbers: &[Number], i: usize) -> Number {
+    debug_assert!(i < numbers.len());
+    unsafe { *numbers.get_unchecked(i) }
+}
+#[inline(always)]
+fn slot_mut(numbers: &mut [Number], i: usize) -> &mut Number {
+    debug_assert!(i < numbers.len());
+    unsafe { numbers.get_unchecked_mut(i) }
 }
 pub struct Program {
     instructions: Vec<(Instruction, Span)>,
@@ -336,19 +363,19 @@ impl Program {
             Self::put(&mut numbers, &mut arrays, *slot, value);
         }
         let mut pc = 0;
-        let result = loop {
-            let (instruction, span) = &self.instructions[pc];
-            let step = (|| -> Result<Option<Value>, String> {
+        let outcome = (|| -> Result<Value, String> {
+            loop {
+                let (instruction, span) = &self.instructions[pc];
                 match instruction {
                     Instruction::Copy { dst, src, array } => {
                         if *array {
                             arrays[*dst] = arrays[*src].clone();
                         } else {
-                            numbers[*dst] = numbers[*src];
+                            *slot_mut(&mut numbers, *dst) = slot(&numbers, *src);
                         }
                     }
                     Instruction::Unary { dst, src, kind, op } => {
-                        numbers[*dst] = kind.unary(*op, numbers[*src])
+                        *slot_mut(&mut numbers, *dst) = kind.unary(*op, slot(&numbers, *src))
                     }
                     Instruction::Binary {
                         dst,
@@ -357,9 +384,36 @@ impl Program {
                         kind,
                         op,
                     } => {
-                        numbers[*dst] = kind
-                            .binary(*op, numbers[*a], numbers[*b])
+                        *slot_mut(&mut numbers, *dst) = kind
+                            .binary(*op, slot(&numbers, *a), slot(&numbers, *b))
                             .map_err(str::to_owned)?
+                    }
+                    Instruction::Fast { dst, a, b, op, shift, signed } => {
+                        let (x, y) = (slot(&numbers, *a).integer(), slot(&numbers, *b).integer());
+                        *slot_mut(&mut numbers, *dst) = match op {
+                            Op::Eq => Number::Bool(x == y),
+                            Op::Ne => Number::Bool(x != y),
+                            Op::Lt => Number::Bool(x < y),
+                            Op::Le => Number::Bool(x <= y),
+                            Op::Gt => Number::Bool(x > y),
+                            Op::Ge => Number::Bool(x >= y),
+                            _ => {
+                                let (x, y) = (x as u64, y as u64);
+                                let r = match op {
+                                    Op::Add => x.wrapping_add(y),
+                                    Op::Sub => x.wrapping_sub(y),
+                                    Op::Mul => x.wrapping_mul(y),
+                                    Op::And => x & y,
+                                    Op::Or => x | y,
+                                    _ => x ^ y,
+                                };
+                                Number::Int(if *signed {
+                                    (((r << shift) as i64) >> shift) as i128
+                                } else {
+                                    ((r << shift) >> shift) as i128
+                                })
+                            }
+                        };
                     }
                     Instruction::Cast { dst, src, from, to } => {
                         let value = match from {
@@ -410,13 +464,13 @@ impl Program {
                     }
                     Instruction::Jump(target) => {
                         pc = *target;
-                        return Ok(None);
+                        continue;
                     }
                     Instruction::Branch { cond, target, when }
-                        if numbers[*cond].boolean() == *when =>
+                        if slot(&numbers, *cond).boolean() == *when =>
                     {
                         pc = *target;
-                        return Ok(None);
+                        continue;
                     }
                     Instruction::Branch { .. } => {}
                     Instruction::Call { dst, name, args } => {
@@ -429,19 +483,14 @@ impl Program {
                         Self::put(&mut numbers, &mut arrays, *dst, value);
                     }
                     Instruction::Return(slot) => {
-                        return Ok(Some(self.value(&numbers, &arrays, *slot)))
+                        return Ok(self.value(&numbers, &arrays, *slot))
                     }
                     Instruction::Fail(msg) => return Err((*msg).into()),
                 }
                 pc += 1;
-                Ok(None)
-            })();
-            match step {
-                Ok(Some(value)) => break Ok(value),
-                Ok(None) => {}
-                Err(msg) => break Err((*span, msg)),
             }
-        };
+        })();
+        let result = outcome.map_err(|msg| (self.instructions[pc].1, msg));
         // Retain at most one frame per function, including after recursive calls.
         let mut cached = self.workspace.borrow_mut();
         if cached.is_none() {
@@ -495,6 +544,27 @@ impl Builder<'_> {
         }
         self.scopes.iter().rev().find_map(|s| s.get(&n[0]).copied())
     }
+    /// Writes the temporary `src` straight into `dst` by retargeting the
+    /// instruction that just produced it, instead of emitting a Copy.
+    fn copy_temp(&mut self, dst: usize, src: usize, s: Span) {
+        let named = self.scopes.iter().any(|m| m.values().any(|v| *v == src));
+        if !named && self.program.types[dst] == self.program.types[src] {
+            if let Some((
+                Instruction::Binary { dst: d, .. }
+                | Instruction::Fast { dst: d, .. }
+                | Instruction::Unary { dst: d, .. }
+                | Instruction::Cast { dst: d, .. },
+                _,
+            )) = self.program.instructions.last_mut()
+            {
+                if *d == src {
+                    *d = dst;
+                    return;
+                }
+            }
+        }
+        self.copy(dst, src, s);
+    }
     fn copy(&mut self, dst: usize, src: usize, s: Span) {
         self.emit(
             Instruction::Copy {
@@ -528,7 +598,7 @@ impl Builder<'_> {
                 }
                 let src = self.expr(value, ty.as_ref())?;
                 let dst = self.slot(self.program.types[src].clone(), Number::Void);
-                self.copy(dst, src, *span);
+                self.copy_temp(dst, src, *span);
                 self.scopes.last_mut()?.insert(name.clone(), dst);
             }
             Stmt::Expr(e) => {
@@ -558,7 +628,7 @@ impl Builder<'_> {
                 match &target.kind {
                     ExprKind::Name(n) => {
                         let dst = self.name(n)?;
-                        self.copy(dst, src, target.span);
+                        self.copy_temp(dst, src, target.span);
                     }
                     ExprKind::Index(base, index) => {
                         let ExprKind::Name(n) = &base.kind else {
@@ -643,6 +713,18 @@ impl Builder<'_> {
             _ => {}
         }
         let dst = self.slot(if op.comparison() { Type::Bool } else { ty }, Number::Void);
+        if let Kind::Int { bits, sign, .. } = kind {
+            if bits <= 64
+                && matches!(op, Op::Add | Op::Sub | Op::Mul | Op::And | Op::Or | Op::Xor
+                    | Op::Eq | Op::Ne | Op::Lt | Op::Le | Op::Gt | Op::Ge)
+            {
+                self.emit(
+                    Instruction::Fast { dst, a, b, op, shift: 64 - bits, signed: sign != 0 },
+                    span,
+                );
+                return Some(dst);
+            }
+        }
         self.emit(
             Instruction::Binary {
                 dst,
