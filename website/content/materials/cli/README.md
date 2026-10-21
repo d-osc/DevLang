@@ -89,3 +89,19 @@ a newer registry release. See [the registry example](../examples/registry/README
 Search with d pkg search QUERY, inspect with d pkg info @owner/repo, and add with d pkg add @owner/repo --as math --version '^1'. Use --store URL for a custom catalog. pkg outdated reports current/wanted/latest; pkg upgrade preserves ranges and --latest explicitly opts into new stable majors. Both support direct development dependencies. Git sources support --subdir packages/math. pkg publish --github OWNER/REPO [--dry-run] prepares/upload tagged immutable assets using gh; see the Store guide for authentication and clean/tag requirements.
 
 Transitive namespace collisions now use version-2 graph locks with package-local module scopes across auto/AST/native/LSP/global bins. Compatible graphs keep version-1 locks. Optional devlang constrains CLI SemVer; pkg compatibility --json reports it. Build all three components from current source to use scoped module mappings.
+
+## Executable scripts (shebang)
+
+`dev` is the same launcher as `d` and is meant for `#!/usr/bin/env dev`.
+The `#!` line is read as a comment, and arguments after the script path go to
+the program without `--`:
+
+```sh
+#!/usr/bin/env dev
+use "std/args"
+print(args.get(0))
+```
+
+```sh
+chmod +x hello && ./hello world
+```

@@ -1,0 +1,7 @@
+#!/usr/bin/env dev
+fn main() {
+    print("running as a script")
+    print(6 * 7)
+}
+
+main()
