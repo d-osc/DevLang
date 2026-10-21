@@ -194,6 +194,11 @@
     "validation_sha256": "1ad6f4612a40e2e0b257b447a6b4adfff4274d0a7a819fb210a9c28eab9c5067",
     "output": "Dev\n19\nChiang Mai\nDevLang user\n18\n{\"active\":true,\"address\":{\"city\":\"Chiang Mai\"},\"age\":19,\"display-name\":\"DevLang user\",\"name\":\"Dev\",\"tags\":[\"developer\",100,true,null]}\n"
   },
+  "don-destructuring": {
+    "source_sha256": "e1265f6e4d14138d60938b47dadd26f4163143e3484b257546e3e5bea15162e8",
+    "validation_sha256": "dfb521c63d132553d2d97550ea270f3c1a1b14738bff2974ec5c845a5c82bbea",
+    "output": "test\n10\ntest\n10\n11\n10\nDev\n"
+  },
   "filesystem": {
     "source_sha256": "bec2ef5134f806cda211e376d134aca1d0cd8564f265288d16439b631fd3fba7",
     "validation_sha256": "c2f0474d8f6246f9f46767141c2c242e6d557ffacfdc4f5dc44267768ea11cbc",
@@ -237,7 +242,7 @@
   "basic-libs": {
     "source_sha256": "7bea9b8369a55f03518dbf71fe3611920175f56bcc7ff88786b4a4b580cc312a",
     "validation_sha256": "ecadeb9581aef10e93056e858c0ca797ce500e15772bcfbbd973f7348db4181c",
-    "output": "3\nDEVLANG\ntrue\n2024-02-29T12:30:00.000Z\n2024-02-29 19:30:00 +07:00\nPASS math\nFAIL unicode: \\\\?\\C:\\Users\\ondev\\Projects\\dev-lang\\out\\don-objects-site\\examples\\basic-libs\\main.dev:22:13: std/test.g_equal_8ee5e9315bcacf54: assertion failed: characters\nfalse\n"
+    "output": "3\nDEVLANG\ntrue\n2024-02-29T12:30:00.000Z\n2024-02-29 19:30:00 +07:00\nPASS math\nFAIL unicode: /home/user/DevLang/examples/basic-libs/main.dev:22:13: std/test.g_equal_8ee5e9315bcacf54: assertion failed: characters\nfalse\n"
   },
   "data-libs": {
     "source_sha256": "177b7cb427fee372984106e0485bfe42a6381ed96129171af7d329928bbd98b1",
@@ -504,11 +509,6 @@
     "validation_sha256": "562cc824dbf534724d6e391bd3247b33e96b9af32fcfe67c6d3865d4cfd749a9",
     "output": "released\n"
   },
-  "don-destructuring": {
-    "source_sha256": "e1265f6e4d14138d60938b47dadd26f4163143e3484b257546e3e5bea15162e8",
-    "validation_sha256": "dfb521c63d132553d2d97550ea270f3c1a1b14738bff2974ec5c845a5c82bbea",
-    "output": "test\n10\ntest\n10\n11\n10\nDev\n"
-  },
   "constants": {
     "source_sha256": "f0f19dc4893eb2e80042b11669df65493c3c8c5fdec14ecdd430064445d30ebe",
     "validation_sha256": "268fd96f301890788cc73ff3f48f880d3ec77e84dcb3f363071f23207ef19f71",
@@ -628,5 +628,10 @@
     "source_sha256": "1cf89d9717df0af7459e0ccae39d65834d2d21e4bb49c30f2b10914311370c50",
     "validation_sha256": "bdc949d80d569908835c15250d041d759e591b4154fb141f21b24629e25108bd",
     "output": "42\n42\n12.5\ntrue\nDevLang Math\n"
+  },
+  "shebang": {
+    "source_sha256": "2857de879919b16fdbdbf8a9aae419ba158295da5e338fd1a6b986bb7622af18",
+    "validation_sha256": "88334750be4e5c6cc3232245e89c6f099895bf8f4503baa1e6150770bde582ee",
+    "output": "running as a script\n42\n"
   }
 }

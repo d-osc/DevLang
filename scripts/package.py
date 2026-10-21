@@ -58,7 +58,7 @@ def main():
     bundle = repo / "dist/d" / args.platform
     bundle.mkdir(parents=True, exist_ok=True)
     suffix = ".exe" if args.platform.startswith("windows") else ""
-    for source, name in ((args.cli, "d"), (args.compiler, "devc"), (args.runtime, "devrun")):
+    for source, name in ((args.cli, "d"), (args.cli, "dev"), (args.compiler, "devc"), (args.runtime, "devrun")):
         shutil.copy2(source, bundle / (name + suffix))
     if (compiler / "backend").is_dir():
         shutil.copytree(compiler / "backend", bundle / "backend", dirs_exist_ok=True)

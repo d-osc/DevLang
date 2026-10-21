@@ -1702,5 +1702,20 @@
       ".cs",
       ".csproj"
     ]
+  },
+  {
+    "id": "shebang",
+    "title": "สคริปต์ที่รันได้ด้วย shebang",
+    "category": "พื้นฐาน",
+    "path": "examples/howto/shebang.dev",
+    "description": "#!/usr/bin/env dev ทำให้ไฟล์ .dev รันเป็นคำสั่งได้ (บรรทัด #! ถือเป็น comment ทั้งใน d, devrun และ devc)",
+    "doc": "cli",
+    "commands": [
+      "d examples/howto/shebang.dev",
+      "chmod +x examples/howto/shebang.dev && ./examples/howto/shebang.dev hello",
+      "d check examples/howto/shebang.dev",
+      "d build examples/howto/shebang.dev --release -o out/example.exe",
+      "# Windows: ./out/example.exe | Linux: ./out/example.exe"
+    ]
   }
 ]
