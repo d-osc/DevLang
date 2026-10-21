@@ -89,23 +89,39 @@ fn main() {
     }
 }
 
-/// `dev` is the interpreter name for `#!/usr/bin/env dev` scripts: everything
-/// after the script path belongs to the script, so no `--` is needed.
+/// Arguments after a script path belong to the script. `dev` always forwards
+/// them; `d` does so for scripts that start with `#!` (so `#!/usr/bin/env d`
+/// works too), except for options, which stay with the launcher.
 fn shebang_arguments(raw: &mut Vec<OsString>) {
     let as_dev = env::current_exe()
         .ok()
         .is_some_and(|p| p.file_stem().is_some_and(|n| n == "dev"));
-    if !as_dev {
-        return;
-    }
     let at = usize::from(raw.first().is_some_and(|a| a == "run"));
     let is_script = raw.get(at).is_some_and(|a| {
         let name = a.to_string_lossy();
-        !name.starts_with('-') && (std::path::Path::new(a).is_file() || name.ends_with(".dev"))
+        let path = std::path::Path::new(a);
+        !name.starts_with('-')
+            && if as_dev {
+                path.is_file() || name.ends_with(".dev")
+            } else {
+                has_shebang(path)
+            }
     });
-    if is_script && raw.get(at + 1).is_some_and(|a| a != "--") {
+    let forward = raw
+        .get(at + 1)
+        .is_some_and(|a| a != "--" && (as_dev || !a.to_string_lossy().starts_with('-')));
+    if is_script && forward {
         raw.insert(at + 1, "--".into());
     }
+}
+
+fn has_shebang(path: &std::path::Path) -> bool {
+    use std::io::Read;
+    let mut head = [0u8; 2];
+    std::fs::File::open(path)
+        .and_then(|mut f| f.read_exact(&mut head))
+        .is_ok()
+        && &head == b"#!"
 }
 
 fn run() -> Result<i32, String> {

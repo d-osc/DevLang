@@ -105,3 +105,12 @@ future work. Native LLDB debugging via `d debug --vscode` is a separate mode.
 จาก Command Palette ระบบบันทึกไฟล์ก่อนเปิด debugger ใน terminal ใช้คำสั่ง
 `break`, `step`, `next`, `locals`, `stack` และ `continue` ได้โดยไม่ต้อง compile
 ยังไม่เชื่อม breakpoint ที่ gutter หรือแผง Variables ของ VS Code
+
+## Executable scripts
+
+Files whose first line is `#!/usr/bin/env dev` or `#!/usr/bin/env d` (also
+`-S`, or a direct path such as `#!/usr/local/bin/dev`) are detected as DevLang
+even without an extension. They get DevLang highlighting (the `#!` line is a
+comment), formatting and the language server. VS Code decides the language from
+file content only after the file is opened, so the Explorer shows the DevLang
+icon for `.dev` files but not for extensionless scripts.

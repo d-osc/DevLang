@@ -93,8 +93,10 @@ Transitive namespace collisions now use version-2 graph locks with package-local
 ## Executable scripts (shebang)
 
 `dev` is the same launcher as `d` and is meant for `#!/usr/bin/env dev`.
-The `#!` line is read as a comment, and arguments after the script path go to
-the program without `--`:
+`#!/usr/bin/env d` works as well. The `#!` line is read as a comment, and
+arguments after the script path go to the program without `--`. With `d`,
+arguments that start with `-` stay with the launcher (use `dev` when a script
+needs flags):
 
 ```sh
 #!/usr/bin/env dev

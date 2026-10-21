@@ -2,6 +2,10 @@
   "scopeName": "source.devlang",
   "patterns": [
     {
+      "name": "comment.line.shebang.devlang",
+      "match": "\\A#!.*$"
+    },
+    {
       "name": "comment.block.devlang",
       "begin": "/\\*",
       "end": "\\*/"
