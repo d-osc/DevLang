@@ -5,6 +5,7 @@ mod format;
 mod lsp;
 mod packages;
 mod unused;
+mod update;
 
 const HELP: &str = "Dev Lang
 
@@ -16,6 +17,7 @@ const HELP: &str = "Dev Lang
   d check|--check FILE.dev [options]        Check a native program
   d emit|--emit FILE.dev [options]          Emit C source
   d new NAME                              Create a project with package.don
+  d update [--check] [--version vX.Y.Z]  Update DevLang to the latest release
   d exec NAME [-- arguments]              Run a local or installed package bin
   d task [NAME] [-- arguments]            List or run explicit package scripts
   d pkg ci [--production]                 Verify/install the frozen lock
@@ -129,8 +131,9 @@ fn run() -> Result<i32, String> {
                 return Ok(0);
             }
             "--version"
-                if args.first().is_some_and(|a| a == "pkg")
-                    && args.get(1).is_some_and(|a| a == "add") =>
+                if (args.first().is_some_and(|a| a == "pkg")
+                    && args.get(1).is_some_and(|a| a == "add"))
+                    || args.first().is_some_and(|a| a == "update") =>
             {
                 args.push(raw[at].clone());
                 at += 1;
@@ -187,7 +190,7 @@ fn run() -> Result<i32, String> {
     let run_alias = matches!(selector, "run" | "--run" | "-r");
     let script_index = usize::from(run_alias);
     if let Some(name) = args.get(script_index).and_then(|a| a.to_str()) {
-        let reserved = matches!(selector, "new" | "pkg" | "fmt" | "lsp" | "debug" | "don" | "exec" | "task" | "help" | "build" | "compiler" | "emit");
+        let reserved = matches!(selector, "new" | "pkg" | "fmt" | "lsp" | "debug" | "don" | "exec" | "task" | "update" | "help" | "build" | "compiler" | "emit");
         let bare_builtin = matches!(selector, "check" | "format")
             && args.get(1).is_none_or(|a| a == "--");
         let candidate = !name.starts_with('-') && !name.ends_with(".dev")
@@ -203,6 +206,11 @@ fn run() -> Result<i32, String> {
                 }
             }
         }
+    }
+    if selector == "update" {
+        let values = args.iter().skip(1).map(|a| a.to_str().map(str::to_owned)
+            .ok_or("update arguments must be UTF-8")).collect::<Result<Vec<_>, _>>()?;
+        return update::command(&values);
     }
     if matches!(selector, "new" | "pkg" | "fmt" | "lsp" | "debug" | "don" | "exec" | "task") {
         let values = args

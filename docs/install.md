@@ -49,7 +49,9 @@ Use `--prefix DIR --bin-dir DIR` for custom directories. To uninstall, rerun the
 
 ## Updates and native builds
 
-Rerun the installer to update an existing managed installation. Files outside its recorded manifest are preserved, and conflicting unowned files/commands are rejected. Checksums are verified before installation. Verify the downloaded installer against the release `SHA256SUMS` as well.
+`d update` installs the newest release (`d update --check` only reports it; `d update --version vX.Y.Z` picks a tag). It downloads the platform installer from the GitHub release, verifies it against the release `SHA256SUMS`, and runs it against the current managed installation. On Linux that is the installation recorded beside `d`; on Windows x86_64 the installer runs silently after `d` exits. Windows ARM64 and unmanaged copies of `d` are not updated automatically.
+
+You can also rerun the installer to update an existing managed installation. Files outside its recorded manifest are preserved, and conflicting unowned files/commands are rejected. Checksums are verified before installation. Verify the downloaded installer against the release `SHA256SUMS` as well.
 
 Pure Dev source runs without a C compiler. Native builds and first-time C source FFI preparation require an installed Clang/GCC backend on each platform. This release does not bundle TinyCC. Examples are in the installed `examples` directory; run them using their full path or from the installation directory. See the installed language and runtime documentation for stdlib module/link options.
 

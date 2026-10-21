@@ -105,3 +105,13 @@ print(args.get(0))
 ```sh
 chmod +x hello && ./hello world
 ```
+
+## Updating
+
+```sh
+d update --check          # report the newest release
+d update                  # install it
+d update --version v0.5.3 # install a specific release
+```
+
+The installer is verified against the release `SHA256SUMS` before it runs. See [Install DevLang](../docs/install.md).
