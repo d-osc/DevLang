@@ -87,8 +87,28 @@ fn main() {
     }
 }
 
+/// `dev` is the interpreter name for `#!/usr/bin/env dev` scripts: everything
+/// after the script path belongs to the script, so no `--` is needed.
+fn shebang_arguments(raw: &mut Vec<OsString>) {
+    let as_dev = env::current_exe()
+        .ok()
+        .is_some_and(|p| p.file_stem().is_some_and(|n| n == "dev"));
+    if !as_dev {
+        return;
+    }
+    let at = usize::from(raw.first().is_some_and(|a| a == "run"));
+    let is_script = raw.get(at).is_some_and(|a| {
+        let name = a.to_string_lossy();
+        !name.starts_with('-') && (std::path::Path::new(a).is_file() || name.ends_with(".dev"))
+    });
+    if is_script && raw.get(at + 1).is_some_and(|a| a != "--") {
+        raw.insert(at + 1, "--".into());
+    }
+}
+
 fn run() -> Result<i32, String> {
-    let raw: Vec<OsString> = env::args_os().skip(1).collect();
+    let mut raw: Vec<OsString> = env::args_os().skip(1).collect();
+    shebang_arguments(&mut raw);
     let mut args = Vec::new();
     let mut cwd = None;
     let mut selected_package = None;
