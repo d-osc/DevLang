@@ -1,0 +1,3461 @@
+// dcc - a tiny C-subset compiler written in pure DevLang.
+//
+// It compiles a .c file straight into a Windows x86-64 PE executable:
+// lexer -> recursive-descent parser -> x64 code generator -> PE writer.
+// No clang/GCC, assembler or linker is involved at any stage.
+//
+// Usage:
+//   d run tools/dcc/main.dev -- program.c -o program.exe
+//
+// Supported C subset: int-typed functions (max 4 params), local variables,
+// if/else, while, for, break/continue, recursion, arithmetic/logical
+// operators, assignment (= += -= *= /= %=), ++/--, string literals,
+// char literals, comments. Builtins: puts(strlit), putchar(int),
+// print_int(int). See README.md for the full contract.
+
+use "std/cli"
+use "std/fs"
+use "std/strings"
+
+// ---------------------------------------------------------------------------
+// Vocabulary
+// ---------------------------------------------------------------------------
+
+enum TK { T_EOF, T_NUM, T_IDENT, T_STR, T_PUNCT, T_KW, T_FNUM }
+
+enum KW { KW_INT, KW_LONG, KW_VOID, KW_RETURN, KW_IF, KW_ELSE, KW_WHILE, KW_FOR, KW_BREAK, KW_CONTINUE, KW_TYPEDEF, KW_STATIC, KW_STRUCT, KW_CONST, KW_UNSIGNED, KW_SIGNED, KW_SHORT, KW_CHAR, KW_DOUBLE, KW_FLOAT }
+
+enum NK { N_NUM, N_STR, N_VAR, N_BIN, N_UN, N_CALL, N_ASSIGN, N_INCDEC, N_RET, N_EXPR, N_DECL, N_BLOCK, N_IF, N_WHILE, N_FOR, N_EMPTY, N_BREAK, N_CONT, N_CAST, N_ADDR, N_DEREF, N_MEMBER, N_TERN, N_FNUM, N_INDEX }
+
+enum OP { O_NONE, O_ADD, O_SUB, O_MUL, O_DIV, O_MOD, O_EQ, O_NE, O_LT, O_LE, O_GT, O_GE, O_AND, O_OR, O_SHL, O_SHR, O_BAND, O_BOR, O_XOR }
+
+enum UN { U_NONE, U_NEG, U_NOT, U_BITNOT }
+
+enum IC { IC_NONE, IC_POSTINC, IC_POSTDEC, IC_PREINC, IC_PREDEC }
+
+struct Token { kind i64, text str, ival i64, line i64, bytes Vec<u8> }
+
+// AST node. Fields double as: N_BIN ival=opcode a/b=operands;
+// N_CALL name + kids=args; N_DECL name + a=init(-1 none);
+// N_IF a=cond b=then c=else(-1 none); N_WHILE a=cond b=body;
+// N_FOR a=init b=cond c=step kids[0]=body; N_ASSIGN name a=rhs;
+// N_INCDEC name ival=IC kind; N_NUM ival=value; N_STR ival=string index.
+struct Node { kind i64, name str, ival i64, a i64, b i64, c i64, line i64, kids Vec<i64> }
+
+struct Func { name str, params Vec<str>, body i64, addr i64, ptypes Vec<i64> }
+
+struct LexOut { toks Vec<Token>, err str }
+
+struct P {
+    toks Vec<Token>, pos i64, out i64, line i64, tout i64,
+    nodes Vec<Node>, funcs Vec<Func>, strs Vec<Vec<u8>>,
+    tys Vec<Ty>, tdef Map<str, i64>,
+    pnames Vec<str>, ptypes Vec<i64>,
+    err str
+}
+
+// Relocation records, all patched after code and layout are complete.
+struct SFix { pos i64, idx i64 }       // lea rax,[rip+str]
+struct IFix { pos i64, idx i64 }       // call [rip+IAT entry]
+struct CFix { pos i64, name str }      // call rel32 function
+struct BFix { pos i64, label i64 }     // jcc/jmp rel32 label
+
+struct Cg {
+    code Vec<u8>,
+    nodes Vec<Node>,
+    funcs Vec<Func>,
+    strs Vec<Vec<u8>>,
+    strfix Vec<SFix>, iatfix Vec<IFix>, callfix Vec<CFix>, brfix Vec<BFix>,
+    labels Vec<i64>, nlabels i64,
+    slots Map<str, i64>, nslots i64, maxslots i64,
+    breakL i64, contL i64,
+    addr Map<str, i64>,
+    tys Vec<Ty>, vtypes Map<str, i64>, emitset Map<str, bool>,
+    err str
+}
+
+struct GenOut { pe Vec<u8>, size i64, nfuncs i64, err str }
+
+// ---------------------------------------------------------------------------
+// Small helpers
+// ---------------------------------------------------------------------------
+
+fn istr(v i64) str { return Vec<i64>(v).toString() }
+
+fn align_up(v i64, a i64) i64 { return ((v + a - 1) / a) * a }
+
+fn byte_of(v i64, shift i64) i64 {
+    let x = ((v >> shift) % 256)
+    if x < 0 { x += 256 }
+    return x
+}
+
+// ---------------------------------------------------------------------------
+// Lexer
+// ---------------------------------------------------------------------------
+
+fn is_digit(ch i64) bool { return ch >= 48 && ch <= 57 }
+
+fn hex_digit_value(d i64) i64 {
+    if d >= 97 { return 87 }
+    if d >= 65 { return 55 }
+    return 48
+}
+
+fn is_ident_start(ch i64) bool {
+    return (ch >= 97 && ch <= 122) || (ch >= 65 && ch <= 90) || ch == 95
+}
+
+fn is_ident_ch(ch i64) bool { return is_ident_start(ch) || is_digit(ch) }
+
+fn kw_id(s str) i64 {
+    if strings.equal(s, "int") { return KW.KW_INT as i64 }
+    if strings.equal(s, "long") { return KW.KW_LONG as i64 }
+    if strings.equal(s, "void") { return KW.KW_VOID as i64 }
+    if strings.equal(s, "return") { return KW.KW_RETURN as i64 }
+    if strings.equal(s, "if") { return KW.KW_IF as i64 }
+    if strings.equal(s, "else") { return KW.KW_ELSE as i64 }
+    if strings.equal(s, "while") { return KW.KW_WHILE as i64 }
+    if strings.equal(s, "for") { return KW.KW_FOR as i64 }
+    if strings.equal(s, "break") { return KW.KW_BREAK as i64 }
+    if strings.equal(s, "continue") { return KW.KW_CONTINUE as i64 }
+    if strings.equal(s, "typedef") { return KW.KW_TYPEDEF as i64 }
+    if strings.equal(s, "static") { return KW.KW_STATIC as i64 }
+    if strings.equal(s, "struct") { return KW.KW_STRUCT as i64 }
+    if strings.equal(s, "const") { return KW.KW_CONST as i64 }
+    if strings.equal(s, "unsigned") { return KW.KW_UNSIGNED as i64 }
+    if strings.equal(s, "signed") { return KW.KW_SIGNED as i64 }
+    if strings.equal(s, "short") { return KW.KW_SHORT as i64 }
+    if strings.equal(s, "char") { return KW.KW_CHAR as i64 }
+    if strings.equal(s, "double") { return KW.KW_DOUBLE as i64 }
+    if strings.equal(s, "float") { return KW.KW_FLOAT as i64 }
+    return -1
+}
+
+// UTF-8 byte position -> Unicode scalar position, so substring() can slice
+// ASCII identifiers out of sources that contain Thai text in comments.
+fn scalar_map(src str) Vec<i64> {
+    let m = Vec<i64>()
+    m.push(0)
+    for j in 0..strings.len(src) as i64 {
+        let b = src[j] as i64
+        if b < 128 || b >= 192 {
+            m.push(m[j] + 1)
+        } else {
+            m.push(m[j])
+        }
+    }
+    return m
+}
+
+fn lex(src str) LexOut {
+    let toks = Vec<Token>()
+    let sc = scalar_map(src)
+    let n = strings.len(src) as i64
+    let i = 0
+    let line = 1
+    while i < n {
+        let ch = src[i] as i64
+        if ch == 10 { line += 1; i += 1; continue }
+        if ch == 32 || ch == 9 || ch == 13 { i += 1; continue }
+        // // comment
+        if ch == 47 && i + 1 < n && src[i + 1] == 47 {
+            i += 2
+            while i < n && src[i] != 10 { i += 1 }
+            continue
+        }
+        // /* comment */
+        if ch == 47 && i + 1 < n && src[i + 1] == 42 {
+            let startLine = line
+            i += 2
+            let closed = false
+            while i < n {
+                if src[i] == 10 { line += 1 }
+                if src[i] == 42 && i + 1 < n && src[i + 1] == 47 { i += 2; closed = true; break }
+                i += 1
+            }
+            if closed == false {
+                return LexOut(toks, "dcc: line " + istr(startLine) + ": unterminated /* comment")
+            }
+            continue
+        }
+        // identifier / keyword
+        if is_ident_start(ch) {
+            let j = i
+            while j < n && is_ident_ch(src[j] as i64) { j += 1 }
+            let text = strings.substring(src, sc[i], sc[j])
+            let kid = kw_id(text)
+            if kid >= 0 {
+                toks.push(Token(TK.T_KW as i64, text, kid, line, Vec<u8>()))
+            } else {
+                toks.push(Token(TK.T_IDENT as i64, text, 0, line, Vec<u8>()))
+            }
+            i = j
+            continue
+        }
+        // number (decimal, hex) or float literal
+        if is_digit(ch) || (ch == 46 && i + 1 < n && is_digit(src[i + 1] as i64)) {
+            let j = i
+            let v = 0
+            let isFloat = false
+            let isHex = false
+            if ch == 48 && i + 1 < n && (src[i + 1] == 120 || src[i + 1] == 88) {
+                isHex = true
+                j = i + 2
+                while j < n {
+                    let d = src[j] as i64
+                    let ok = is_digit(d) || (d >= 97 && d <= 102) || (d >= 65 && d <= 70)
+                    if ok == false { break }
+                    v = v * 16 + (d - hex_digit_value(d))
+                    j += 1
+                }
+            } else {
+                while j < n && is_digit(src[j] as i64) {
+                    v = v * 10 + ((src[j] as i64) - 48)
+                    j += 1
+                }
+                if j < n && src[j] == 46 {
+                    isFloat = true
+                    j += 1
+                    while j < n && is_digit(src[j] as i64) { j += 1 }
+                }
+                if j < n && (src[j] == 101 || src[j] == 69) {
+                    isFloat = true
+                    j += 1
+                    if j < n && (src[j] == 43 || src[j] == 45) { j += 1 }
+                    while j < n && is_digit(src[j] as i64) { j += 1 }
+                }
+            }
+            if isFloat {
+                let text = strings.substring(src, sc[i], sc[j])
+                toks.push(Token(TK.T_FNUM as i64, text, 0, line, Vec<u8>()))
+            } else {
+                toks.push(Token(TK.T_NUM as i64, "", v, line, Vec<u8>()))
+            }
+            i = j
+            continue
+        }
+        // string literal
+        if ch == 34 {
+            let startLine = line
+            i += 1
+            let bytes = Vec<u8>()
+            let done = false
+            while i < n {
+                let b = src[i] as i64
+                if b == 34 { i += 1; done = true; break }
+                if b == 10 { break }
+                if b == 92 && i + 1 < n {
+                    let e = src[i + 1] as i64
+                    if e == 110 { bytes.push(10) }
+                    else if e == 116 { bytes.push(9) }
+                    else if e == 114 { bytes.push(13) }
+                    else if e == 48 { bytes.push(0) }
+                    else if e == 92 { bytes.push(92) }
+                    else if e == 34 { bytes.push(34) }
+                    else if e == 39 { bytes.push(39) }
+                    else if e == 63 { bytes.push(63) }
+                    else if e == 97 { bytes.push(7) }
+                    else if e == 98 { bytes.push(8) }
+                    else if e == 102 { bytes.push(12) }
+                    else if e == 118 { bytes.push(11) }
+                    else {
+                        return LexOut(toks, "dcc: line " + istr(startLine) + ": unknown escape")
+                    }
+                    i += 2
+                    continue
+                }
+                bytes.push(b as u8)
+                i += 1
+            }
+            if done == false {
+                return LexOut(toks, "dcc: line " + istr(startLine) + ": unterminated string literal")
+            }
+            toks.push(Token(TK.T_STR as i64, "", 0, startLine, bytes))
+            continue
+        }
+        // char literal
+        if ch == 39 {
+            let startLine = line
+            if i + 2 < n && src[i + 1] == 92 && i + 3 < n && src[i + 3] == 39 {
+                let e = src[i + 2] as i64
+                let v = e
+                if e == 110 { v = 10 }
+                else if e == 116 { v = 9 }
+                else if e == 48 { v = 0 }
+                else if e == 92 { v = 92 }
+                else if e == 39 { v = 39 }
+                else if e == 34 { v = 34 }
+                else if e == 63 { v = 63 }
+                else if e == 97 { v = 7 }
+                else if e == 98 { v = 8 }
+                else if e == 102 { v = 12 }
+                else if e == 118 { v = 11 }
+                toks.push(Token(TK.T_NUM as i64, "", v, startLine, Vec<u8>()))
+                i += 4
+                continue
+            }
+            if i + 2 < n && src[i + 2] == 39 && src[i + 1] != 92 {
+                toks.push(Token(TK.T_NUM as i64, "", src[i + 1] as i64, startLine, Vec<u8>()))
+                i += 3
+                continue
+            }
+            return LexOut(toks, "dcc: line " + istr(startLine) + ": bad char literal")
+        }
+        // two-char punctuator
+        if i + 1 < n {
+            let b0 = ch
+            let b1 = src[i + 1]
+            let two = b0 == 61 && b1 == 61
+            two = two || (b0 == 33 && b1 == 61)
+            two = two || (b0 == 60 && b1 == 61)
+            two = two || (b0 == 62 && b1 == 61)
+            two = two || (b0 == 38 && b1 == 38)
+            two = two || (b0 == 124 && b1 == 124)
+            two = two || (b0 == 43 && b1 == 61)
+            two = two || (b0 == 45 && b1 == 61)
+            two = two || (b0 == 42 && b1 == 61)
+            two = two || (b0 == 47 && b1 == 61)
+            two = two || (b0 == 37 && b1 == 61)
+            two = two || (b0 == 43 && b1 == 43)
+            two = two || (b0 == 45 && b1 == 45)
+            two = two || (b0 == 60 && b1 == 60)
+            two = two || (b0 == 62 && b1 == 62)
+            two = two || (b0 == 45 && b1 == 62)
+            if two {
+                let text = strings.substring(src, sc[i], sc[i + 2])
+                toks.push(Token(TK.T_PUNCT as i64, text, 0, line, Vec<u8>()))
+                i += 2
+                continue
+            }
+        }
+        // one-char punctuator
+        if ch == 43 || ch == 45 || ch == 42 || ch == 47 || ch == 37 || ch == 60 || ch == 62 || ch == 61 || ch == 33 || ch == 40 || ch == 41 || ch == 123 || ch == 125 || ch == 59 || ch == 44 || ch == 38 || ch == 46 || ch == 91 || ch == 93 || ch == 124 || ch == 94 || ch == 126 {
+            let text = strings.substring(src, sc[i], sc[i] + 1)
+            toks.push(Token(TK.T_PUNCT as i64, text, 0, line, Vec<u8>()))
+            i += 1
+            continue
+        }
+        return LexOut(toks, "dcc: line " + istr(line) + ": unexpected character " + istr(ch))
+    }
+    toks.push(Token(TK.T_EOF as i64, "", 0, line, Vec<u8>()))
+    return LexOut(toks, "")
+}
+
+// ---------------------------------------------------------------------------
+// C type registry
+// ---------------------------------------------------------------------------
+
+enum TYK { TY_VOID, TY_I8, TY_I16, TY_I32, TY_I64, TY_U8, TY_U16, TY_U32, TY_U64, TY_BOOL, TY_F64, TY_PTR, TY_STRUCT }
+
+struct Ty { kind i64, size i64, pointee i64, name str }
+
+fn builtin_types() Vec<Ty> {
+    let t = Vec<Ty>()
+    t.push(Ty(TYK.TY_VOID as i64, 0, -1, "void"))
+    t.push(Ty(TYK.TY_I8 as i64, 1, -1, "i8"))
+    t.push(Ty(TYK.TY_I16 as i64, 2, -1, "i16"))
+    t.push(Ty(TYK.TY_I32 as i64, 4, -1, "i32"))
+    t.push(Ty(TYK.TY_I64 as i64, 8, -1, "i64"))
+    t.push(Ty(TYK.TY_U8 as i64, 1, -1, "u8"))
+    t.push(Ty(TYK.TY_U16 as i64, 2, -1, "u16"))
+    t.push(Ty(TYK.TY_U32 as i64, 4, -1, "u32"))
+    t.push(Ty(TYK.TY_U64 as i64, 8, -1, "u64"))
+    t.push(Ty(TYK.TY_BOOL as i64, 1, -1, "bool"))
+    t.push(Ty(TYK.TY_F64 as i64, 8, -1, "f64"))
+    return t
+}
+
+fn TY_VOID_ID() i64 { return 0 }
+fn TY_I8_ID() i64 { return 1 }
+fn TY_I16_ID() i64 { return 2 }
+fn TY_I32_ID() i64 { return 3 }
+fn TY_I64_ID() i64 { return 4 }
+fn TY_U8_ID() i64 { return 5 }
+fn TY_U16_ID() i64 { return 6 }
+fn TY_U32_ID() i64 { return 7 }
+fn TY_U64_ID() i64 { return 8 }
+fn TY_BOOL_ID() i64 { return 9 }
+fn TY_F64_ID() i64 { return 10 }
+
+fn is_unsigned_kind(k i64) bool {
+    return k == TYK.TY_U8 as i64 || k == TYK.TY_U16 as i64 || k == TYK.TY_U32 as i64 || k == TYK.TY_U64 as i64 || k == TYK.TY_BOOL as i64
+}
+
+fn mk_ptr(p P, pointee i64) P {
+    for i in 0..p.tys.len() as i64 {
+        if p.tys[i].kind == TYK.TY_PTR as i64 && p.tys[i].pointee == pointee { return p }
+    }
+    p.tys.push(Ty(TYK.TY_PTR as i64, 8, pointee, ""))
+    return p
+}
+
+fn mk_named_struct(p P, name str) P {
+    for i in 0..p.tys.len() as i64 {
+        if p.tys[i].kind == TYK.TY_STRUCT as i64 && strings.equal(p.tys[i].name, name) { return p }
+    }
+    p.tys.push(Ty(TYK.TY_STRUCT as i64, 0, -1, name))
+    return p
+}
+
+// ---------------------------------------------------------------------------
+// Mini system headers: the only <...> includes devc output relies on.
+// Everything devc actually calls (printf/puts/strlen/exit/...) is handled
+// directly by codegen; these headers only supply typedefs and macros.
+// ---------------------------------------------------------------------------
+
+fn sys_header_text(name str) str {
+    if strings.equal(name, "stdint.h") {
+        return "#define INT8_C(v) v\n#define INT16_C(v) v\n#define INT32_C(v) v\n#define INT64_C(v) v\n#define UINT8_C(v) v\n#define UINT16_C(v) v\n#define UINT32_C(v) v\n#define UINT64_C(v) v\ntypedef signed char int8_t;\ntypedef short int16_t;\ntypedef int int32_t;\ntypedef long long int64_t;\ntypedef unsigned char uint8_t;\ntypedef unsigned short uint16_t;\ntypedef unsigned int uint32_t;\ntypedef unsigned long long uint64_t;\ntypedef long intptr_t;\ntypedef unsigned long uintptr_t;\n#define INT8_MIN (-128)\n#define INT16_MIN (-32767-1)\n#define INT32_MIN (-2147483647-1)\n#define INT64_MIN (-9223372036854775807-1)\n#define INT8_MAX 127\n#define INT16_MAX 32767\n#define INT32_MAX 2147483647\n#define INT64_MAX 9223372036854775807\n#define UINT8_MAX 255\n#define UINT16_MAX 65535\n#define UINT32_MAX 4294967295\n#define UINT64_MAX 18446744073709551615\n#define INTPTR_MIN (-9223372036854775807-1)\n#define INTPTR_MAX 9223372036854775807\n#define UINTPTR_MAX 18446744073709551615"
+    }
+    if strings.equal(name, "stddef.h") {
+        return "typedef unsigned long long size_t;\ntypedef long ptrdiff_t;\n#define NULL 0"
+    }
+    if strings.equal(name, "stdbool.h") {
+        return "typedef unsigned char bool;\n#define true 1\n#define false 0"
+    }
+    if strings.equal(name, "stdio.h") {
+        return "#define stderr 2\n#define stdout 1"
+    }
+    if strings.equal(name, "limits.h") {
+        return "#define CHAR_BIT 8\n#define SCHAR_MIN (-128)\n#define SCHAR_MAX 127\n#define UCHAR_MAX 255\n#define SHRT_MIN (-32767-1)\n#define SHRT_MAX 32767\n#define USHRT_MAX 65535\n#define INT_MIN (-2147483647-1)\n#define INT_MAX 2147483647\n#define UINT_MAX 4294967295\n#define LONG_MAX 2147483647\n#define ULONG_MAX 4294967295"
+    }
+    return ""
+}
+
+// ---------------------------------------------------------------------------
+// Preprocessor: includes, guards, #if defined(...), object/function macros
+// ---------------------------------------------------------------------------
+
+struct MDef { isfn bool, params Vec<str>, body str }
+
+struct PP {
+    out str,
+    defines Map<str, MDef>,
+    err str
+}
+
+fn dir_of(path str) str {
+    let n = strings.len(path) as i64
+    let j = n - 1
+    while j >= 0 {
+        let b = path[j] as i64
+        if b == 92 || b == 47 { return strings.substring(path, 0, j) }
+        j -= 1
+    }
+    return "."
+}
+
+fn join_path(base str, name str) str {
+    if strings.len(base) as i64 == 0 { return name }
+    return base + "\\" + name
+}
+
+fn pp_eval(e str, from i64, to i64, pp PP) i64 {
+    // top-level ||
+    let i = from
+    let depth = 0
+    let split = -1
+    while i < to {
+        let c = e[i] as i64
+        if c == 40 { depth += 1 }
+        if c == 41 { depth -= 1 }
+        if depth == 0 && c == 124 && i + 1 < to && e[i + 1] as i64 == 124 {
+            split = i
+            break
+        }
+        i += 1
+    }
+    if split >= 0 {
+        let a = pp_eval(e, from, split, pp)
+        let b = pp_eval(e, split + 2, to, pp)
+        if a < 0 || b < 0 { return -1 }
+        if a == 1 || b == 1 { return 1 }
+        return 0
+    }
+    // top-level &&
+    let j = from
+    let depth2 = 0
+    let split2 = -1
+    while j < to {
+        let c2 = e[j] as i64
+        if c2 == 40 { depth2 += 1 }
+        if c2 == 41 { depth2 -= 1 }
+        if depth2 == 0 && c2 == 38 && j + 1 < to && e[j + 1] as i64 == 38 {
+            split2 = j
+            break
+        }
+        j += 1
+    }
+    if split2 >= 0 {
+        let a = pp_eval(e, from, split2, pp)
+        let b = pp_eval(e, split2 + 2, to, pp)
+        if a < 0 || b < 0 { return -1 }
+        if a == 1 && b == 1 { return 1 }
+        return 0
+    }
+    if from < to && e[from] as i64 == 33 {
+        let v = pp_eval(e, from + 1, to, pp)
+        if v < 0 { return -1 }
+        if v == 1 { return 0 }
+        return 1
+    }
+    if from < to && e[from] as i64 == 40 && to - from >= 2 && e[to - 1] as i64 == 41 {
+        return pp_eval(e, from + 1, to - 1, pp)
+    }
+    if from + 8 <= to {
+        let head = strings.substring(e, from, from + 7)
+        if strings.equal(head, "defined") {
+            let rest = strings.substring(e, from + 7, to)
+            if strings.startsWith(rest, "(") == false || strings.endsWith(rest, ")") == false { return -1 }
+            let name = strings.substring(rest, 1, strings.charLength(rest) - 1)
+            if strings.equal(name, "1") { return 1 }
+            if strings.equal(name, "0") { return 0 }
+            if pp.defines.contains(name) { return 1 }
+            return 0
+        }
+    }
+    if from < to {
+        let lit = strings.substring(e, from, to)
+        if strings.equal(lit, "1") { return 1 }
+        if strings.equal(lit, "0") { return 0 }
+    }
+    return -1
+}
+
+fn pp_process_text(pp PP, text str, base str, depth i64) PP {
+    if strings.equal(pp.err, "") == false { return pp }
+    if depth > 64 {
+        pp.err = "dcc pp: include depth exceeded"
+        return pp
+    }
+    let lines = strings.split(text, "\n")
+    let stack = Vec<bool>()
+    let li = 0
+    while li < lines.len() as i64 {
+        let mut = strings.trimEnd(lines[li])
+        li += 1
+        while strings.endsWith(mut, "\\") && li < lines.len() as i64 {
+            let nxt = strings.trimEnd(lines[li])
+            li += 1
+            mut = strings.substring(mut, 0, strings.charLength(mut) - 1) + strings.trimStart(nxt)
+        }
+        let line = strings.trim(mut)
+        let active = true
+        for k in 0..stack.len() as i64 {
+            if stack[k] == false { active = false }
+        }
+        if strings.len(line) as i64 == 0 { continue }
+        if line[0] as i64 != 35 {
+            if active { pp.out = pp.out + mut + "\n" }
+            continue
+        }
+        if strings.startsWith(line, "#include") {
+            if active == false { continue }
+            let rest = strings.trimStart(strings.substring(line, 8, strings.charLength(line)))
+            if strings.startsWith(rest, "\"") {
+                let relq = strings.indexOf(strings.substring(rest, 1, strings.charLength(rest)), "\"")
+                let closing = -1
+                if relq >= 0 { closing = relq + 1 }
+                if closing < 0 { pp.err = "dcc pp: bad #include"; return pp }
+                let name = strings.substring(rest, 1, closing)
+                let path = join_path(base, name)
+                if fs.exists(path) == false {
+                    pp.err = "dcc pp: cannot include " + path
+                    return pp
+                }
+                pp = pp_process_text(pp, fs.read_text(path), dir_of(path), depth + 1)
+            } else if strings.startsWith(rest, "<") {
+                let relg = strings.indexOf(strings.substring(rest, 1, strings.charLength(rest)), ">")
+                let closing = -1
+                if relg >= 0 { closing = relg + 1 }
+                if closing < 0 { pp.err = "dcc pp: bad #include"; return pp }
+                let name = strings.substring(rest, 1, closing)
+                let text2 = sys_header_text(name)
+                if strings.equal(text2, "") == false {
+                    pp = pp_process_text(pp, text2, base, depth + 1)
+                }
+            } else {
+                pp.err = "dcc pp: unsupported #include form: " + line
+                return pp
+            }
+            continue
+        }
+        if strings.startsWith(line, "#define") {
+            if active == false { continue }
+            let rest = strings.trimStart(strings.substring(line, 7, strings.charLength(line)))
+            let j = 0
+            while j < strings.len(rest) as i64 && is_ident_ch(rest[j] as i64) { j += 1 }
+            if j == 0 { pp.err = "dcc pp: bad #define"; return pp }
+            let name = strings.substring(rest, 0, j)
+            let tail = strings.substring(rest, j, strings.charLength(rest))
+            if strings.startsWith(tail, "(") == false {
+                pp.defines.set(name, MDef(false, Vec<str>(), strings.trim(tail)))
+                continue
+            }
+            let d = 1
+            let k = 1
+            while k < strings.len(tail) as i64 {
+                let c = tail[k] as i64
+                if c == 34 { k += 1; continue }
+                if c == 40 { d += 1 }
+                if c == 41 {
+                    d -= 1
+                    if d == 0 { break }
+                }
+                k += 1
+            }
+            if d != 0 { pp.err = "dcc pp: bad #define params"; return pp }
+            let paramsText = strings.substring(tail, 1, k)
+            let body = strings.trim(strings.substring(tail, k + 1, strings.charLength(tail)))
+            let params = Vec<str>()
+            if strings.len(paramsText) as i64 > 0 {
+                params = strings.split(paramsText, ",")
+            }
+            pp.defines.set(name, MDef(true, params, body))
+            continue
+        }
+        if strings.startsWith(line, "#undef") {
+            if active == false { continue }
+            let name = strings.trim(strings.substring(line, 6, strings.charLength(line)))
+            if pp.defines.contains(name) { pp.defines.remove(name) }
+            continue
+        }
+        if strings.startsWith(line, "#ifndef") {
+            let name = strings.trim(strings.substring(line, 7, strings.charLength(line)))
+            stack.push(pp.defines.contains(name) == false)
+            continue
+        }
+        if strings.startsWith(line, "#ifdef") {
+            let name = strings.trim(strings.substring(line, 6, strings.charLength(line)))
+            stack.push(pp.defines.contains(name))
+            continue
+        }
+        if strings.startsWith(line, "#if") {
+            let expr = strings.trim(strings.substring(line, 3, strings.charLength(line)))
+            let v = pp_eval(expr, 0, strings.len(expr) as i64, pp)
+            if v < 0 { pp.err = "dcc pp: unsupported #if expression: " + line; return pp }
+            stack.push(v == 1)
+            continue
+        }
+        if strings.startsWith(line, "#else") {
+            if stack.len() as i64 == 0 { pp.err = "dcc pp: #else without #if"; return pp }
+            let top = stack.len() as i64 - 1
+            let cur = stack[top]
+            stack[top] = cur == false
+            continue
+        }
+        if strings.startsWith(line, "#elif") {
+            pp.err = "dcc pp: #elif is not supported"
+            return pp
+        }
+        if strings.startsWith(line, "#endif") {
+            if stack.len() as i64 == 0 { pp.err = "dcc pp: #endif without #if"; return pp }
+            let dropped = stack.pop()
+            continue
+        }
+        if strings.startsWith(line, "#line") || strings.startsWith(line, "#pragma") {
+            continue
+        }
+        pp.err = "dcc pp: unsupported directive: " + line
+        return pp
+    }
+    if stack.len() as i64 > 0 {
+        pp.err = "dcc pp: missing #endif"
+        return pp
+    }
+    return pp
+}
+
+fn subst_params(body str, params Vec<str>, args Vec<str>) str {
+    let out = ""
+    let n = strings.len(body) as i64
+    let i = 0
+    while i < n {
+        let c = body[i] as i64
+        if is_ident_start(c) {
+            let j = i
+            while j < n && is_ident_ch(body[j] as i64) { j += 1 }
+            let word = strings.substring(body, i, j)
+            let matched = -1
+            for k in 0..params.len() as i64 {
+                if strings.equal(params[k], word) { matched = k }
+            }
+            if matched >= 0 && matched < args.len() as i64 {
+                out = out + args[matched]
+            } else {
+                out = out + word
+            }
+            i = j
+            continue
+        }
+        out = out + strings.charAt(body, i)
+        i += 1
+    }
+    return out
+}
+
+fn split_top_commas(s str) Vec<str> {
+    let parts = Vec<str>()
+    let cur = ""
+    let depth = 0
+    let i = 0
+    while i < strings.len(s) as i64 {
+        let c = s[i] as i64
+        if c == 40 || c == 91 { depth += 1 }
+        if c == 41 || c == 93 { depth -= 1 }
+        if c == 44 && depth == 0 {
+            parts.push(cur)
+            cur = ""
+            i += 1
+            continue
+        }
+        cur = cur + strings.charAt(s, i)
+        i += 1
+    }
+    parts.push(cur)
+    return parts
+}
+
+fn expand_macros_once(text str, defines Map<str, MDef>) PPX {
+    let n = strings.len(text) as i64
+    let out = ""
+    let i = 0
+    let changed = false
+    while i < n {
+        let c = text[i] as i64
+        if c == 34 {
+            let j = i + 1
+            while j < n {
+                if text[j] as i64 == 92 { j += 2; continue }
+                if text[j] as i64 == 34 { break }
+                j += 1
+            }
+            out = out + strings.substring(text, i, j + 1)
+            i = j + 1
+            continue
+        }
+        if c == 39 {
+            let j = i + 1
+            while j < n {
+                if text[j] as i64 == 92 { j += 2; continue }
+                if text[j] as i64 == 39 { break }
+                j += 1
+            }
+            out = out + strings.substring(text, i, j + 1)
+            i = j + 1
+            continue
+        }
+        if is_ident_start(c) == false {
+            out = out + strings.charAt(text, i)
+            i += 1
+            continue
+        }
+        let j = i
+        while j < n && is_ident_ch(text[j] as i64) { j += 1 }
+        let word = strings.substring(text, i, j)
+        if defines.contains(word) == false {
+            out = out + word
+            i = j
+            continue
+        }
+        let d = defines.get(word)
+        if d.isfn == false {
+            out = out + d.body
+            changed = true
+            i = j
+            continue
+        }
+        let k = j
+        while k < n && (text[k] as i64 == 32 || text[k] as i64 == 9) { k += 1 }
+        if k >= n || text[k] as i64 != 40 {
+            out = out + word
+            i = j
+            continue
+        }
+        let depth = 1
+        let m = k + 1
+        while m < n {
+            let mc = text[m] as i64
+            if mc == 34 {
+                m += 1
+                while m < n {
+                    if text[m] as i64 == 92 { m += 2; continue }
+                    if text[m] as i64 == 34 { break }
+                    m += 1
+                }
+            }
+            if mc == 40 { depth += 1 }
+            if mc == 41 {
+                depth -= 1
+                if depth == 0 { break }
+            }
+            m += 1
+        }
+        if depth != 0 {
+            out = out + word
+            i = j
+            continue
+        }
+        let inner = strings.substring(text, k + 1, m)
+        let args = split_top_commas(inner)
+        out = out + subst_params(d.body, d.params, args)
+        changed = true
+        i = m + 1
+    }
+    return PPX(out, changed)
+}
+
+struct PPX { text str, changed bool }
+
+fn expand_macros(text str, defines Map<str, MDef>, passes i64) str {
+    if passes > 10 { return text }
+    let r = expand_macros_once(text, defines)
+    if r.changed { return expand_macros(r.text, defines, passes + 1) }
+    return r.text
+}
+
+fn path_has_wildcards(path str) bool {
+    let i = 0
+    while i < strings.len(path) as i64 {
+        let b = path[i] as i64
+        if b == 42 { return true }
+        i += 1
+    }
+    return false
+}
+
+fn preprocess(path str) PP {
+    let pp = PP("", Map<str, MDef>(), "")
+    if path_has_wildcards(path) {
+        pp.err = "dcc: invalid path " + path
+        return pp
+    }
+    if fs.exists(path) == false {
+        pp.err = "dcc: cannot open " + path
+        return pp
+    }
+    pp = pp_process_text(pp, fs.read_text(path), dir_of(path), 0)
+    if strings.equal(pp.err, "") == false { return pp }
+    pp.out = expand_macros(pp.out, pp.defines, 0)
+    return pp
+}
+
+// ---------------------------------------------------------------------------
+// Parser
+// ---------------------------------------------------------------------------
+
+fn cur(p P) Token { return p.toks[p.pos] }
+
+fn bad(p P, msg str) P {
+    if strings.equal(p.err, "") {
+        p.err = "dcc: line " + istr(p.line) + ": " + msg
+    }
+    return p
+}
+
+fn bump(p P) P {
+    p.pos += 1
+    p.line = p.toks[p.pos].line
+    return p
+}
+
+fn is_punct(p P, s str) bool {
+    let t = p.toks[p.pos]
+    return t.kind == TK.T_PUNCT as i64 && strings.equal(t.text, s)
+}
+
+fn is_kw(p P, id i64) bool {
+    return p.toks[p.pos].kind == TK.T_KW as i64 && p.toks[p.pos].ival == id
+}
+
+fn expect_punct(p P, s str, what str) P {
+    if is_punct(p, s) { return bump(p) }
+    return bad(p, "expected '" + s + "' " + what)
+}
+
+fn nn(p P, kind i64, name str, ival i64, a i64, b i64, c i64) P {
+    p.nodes.push(Node(kind, name, ival, a, b, c, p.line, Vec<i64>()))
+    p.out = (p.nodes.len() as i64) - 1
+    return p
+}
+
+fn opcode_of(op str) i64 {
+    if strings.equal(op, "+") { return OP.O_ADD as i64 }
+    if strings.equal(op, "-") { return OP.O_SUB as i64 }
+    if strings.equal(op, "*") { return OP.O_MUL as i64 }
+    if strings.equal(op, "/") { return OP.O_DIV as i64 }
+    if strings.equal(op, "%") { return OP.O_MOD as i64 }
+    if strings.equal(op, "==") { return OP.O_EQ as i64 }
+    if strings.equal(op, "!=") { return OP.O_NE as i64 }
+    if strings.equal(op, "<") { return OP.O_LT as i64 }
+    if strings.equal(op, "<=") { return OP.O_LE as i64 }
+    if strings.equal(op, ">") { return OP.O_GT as i64 }
+    if strings.equal(op, ">=") { return OP.O_GE as i64 }
+    if strings.equal(op, "&&") { return OP.O_AND as i64 }
+    if strings.equal(op, "||") { return OP.O_OR as i64 }
+    if strings.equal(op, "<<") { return OP.O_SHL as i64 }
+    if strings.equal(op, ">>") { return OP.O_SHR as i64 }
+    if strings.equal(op, "&") { return OP.O_BAND as i64 }
+    if strings.equal(op, "|") { return OP.O_BOR as i64 }
+    if strings.equal(op, "^") { return OP.O_XOR as i64 }
+    return OP.O_NONE as i64
+}
+
+fn compound_op(op str) i64 {
+    if strings.equal(op, "+=") { return OP.O_ADD as i64 }
+    if strings.equal(op, "-=") { return OP.O_SUB as i64 }
+    if strings.equal(op, "*=") { return OP.O_MUL as i64 }
+    if strings.equal(op, "/=") { return OP.O_DIV as i64 }
+    if strings.equal(op, "%=") { return OP.O_MOD as i64 }
+    return OP.O_NONE as i64
+}
+
+// ---- type parsing ----------------------------------------------------------
+
+fn at_type_kw(p P) bool {
+    if is_kw(p, KW.KW_INT as i64) || is_kw(p, KW.KW_LONG as i64) || is_kw(p, KW.KW_VOID as i64) { return true }
+    if is_kw(p, KW.KW_UNSIGNED as i64) || is_kw(p, KW.KW_SIGNED as i64) || is_kw(p, KW.KW_SHORT as i64) { return true }
+    if is_kw(p, KW.KW_CHAR as i64) || is_kw(p, KW.KW_CONST as i64) || is_kw(p, KW.KW_STATIC as i64) { return true }
+    if is_kw(p, KW.KW_DOUBLE as i64) || is_kw(p, KW.KW_FLOAT as i64) || is_kw(p, KW.KW_STRUCT as i64) { return true }
+    let t = cur(p)
+    return t.kind == TK.T_IDENT as i64 && p.tdef.contains(t.text)
+}
+
+// parses const/static qualifiers, a base type and trailing '*'s.
+// result type id in p.tout; consumes nothing when the position is not a type.
+fn parse_type(p P) P {
+    p.tout = -1
+    while is_kw(p, KW.KW_CONST as i64) || is_kw(p, KW.KW_STATIC as i64) { p = bump(p) }
+    let tid = -1
+    if is_kw(p, KW.KW_STRUCT as i64) {
+        p = bump(p)
+        let sname = ""
+        if cur(p).kind == TK.T_IDENT as i64 {
+            sname = cur(p).text
+            p = bump(p)
+        }
+        p = mk_named_struct(p, sname)
+        tid = (p.tys.len() as i64) - 1
+    } else {
+        let nLong = 0
+        let nShort = 0
+        let nUnsigned = false
+        let nSigned = false
+        let nChar = false
+        let nInt = false
+        let nVoid = false
+        let nDbl = false
+        let nIdent = false
+        while true {
+            if is_kw(p, KW.KW_LONG as i64) { nLong += 1; p = bump(p); continue }
+            if is_kw(p, KW.KW_SHORT as i64) { nShort += 1; p = bump(p); continue }
+            if is_kw(p, KW.KW_UNSIGNED as i64) { nUnsigned = true; p = bump(p); continue }
+            if is_kw(p, KW.KW_SIGNED as i64) { nSigned = true; p = bump(p); continue }
+            if is_kw(p, KW.KW_CHAR as i64) { nChar = true; p = bump(p); continue }
+            if is_kw(p, KW.KW_INT as i64) { nInt = true; p = bump(p); continue }
+            if is_kw(p, KW.KW_VOID as i64) { nVoid = true; p = bump(p); continue }
+            if is_kw(p, KW.KW_DOUBLE as i64) || is_kw(p, KW.KW_FLOAT as i64) { nDbl = true; p = bump(p); continue }
+            let t = cur(p)
+            if tid < 0 && nIdent == false && t.kind == TK.T_IDENT as i64 && p.tdef.contains(t.text) {
+                tid = p.tdef.get(t.text)
+                nIdent = true
+                p = bump(p)
+                continue
+            }
+            break
+        }
+        if nIdent {
+            // typedef'd name consumed above; tid already set
+        } else if nDbl {
+            tid = TY_F64_ID()
+        } else if nVoid {
+            tid = TY_VOID_ID()
+        } else if nChar {
+            if nUnsigned { tid = TY_U8_ID() } else { tid = TY_I8_ID() }
+        } else if nShort > 0 {
+            if nUnsigned { tid = TY_U16_ID() } else { tid = TY_I16_ID() }
+        } else if nLong > 0 {
+            if nLong >= 2 {
+                if nUnsigned { tid = TY_U64_ID() } else { tid = TY_I64_ID() }
+            } else {
+                if nUnsigned { tid = TY_U64_ID() } else { tid = TY_I64_ID() }
+            }
+        } else if nUnsigned {
+            tid = TY_U32_ID()
+        } else if nSigned {
+            tid = TY_I32_ID()
+        } else if nInt {
+            tid = TY_I32_ID()
+        } else {
+            return p
+        }
+    }
+    while is_punct(p, "*") {
+        p = bump(p)
+        p = mk_ptr(p, tid)
+        tid = (p.tys.len() as i64) - 1
+    }
+    p.tout = tid
+    return p
+}
+
+fn p_primary(p P) P {
+    if strings.equal(p.err, "") == false { return p }
+    let t = cur(p)
+    if t.kind == TK.T_NUM as i64 {
+        p = bump(p)
+        return nn(p, NK.N_NUM as i64, "", t.ival, -1, -1, -1)
+    }
+    if t.kind == TK.T_FNUM as i64 {
+        p = bump(p)
+        return nn(p, NK.N_FNUM as i64, t.text, 0, -1, -1, -1)
+    }
+    if t.kind == TK.T_STR as i64 {
+        p = bump(p)
+        p.strs.push(t.bytes)
+        return nn(p, NK.N_STR as i64, "", (p.strs.len() as i64) - 1, -1, -1, -1)
+    }
+    if t.kind == TK.T_IDENT as i64 {
+        p = bump(p)
+        return nn(p, NK.N_VAR as i64, t.text, 0, -1, -1, -1)
+    }
+    if is_punct(p, "(") {
+        p = bump(p)
+        p = p_expr(p)
+        if strings.equal(p.err, "") == false { return p }
+        return expect_punct(p, ")", "after expression")
+    }
+    return bad(p, "expected expression")
+}
+
+fn p_postfix(p P) P {
+    if strings.equal(p.err, "") == false { return p }
+    p = p_primary(p)
+    if strings.equal(p.err, "") == false { return p }
+    // function call
+    if is_punct(p, "(") {
+        let base = p.nodes[p.out]
+        if base.kind != NK.N_VAR as i64 {
+            return bad(p, "only named functions can be called")
+        }
+        p = bump(p)
+        p = nn(p, NK.N_CALL as i64, base.name, 0, -1, -1, -1)
+        let callIdx = p.out
+        if is_punct(p, ")") == false {
+            while true {
+                p = p_expr(p)
+                if strings.equal(p.err, "") == false { return p }
+                let nd = p.nodes[callIdx]
+                nd.kids.push(p.out)
+                p.nodes[callIdx] = nd
+                if is_punct(p, ",") { p = bump(p); continue }
+                break
+            }
+        }
+        p = expect_punct(p, ")", "after arguments")
+        if p.nodes[callIdx].kids.len() as i64 > 8 {
+            return bad(p, "too many arguments (max 8)")
+        }
+        p.out = callIdx
+        return p
+    }
+    // postfix ++/--
+    if is_punct(p, "++") || is_punct(p, "--") {
+        let base = p.nodes[p.out]
+        if base.kind != NK.N_VAR as i64 {
+            return bad(p, "++/-- needs a variable")
+        }
+        let ick = IC.IC_POSTINC as i64
+        if is_punct(p, "--") { ick = IC.IC_POSTDEC as i64 }
+        p = bump(p)
+        return nn(p, NK.N_INCDEC as i64, base.name, ick, -1, -1, -1)
+    }
+    // indexing p[i]
+    if is_punct(p, "[") {
+        let base = p.out
+        p = bump(p)
+        p = p_expr(p)
+        if strings.equal(p.err, "") == false { return p }
+        let idx = p.out
+        p = expect_punct(p, "]", "after index")
+        return nn(p, NK.N_INDEX as i64, "", 0, base, idx, -1)
+    }
+    // member access a.b / a->b
+    if is_punct(p, ".") || is_punct(p, "->") {
+        let arrow = is_punct(p, "->")
+        let obj = p.out
+        p = bump(p)
+        let mt = cur(p)
+        if mt.kind != TK.T_IDENT as i64 {
+            return bad(p, "expected a member name")
+        }
+        p = bump(p)
+        return nn(p, NK.N_MEMBER as i64, mt.text, arrow, obj, -1, -1)
+    }
+    return p
+}
+
+fn p_unary(p P) P {
+    if strings.equal(p.err, "") == false { return p }
+    // cast: '(' type ')' unary
+    if is_punct(p, "(") {
+        let save = p.pos
+        let saveLine = p.line
+        p = bump(p)
+        p = parse_type(p)
+        if p.tout >= 0 && is_punct(p, ")") {
+            let ctid = p.tout
+            p = bump(p)
+            p = p_unary(p)
+            if strings.equal(p.err, "") == false { return p }
+            return nn(p, NK.N_CAST as i64, "", ctid, p.out, -1, -1)
+        }
+        p.pos = save
+        p.line = saveLine
+    }
+    if is_punct(p, "-") {
+        p = bump(p)
+        p = p_unary(p)
+        if strings.equal(p.err, "") == false { return p }
+        return nn(p, NK.N_UN as i64, "", UN.U_NEG as i64, p.out, -1, -1)
+    }
+    if is_punct(p, "!") {
+        p = bump(p)
+        p = p_unary(p)
+        if strings.equal(p.err, "") == false { return p }
+        return nn(p, NK.N_UN as i64, "", UN.U_NOT as i64, p.out, -1, -1)
+    }
+    if is_punct(p, "~") {
+        p = bump(p)
+        p = p_unary(p)
+        if strings.equal(p.err, "") == false { return p }
+        return nn(p, NK.N_UN as i64, "", UN.U_BITNOT as i64, p.out, -1, -1)
+    }
+    if is_punct(p, "&") {
+        p = bump(p)
+        p = p_unary(p)
+        if strings.equal(p.err, "") == false { return p }
+        return nn(p, NK.N_ADDR as i64, "", 0, p.out, -1, -1)
+    }
+    if is_punct(p, "*") {
+        p = bump(p)
+        p = p_unary(p)
+        if strings.equal(p.err, "") == false { return p }
+        return nn(p, NK.N_DEREF as i64, "", 0, p.out, -1, -1)
+    }
+    if is_punct(p, "++") || is_punct(p, "--") {
+        let ick = IC.IC_PREINC as i64
+        if is_punct(p, "--") { ick = IC.IC_PREDEC as i64 }
+        p = bump(p)
+        p = p_unary(p)
+        if strings.equal(p.err, "") == false { return p }
+        if p.nodes[p.out].kind != NK.N_VAR as i64 {
+            return bad(p, "++/-- needs a variable")
+        }
+        let name = p.nodes[p.out].name
+        return nn(p, NK.N_INCDEC as i64, name, ick, -1, -1, -1)
+    }
+    return p_postfix(p)
+}
+
+// ---------------------------------------------------------------------------
+// Precedence climbing: one function instead of a seven-deep chain, so the
+// DevLang runtime recursion limit survives devc's deeply nested parentheses.
+// ---------------------------------------------------------------------------
+
+// binary operator precedence (higher binds tighter); 0 = not a binary op
+fn punct_prec(op str) i64 {
+    if strings.equal(op, "||") { return 1 }
+    if strings.equal(op, "&&") { return 2 }
+    if strings.equal(op, "|") { return 3 }
+    if strings.equal(op, "^") { return 4 }
+    if strings.equal(op, "&") { return 5 }
+    if strings.equal(op, "==") || strings.equal(op, "!=") { return 6 }
+    if strings.equal(op, "<") || strings.equal(op, "<=") || strings.equal(op, ">") || strings.equal(op, ">=") { return 7 }
+    if strings.equal(op, "<<") || strings.equal(op, ">>") { return 8 }
+    if strings.equal(op, "+") || strings.equal(op, "-") { return 9 }
+    if strings.equal(op, "*") || strings.equal(op, "/") || strings.equal(op, "%") { return 10 }
+    return 0
+}
+
+fn p_binary(p P, minPrec i64) P {
+    p = p_unary(p)
+    if strings.equal(p.err, "") == false { return p }
+    let leftIdx = p.out
+    while true {
+        let t = cur(p)
+        if t.kind != TK.T_PUNCT as i64 { return p }
+        let prec = punct_prec(t.text)
+        if prec == 0 || prec < minPrec { return p }
+        let op = t.text
+        leftIdx = p.out
+        p = bump(p)
+        p = p_binary(p, prec + 1)
+        if strings.equal(p.err, "") == false { return p }
+        let right = p.out
+        p = nn(p, NK.N_BIN as i64, "", opcode_of(op), leftIdx, right, -1)
+    }
+    return p
+}
+
+fn p_tern(p P) P {
+    p = p_binary(p, 1)
+    if strings.equal(p.err, "") == false { return p }
+    if is_punct(p, "?") == false { return p }
+    let cond = p.out
+    p = bump(p)
+    p = p_expr(p)
+    if strings.equal(p.err, "") == false { return p }
+    let thenE = p.out
+    p = expect_punct(p, ":", "in ternary")
+    if strings.equal(p.err, "") == false { return p }
+    p = p_tern(p)
+    if strings.equal(p.err, "") == false { return p }
+    return nn(p, NK.N_TERN as i64, "", 0, cond, thenE, p.out)
+}
+
+fn p_expr(p P) P {
+    if strings.equal(p.err, "") == false { return p }
+    p = p_tern(p)
+    if strings.equal(p.err, "") == false { return p }
+    let t = cur(p)
+    if t.kind == TK.T_PUNCT as i64 {
+        if strings.equal(t.text, "=") {
+            let lhs = p.nodes[p.out]
+            if lhs.kind == NK.N_VAR as i64 {
+                let name = lhs.name
+                p = bump(p)
+                p = p_expr(p)
+                if strings.equal(p.err, "") == false { return p }
+                return nn(p, NK.N_ASSIGN as i64, name, 0, p.out, -1, -1)
+            }
+            if lhs.kind == NK.N_DEREF as i64 || lhs.kind == NK.N_MEMBER as i64 {
+                // *p = v: keep the target node in b, value in a; name "" marks pointer store
+                let target = p.out
+                p = bump(p)
+                p = p_expr(p)
+                if strings.equal(p.err, "") == false { return p }
+                return nn(p, NK.N_ASSIGN as i64, "", 0, p.out, target, -1)
+            }
+            return bad(p, "assignment needs a variable, *p or a member on the left")
+        }
+        let cop = compound_op(t.text)
+        if cop != OP.O_NONE as i64 {
+            if p.nodes[p.out].kind != NK.N_VAR as i64 {
+                return bad(p, "compound assignment needs a variable on the left")
+            }
+            let name = p.nodes[p.out].name
+            let varIdx = p.out
+            p = bump(p)
+            p = p_expr(p)
+            if strings.equal(p.err, "") == false { return p }
+            p = nn(p, NK.N_BIN as i64, "", cop, varIdx, p.out, -1)
+            return nn(p, NK.N_ASSIGN as i64, name, 0, p.out, -1, -1)
+        }
+    }
+    return p
+}
+
+fn p_block(p P) P {
+    p = expect_punct(p, "{", "to start a block")
+    if strings.equal(p.err, "") == false { return p }
+    p = nn(p, NK.N_BLOCK as i64, "", 0, -1, -1, -1)
+    let bi = p.out
+    while is_punct(p, "}") == false {
+        if cur(p).kind == TK.T_EOF as i64 {
+            return bad(p, "unexpected end of file inside a block")
+        }
+        p = p_stmt(p)
+        if strings.equal(p.err, "") == false { return p }
+        let nd = p.nodes[bi]
+        nd.kids.push(p.out)
+        p.nodes[bi] = nd
+    }
+    p = bump(p)
+    p.out = bi
+    return p
+}
+
+// "name (= expr)?" without trailing comma/semicolon
+fn p_decl_one(p P) P {
+    let t = cur(p)
+    if t.kind != TK.T_IDENT as i64 {
+        return bad(p, "expected a variable name")
+    }
+    let name = t.text
+    p = bump(p)
+    if is_punct(p, "=") {
+        p = bump(p)
+        p = p_expr(p)
+        if strings.equal(p.err, "") == false { return p }
+        return nn(p, NK.N_DECL as i64, name, p.tout, p.out, -1, -1)
+    }
+    return nn(p, NK.N_DECL as i64, name, p.tout, -1, -1, -1)
+}
+
+fn p_stmt(p P) P {
+    if strings.equal(p.err, "") == false { return p }
+    // typed declaration list: "int64_t a = 1, b;"
+    if at_type_kw(p) {
+        p = parse_type(p)
+        if p.tout < 0 {
+            return bad(p, "expected a type")
+        }
+        p = p_decl_one(p)
+        if strings.equal(p.err, "") == false { return p }
+        let first = p.out
+        if is_punct(p, ",") {
+            p = nn(p, NK.N_BLOCK as i64, "", 0, -1, -1, -1)
+            let bi = p.out
+            let blk = p.nodes[bi]
+            blk.kids.push(first)
+            p.nodes[bi] = blk
+            while is_punct(p, ",") {
+                p = bump(p)
+                p = p_decl_one(p)
+                if strings.equal(p.err, "") == false { return p }
+                let nd = p.nodes[bi]
+                nd.kids.push(p.out)
+                p.nodes[bi] = nd
+            }
+            p.out = bi
+        }
+        return expect_punct(p, ";", "after declaration")
+    }
+    if is_punct(p, ";") { return nn(p, NK.N_EMPTY as i64, "", 0, -1, -1, -1) }
+    if is_punct(p, "{") { return p_block(p) }
+    if is_kw(p, KW.KW_RETURN as i64) {
+        p = bump(p)
+        if is_punct(p, ";") {
+            p = bump(p)
+            return nn(p, NK.N_RET as i64, "", 0, -1, -1, -1)
+        }
+        p = p_expr(p)
+        if strings.equal(p.err, "") == false { return p }
+        let e = p.out
+        p = expect_punct(p, ";", "after return value")
+        return nn(p, NK.N_RET as i64, "", 0, e, -1, -1)
+    }
+    if is_kw(p, KW.KW_IF as i64) {
+        p = bump(p)
+        p = expect_punct(p, "(", "after if")
+        p = p_expr(p)
+        if strings.equal(p.err, "") == false { return p }
+        let cond = p.out
+        p = expect_punct(p, ")", "after if condition")
+        p = p_stmt(p)
+        if strings.equal(p.err, "") == false { return p }
+        let thenS = p.out
+        let elseS = -1
+        if is_kw(p, KW.KW_ELSE as i64) {
+            p = bump(p)
+            p = p_stmt(p)
+            if strings.equal(p.err, "") == false { return p }
+            elseS = p.out
+        }
+        return nn(p, NK.N_IF as i64, "", 0, cond, thenS, elseS)
+    }
+    if is_kw(p, KW.KW_WHILE as i64) {
+        p = bump(p)
+        p = expect_punct(p, "(", "after while")
+        p = p_expr(p)
+        if strings.equal(p.err, "") == false { return p }
+        let cond = p.out
+        p = expect_punct(p, ")", "after while condition")
+        p = p_stmt(p)
+        if strings.equal(p.err, "") == false { return p }
+        return nn(p, NK.N_WHILE as i64, "", 0, cond, p.out, -1)
+    }
+    if is_kw(p, KW.KW_FOR as i64) {
+        p = bump(p)
+        p = expect_punct(p, "(", "after for")
+        // init
+        let init = -1
+        if is_punct(p, ";") {
+            p = bump(p)
+        } else if at_type_kw(p) {
+            p = parse_type(p)
+            p = p_decl_one(p)
+            if strings.equal(p.err, "") == false { return p }
+            init = p.out
+            p = expect_punct(p, ";", "after for initializer")
+        } else {
+            p = p_expr(p)
+            if strings.equal(p.err, "") == false { return p }
+            p = nn(p, NK.N_EXPR as i64, "", 0, p.out, -1, -1)
+            init = p.out
+            p = expect_punct(p, ";", "after for initializer")
+        }
+        // condition (empty = always true)
+        let cond = -1
+        if is_punct(p, ";") == false {
+            p = p_expr(p)
+            if strings.equal(p.err, "") == false { return p }
+            cond = p.out
+        }
+        p = expect_punct(p, ";", "after for condition")
+        // step
+        let step = -1
+        if is_punct(p, ")") == false {
+            p = p_expr(p)
+            if strings.equal(p.err, "") == false { return p }
+            p = nn(p, NK.N_EXPR as i64, "", 0, p.out, -1, -1)
+            step = p.out
+        }
+        p = expect_punct(p, ")", "after for clauses")
+        p = p_stmt(p)
+        if strings.equal(p.err, "") == false { return p }
+        let body = p.out
+        p = nn(p, NK.N_FOR as i64, "", 0, init, cond, step)
+        let nd = p.nodes[p.out]
+        nd.kids.push(body)
+        p.nodes[p.out] = nd
+        return p
+    }
+    if is_kw(p, KW.KW_BREAK as i64) {
+        p = bump(p)
+        p = expect_punct(p, ";", "after break")
+        return nn(p, NK.N_BREAK as i64, "", 0, -1, -1, -1)
+    }
+    if is_kw(p, KW.KW_CONTINUE as i64) {
+        p = bump(p)
+        p = expect_punct(p, ";", "after continue")
+        return nn(p, NK.N_CONT as i64, "", 0, -1, -1, -1)
+    }
+    // expression statement
+    p = p_expr(p)
+    if strings.equal(p.err, "") == false { return p }
+    let e = p.out
+    p = expect_punct(p, ";", "after expression")
+    return nn(p, NK.N_EXPR as i64, "", 0, e, -1, -1)
+}
+
+// skips a balanced { ... } block from the current '{'
+fn skip_braces(p P) P {
+    p = expect_punct(p, "{", "to open a struct body")
+    if strings.equal(p.err, "") == false { return p }
+    let depth = 1
+    while depth > 0 {
+        if cur(p).kind == TK.T_EOF as i64 {
+            return bad(p, "unexpected end of file in struct body")
+        }
+        if is_punct(p, "{") { depth += 1 }
+        if is_punct(p, "}") { depth -= 1 }
+        p = bump(p)
+    }
+    return p
+}
+
+// parses one parameter list into p.pnames / p.ptypes
+fn p_params(p P) P {
+    if is_punct(p, ")") { return p }
+    if is_kw(p, KW.KW_VOID as i64) {
+        let save = p.pos
+        let saveLine = p.line
+        p = bump(p)
+        if is_punct(p, ")") { return p }
+        p.pos = save
+        p.line = saveLine
+    }
+    while true {
+        p = parse_type(p)
+        if p.tout < 0 {
+            return bad(p, "expected a parameter type")
+        }
+        let pname = ""
+        if cur(p).kind == TK.T_IDENT as i64 {
+            pname = cur(p).text
+            p = bump(p)
+        }
+        if strings.equal(pname, "") {
+            p.pnames.push("arg")
+        } else {
+            p.pnames.push(pname)
+        }
+        p.ptypes.push(p.tout)
+        if is_punct(p, ",") { p = bump(p); continue }
+        break
+    }
+    return p
+}
+
+fn find_pfunc(p P, name str) i64 {
+    for k in 0..p.funcs.len() as i64 {
+        if strings.equal(p.funcs[k].name, name) { return k }
+    }
+    return -1
+}
+
+fn parse(lo LexOut) P {
+    let p = P(lo.toks, 0, -1, 1, -1, Vec<Node>(), Vec<Func>(), Vec<Vec<u8>>(), builtin_types(), Map<str, i64>(), Vec<str>(), Vec<i64>(), lo.err)
+    if strings.equal(p.err, "") == false { return p }
+    while cur(p).kind != TK.T_EOF as i64 {
+        if strings.equal(p.err, "") == false { return p }
+        // typedef
+        if is_kw(p, KW.KW_TYPEDEF as i64) {
+            p = bump(p)
+            if is_kw(p, KW.KW_STRUCT as i64) {
+                p = bump(p)
+                let sname = ""
+                if cur(p).kind == TK.T_IDENT as i64 {
+                    sname = cur(p).text
+                    p = bump(p)
+                }
+                p = mk_named_struct(p, sname)
+                let tid = (p.tys.len() as i64) - 1
+                if is_punct(p, "{") {
+                    p = skip_braces(p)
+                    if strings.equal(p.err, "") == false { return p }
+                }
+                let t = cur(p)
+                if t.kind != TK.T_IDENT as i64 {
+                    return bad(p, "expected a typedef name")
+                }
+                p.tdef.set(t.text, tid)
+                p = bump(p)
+            } else {
+                p = parse_type(p)
+                if p.tout < 0 {
+                    return bad(p, "expected a type after typedef")
+                }
+                let t = cur(p)
+                if t.kind != TK.T_IDENT as i64 {
+                    return bad(p, "expected a typedef name")
+                }
+                p.tdef.set(t.text, p.tout)
+                p = bump(p)
+            }
+            p = expect_punct(p, ";", "after typedef")
+            continue
+        }
+        if is_punct(p, ";") { p = bump(p); continue }
+        // function prototype or definition: [static] type name(params) [;|{...}]
+        if at_type_kw(p) == false {
+            return bad(p, "expected a function, typedef or declaration")
+        }
+        p = parse_type(p)
+        if p.tout < 0 {
+            return bad(p, "expected a type")
+        }
+        let t = cur(p)
+        if t.kind != TK.T_IDENT as i64 {
+            return bad(p, "expected a function name")
+        }
+        let fname = t.text
+        p = bump(p)
+        p = expect_punct(p, "(", "after function name")
+        if strings.equal(p.err, "") == false { return p }
+        let freshNames = Vec<str>()
+        let freshTypes = Vec<i64>()
+        p.pnames = freshNames
+        p.ptypes = freshTypes
+        p = p_params(p)
+        if strings.equal(p.err, "") == false { return p }
+        p = expect_punct(p, ")", "after parameters")
+        if strings.equal(p.err, "") == false { return p }
+        if is_punct(p, ";") {
+            p = bump(p)
+            let fi = find_pfunc(p, fname)
+            if fi < 0 {
+                p.funcs.push(Func(fname, p.pnames, -1, 0, p.ptypes))
+            }
+            continue
+        }
+        let fi = find_pfunc(p, fname)
+        if fi >= 0 && p.funcs[fi].body >= 0 {
+            return bad(p, "duplicate function " + fname)
+        }
+        p = p_block(p)
+        if strings.equal(p.err, "") == false { return p }
+        if fi >= 0 {
+            // a prototype existed; the definition replaces it
+            let old = p.funcs[fi]
+            let repl = old
+            repl.body = p.out
+            repl.params = p.pnames
+            repl.ptypes = p.ptypes
+            p.funcs[fi] = repl
+        } else {
+            p.funcs.push(Func(fname, p.pnames, p.out, 0, p.ptypes))
+        }
+    }
+    return p
+}
+
+// ---------------------------------------------------------------------------
+// x64 emit helpers (all instruction encodings live here)
+// ---------------------------------------------------------------------------
+
+fn b1(cg Cg, x i64) Cg {
+    let k = cg.code
+    k.push(x as u8)
+    cg.code = k
+    return cg
+}
+
+fn b2(cg Cg, x i64, y i64) Cg {
+    let k = cg.code
+    k.push(x as u8)
+    k.push(y as u8)
+    cg.code = k
+    return cg
+}
+
+fn b3(cg Cg, x i64, y i64, z i64) Cg {
+    let k = cg.code
+    k.push(x as u8)
+    k.push(y as u8)
+    k.push(z as u8)
+    cg.code = k
+    return cg
+}
+
+fn b4(cg Cg, w i64, x i64, y i64, z i64) Cg {
+    let k = cg.code
+    k.push(w as u8)
+    k.push(x as u8)
+    k.push(y as u8)
+    k.push(z as u8)
+    cg.code = k
+    return cg
+}
+
+fn b5(cg Cg, v i64, w i64, x i64, y i64, z i64) Cg {
+    let k = cg.code
+    k.push(v as u8)
+    k.push(w as u8)
+    k.push(x as u8)
+    k.push(y as u8)
+    k.push(z as u8)
+    cg.code = k
+    return cg
+}
+
+fn w32(cg Cg, v i64) Cg {
+    let k = cg.code
+    k.push(byte_of(v, 0) as u8)
+    k.push(byte_of(v, 8) as u8)
+    k.push(byte_of(v, 16) as u8)
+    k.push(byte_of(v, 24) as u8)
+    cg.code = k
+    return cg
+}
+
+fn w64(cg Cg, v i64) Cg {
+    let k = cg.code
+    k.push(byte_of(v, 0) as u8)
+    k.push(byte_of(v, 8) as u8)
+    k.push(byte_of(v, 16) as u8)
+    k.push(byte_of(v, 24) as u8)
+    k.push(byte_of(v, 32) as u8)
+    k.push(byte_of(v, 40) as u8)
+    k.push(byte_of(v, 48) as u8)
+    k.push(byte_of(v, 56) as u8)
+    cg.code = k
+    return cg
+}
+
+// register slots: 0=rax 1=rcx 2=rdx 3=r8 4=r9
+fn rex_of(reg i64) i64 {
+    if reg >= 3 { return 76 }
+    return 72
+}
+
+fn low3(reg i64) i64 {
+    if reg == 0 { return 0 }
+    if reg == 1 { return 1 }
+    if reg == 2 { return 2 }
+    if reg == 3 { return 0 }
+    return 1
+}
+
+// [rbp - 8*(slot+1)] addressing, disp32 form
+fn load_slot(cg Cg, reg i64, slot i64) Cg {
+    cg = b3(cg, rex_of(reg), 139, 133 + low3(reg) * 8)
+    return w32(cg, -(slot + 1) * 8)
+}
+
+fn store_slot(cg Cg, reg i64, slot i64) Cg {
+    cg = b3(cg, rex_of(reg), 137, 133 + low3(reg) * 8)
+    return w32(cg, -(slot + 1) * 8)
+}
+
+fn patch32(cg Cg, pos i64, v i64) Cg {
+    let k = cg.code
+    k[pos] = byte_of(v, 0) as u8
+    k[pos + 1] = byte_of(v, 8) as u8
+    k[pos + 2] = byte_of(v, 16) as u8
+    k[pos + 3] = byte_of(v, 24) as u8
+    cg.code = k
+    return cg
+}
+
+fn new_label(cg Cg) Cg {
+    cg.labels.push(-1)
+    cg.nlabels += 1
+    return cg
+}
+
+fn label_id(cg Cg) i64 { return cg.nlabels - 1 }
+
+fn set_label(cg Cg, id i64) Cg {
+    cg.labels[id] = cg.code.len() as i64
+    return cg
+}
+
+// Every rel32 record stores the position of the 4 displacement bytes and is
+// patched as: target - (pos + 4), because RIP always points just past them.
+fn reserve_rel32(cg Cg) Cg {
+    let k = cg.code
+    k.push(0)
+    k.push(0)
+    k.push(0)
+    k.push(0)
+    cg.code = k
+    return cg
+}
+
+fn rel_pos(cg Cg) i64 { return cg.code.len() as i64 }
+
+fn jmp_label(cg Cg, id i64) Cg {
+    cg = b1(cg, 233)
+    cg.brfix.push(BFix(rel_pos(cg), id))
+    return reserve_rel32(cg)
+}
+
+// cc: 132 je, 133 jne, 140 jl, 141 jge, 142 jle, 143 jg
+fn jcc_label(cg Cg, cc i64, id i64) Cg {
+    cg = b2(cg, 15, cc)
+    cg.brfix.push(BFix(rel_pos(cg), id))
+    return reserve_rel32(cg)
+}
+
+fn call_named(cg Cg, name str) Cg {
+    cg = b1(cg, 232)
+    cg.callfix.push(CFix(rel_pos(cg), name))
+    return reserve_rel32(cg)
+}
+
+// IAT index: 0 ExitProcess, 1 GetStdHandle, 2 WriteFile
+fn call_iat(cg Cg, idx i64) Cg {
+    cg = b2(cg, 255, 21)
+    cg.iatfix.push(IFix(rel_pos(cg), idx))
+    return reserve_rel32(cg)
+}
+
+fn lea_str_rax(cg Cg, idx i64) Cg {
+    cg = b3(cg, 72, 141, 5)
+    cg.strfix.push(SFix(rel_pos(cg), idx))
+    return reserve_rel32(cg)
+}
+
+// common instructions
+fn push_rbp(cg Cg) Cg { return b1(cg, 85) }
+fn mov_rbp_rsp(cg Cg) Cg { return b3(cg, 72, 137, 229) }
+fn leave_ret(cg Cg) Cg { return b2(cg, 201, 195) }
+fn mov_rax_imm(cg Cg, v i64) Cg {
+    cg = b2(cg, 72, 184)
+    return w64(cg, v)
+}
+fn mov_rcx_imm32(cg Cg, v i64) Cg {
+    cg = b3(cg, 72, 199, 193)
+    return w32(cg, v)
+}
+fn mov_rdx_imm32(cg Cg, v i64) Cg {
+    cg = b3(cg, 72, 199, 194)
+    return w32(cg, v)
+}
+fn mov_rax_one(cg Cg) Cg { return b2(cg, 184, 1) }
+fn add_rax_rcx(cg Cg) Cg { return b3(cg, 72, 1, 200) }
+fn sub_rax_rcx(cg Cg) Cg { return b3(cg, 72, 41, 200) }
+fn imul_rax_rcx(cg Cg) Cg { return b4(cg, 72, 15, 175, 193) }
+fn cmp_rax_rcx(cg Cg) Cg { return b3(cg, 72, 57, 200) }
+fn test_rax(cg Cg) Cg { return b3(cg, 72, 133, 192) }
+fn neg_rax(cg Cg) Cg { return b3(cg, 72, 247, 216) }
+fn cqo(cg Cg) Cg { return b2(cg, 72, 153) }
+fn idiv_rcx(cg Cg) Cg { return b3(cg, 72, 247, 249) }
+fn mov_rax_rdx(cg Cg) Cg { return b3(cg, 72, 137, 208) }
+fn setcc_al(cg Cg, cc i64) Cg { return b3(cg, 15, cc, 192) }
+fn movzx_eax_al(cg Cg) Cg { return b3(cg, 15, 182, 192) }
+fn mov_rcx_rax(cg Cg) Cg { return b3(cg, 72, 137, 193) }
+fn mov_rax_rcx(cg Cg) Cg { return b3(cg, 72, 137, 200) }
+fn xor_eax(cg Cg) Cg { return b2(cg, 49, 192) }
+fn add_rax_one(cg Cg) Cg { return b4(cg, 72, 131, 192, 1) }
+fn sub_rax_one(cg Cg) Cg { return b4(cg, 72, 131, 232, 1) }
+fn sub_rsp(cg Cg, v i64) Cg {
+    cg = b3(cg, 72, 129, 236)
+    return w32(cg, v)
+}
+fn add_rsp(cg Cg, v i64) Cg {
+    cg = b3(cg, 72, 129, 196)
+    return w32(cg, v)
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Runtime helper routines emitted as machine code.
+// fd codes travel as the raw DWORD passed to GetStdHandle:
+// 4294967285 = -11 (stdout), 4294967284 = -12 (stderr).
+// ---------------------------------------------------------------------------
+
+// void __start: and rsp,-16; call main; ExitProcess(eax)
+fn emit_start(cg Cg) Cg {
+    cg = b4(cg, 72, 131, 228, 240)
+    cg = call_named(cg, "main")
+    cg = b2(cg, 137, 193)          // mov ecx, eax
+    return call_iat(cg, 0)
+}
+
+// rax = GetStdHandle(edx), shadow space handled
+fn emit_get_handle_edx(cg Cg) Cg {
+    cg = b2(cg, 137, 209)          // mov ecx, edx
+    cg = sub_rsp(cg, 32)
+    cg = call_iat(cg, 1)
+    return add_rsp(cg, 32)
+}
+
+// shared tail: rcx=handle already loaded; write [rbp-0x10](ptr) [rbp-0x08](len) to fd [rbp-0x18]
+fn emit_write_slots(cg Cg) Cg {
+    cg = b4(cg, 72, 139, 85, 232)      // mov rdx, [rbp-0x18] (fd)
+    cg = emit_get_handle_edx(cg)
+    cg = mov_rcx_rax(cg)               // handle
+    cg = b4(cg, 72, 139, 85, 240)      // mov rdx, [rbp-0x10] (ptr)
+    cg = b4(cg, 76, 139, 69, 248)      // mov r8,  [rbp-0x08] (len)
+    cg = b4(cg, 76, 141, 77, 216)      // lea r9, [rbp-0x28] (&written)
+    cg = b5(cg, 72, 199, 68, 36, 0)    // mov qword [rsp], 0 (overlapped)
+    cg = w32(cg, 0)
+    cg = sub_rsp(cg, 32)
+    cg = call_iat(cg, 2)
+    cg = add_rsp(cg, 32)
+    cg = xor_eax(cg)
+    return leave_ret(cg)
+}
+
+// dcc_write3(rcx=ptr, rdx=len, r8=fdcode)
+fn emit_write3(cg Cg) Cg {
+    cg = push_rbp(cg)
+    cg = mov_rbp_rsp(cg)
+    cg = sub_rsp(cg, 64)
+    cg = b4(cg, 72, 137, 77, 240)      // mov [rbp-0x10], rcx (ptr)
+    cg = b4(cg, 72, 137, 85, 248)      // mov [rbp-0x08], rdx (len)
+    cg = b4(cg, 76, 137, 69, 232)      // mov [rbp-0x18], r8  (fd)
+    return emit_write_slots(cg)
+}
+
+// dcc_puts_z(rcx=ptr, rdx=fdcode): strlen then write
+fn emit_puts_z(cg Cg) Cg {
+    cg = push_rbp(cg)
+    cg = mov_rbp_rsp(cg)
+    cg = sub_rsp(cg, 64)
+    cg = b4(cg, 72, 137, 77, 240)      // mov [rbp-0x10], rcx (ptr)
+    cg = b4(cg, 72, 137, 85, 232)      // mov [rbp-0x18], rdx (fd)
+    // strlen: rax scans
+    cg = b3(cg, 72, 137, 193)          // mov rax, rcx
+    cg = new_label(cg)
+    let lScan = label_id(cg)
+    cg = set_label(cg, lScan)
+    cg = b2(cg, 138, 16)               // mov dl, [rax] (dl, not al: al would clobber the pointer)
+    cg = b2(cg, 132, 210)              // test dl, dl
+    cg = new_label(cg)
+    let lDone = label_id(cg)
+    cg = jcc_label(cg, 132, lDone)     // je lDone
+    cg = b3(cg, 72, 255, 192)          // inc rax
+    cg = jmp_label(cg, lScan)
+    cg = set_label(cg, lDone)
+    cg = b3(cg, 72, 41, 200)           // sub rax, rcx   -> len
+    cg = b4(cg, 72, 137, 69, 248)      // mov [rbp-0x08], rax (len)
+    return emit_write_slots(cg)
+}
+
+// dcc_putint(rcx=value, rdx=fdcode): signed decimal
+fn emit_putint(cg Cg) Cg {
+    cg = push_rbp(cg)
+    cg = mov_rbp_rsp(cg)
+    cg = sub_rsp(cg, 96)
+    cg = b4(cg, 72, 137, 85, 232)      // mov [rbp-0x18], rdx (fd)
+    cg = new_label(cg)
+    let lPos = label_id(cg)
+    cg = new_label(cg)
+    let lDiv = label_id(cg)
+    cg = new_label(cg)
+    let lNoSign = label_id(cg)
+    cg = b3(cg, 69, 49, 201)           // xor r9d, r9d
+    cg = b3(cg, 72, 133, 201)          // test rcx, rcx
+    cg = jcc_label(cg, 141, lPos)      // jge lPos
+    cg = b3(cg, 72, 247, 217)          // neg rcx
+    cg = b2(cg, 65, 185)               // mov r9d, 1
+    cg = w32(cg, 1)
+    cg = set_label(cg, lPos)
+    cg = b4(cg, 76, 141, 93, 232)      // lea r11, [rbp-0x18]
+    cg = b2(cg, 65, 186)               // mov r10d, 10
+    cg = w32(cg, 10)
+    cg = set_label(cg, lDiv)
+    cg = mov_rax_rcx(cg)               // mov rax, rcx
+    cg = b2(cg, 49, 210)               // xor edx, edx
+    cg = b3(cg, 73, 247, 242)          // div r10
+    cg = b3(cg, 128, 194, 48)          // add dl, '0'
+    cg = b3(cg, 73, 255, 203)          // dec r11
+    cg = b3(cg, 65, 136, 19)           // mov [r11], dl
+    cg = mov_rcx_rax(cg)               // rcx = quotient
+    cg = b3(cg, 72, 133, 201)          // test rcx, rcx
+    cg = jcc_label(cg, 133, lDiv)      // jne lDiv
+    cg = b3(cg, 69, 133, 201)          // test r9d, r9d
+    cg = jcc_label(cg, 132, lNoSign)   // je lNoSign
+    cg = b3(cg, 73, 255, 203)          // dec r11
+    cg = b4(cg, 65, 198, 3, 45)        // mov byte [r11], '-'
+    cg = set_label(cg, lNoSign)
+    cg = b4(cg, 76, 141, 77, 232)      // lea r9, [rbp-0x18]
+    cg = b3(cg, 77, 41, 217)           // sub r9, r11  -> len
+    cg = b4(cg, 76, 137, 93, 240)      // mov [rbp-0x10], r11 (ptr)
+    cg = b4(cg, 76, 137, 77, 248)      // mov [rbp-0x08], r9  (len)
+    return emit_write_slots(cg)
+}
+
+// dcc_putuint(rcx=value, rdx=fdcode): unsigned decimal
+fn emit_putuint(cg Cg) Cg {
+    cg = push_rbp(cg)
+    cg = mov_rbp_rsp(cg)
+    cg = sub_rsp(cg, 96)
+    cg = b4(cg, 72, 137, 85, 232)      // mov [rbp-0x18], rdx (fd)
+    cg = new_label(cg)
+    let lDiv = label_id(cg)
+    cg = b4(cg, 76, 141, 93, 232)      // lea r11, [rbp-0x18]
+    cg = b2(cg, 65, 186)               // mov r10d, 10
+    cg = w32(cg, 10)
+    cg = set_label(cg, lDiv)
+    cg = mov_rax_rcx(cg)
+    cg = b2(cg, 49, 210)               // xor edx, edx
+    cg = b3(cg, 73, 247, 242)          // div r10
+    cg = b3(cg, 128, 194, 48)          // add dl, '0'
+    cg = b3(cg, 73, 255, 203)          // dec r11
+    cg = b3(cg, 65, 136, 19)           // mov [r11], dl
+    cg = mov_rcx_rax(cg)
+    cg = b3(cg, 72, 133, 201)          // test rcx, rcx
+    cg = jcc_label(cg, 133, lDiv)      // jne lDiv
+    cg = b4(cg, 76, 141, 77, 232)      // lea r9, [rbp-0x18]
+    cg = b3(cg, 77, 41, 217)           // sub r9, r11 -> len
+    cg = b4(cg, 76, 137, 93, 240)      // mov [rbp-0x10], r11
+    cg = b4(cg, 76, 137, 77, 248)      // mov [rbp-0x08], r9
+    return emit_write_slots(cg)
+}
+
+// dcc_puthex(rcx=value, rdx=fdcode): 16 lowercase hex digits
+fn emit_puthex(cg Cg) Cg {
+    cg = push_rbp(cg)
+    cg = mov_rbp_rsp(cg)
+    cg = sub_rsp(cg, 96)
+    cg = b4(cg, 72, 137, 85, 232)      // mov [rbp-0x18], rdx (fd)
+    cg = new_label(cg)
+    let lLoop = label_id(cg)
+    cg = new_label(cg)
+    let lDig = label_id(cg)
+    cg = mov_rax_rcx(cg)               // rax = value
+    cg = b4(cg, 76, 141, 93, 232)      // lea r11, [rbp-0x18]
+    cg = b2(cg, 65, 186)               // mov r10d, 16
+    cg = w32(cg, 16)
+    cg = set_label(cg, lLoop)
+    cg = b4(cg, 72, 193, 192, 4)       // rol rax, 4
+    cg = b3(cg, 73, 137, 192)          // mov r8, rax
+    cg = b4(cg, 73, 131, 224, 15)      // and r8, 15
+    cg = b4(cg, 73, 131, 192, 48)      // add r8, 48
+    cg = b4(cg, 73, 131, 248, 57)      // cmp r8, 57
+    cg = jcc_label(cg, 142, lDig)      // jle lDig
+    cg = b4(cg, 73, 131, 192, 7)       // add r8, 7
+    cg = set_label(cg, lDig)
+    cg = b3(cg, 73, 255, 203)          // dec r11
+    cg = b3(cg, 69, 136, 3)            // mov [r11], r8b
+    cg = b3(cg, 73, 255, 202)          // dec r10
+    cg = b3(cg, 69, 133, 210)          // test r10d, r10d
+    cg = jcc_label(cg, 133, lLoop)     // jne lLoop
+    cg = b4(cg, 76, 137, 93, 240)      // mov [rbp-0x10], r11 (ptr)
+    cg = b4(cg, 72, 199, 69, 248)      // mov qword [rbp-0x08], 16
+    cg = w32(cg, 16)
+    return emit_write_slots(cg)
+}
+
+// dcc_putchar2(rc1=value, rdx=fdcode): one byte
+fn emit_putchar2(cg Cg) Cg {
+    cg = push_rbp(cg)
+    cg = mov_rbp_rsp(cg)
+    cg = sub_rsp(cg, 64)
+    cg = b4(cg, 72, 137, 77, 248)      // mov [rbp-0x08], rcx (char slot)
+    cg = b4(cg, 72, 137, 85, 240)      // mov [rbp-0x10], rdx (fd)
+    cg = b4(cg, 72, 139, 85, 240)      // mov rdx, [rbp-0x10]
+    cg = emit_get_handle_edx(cg)
+    cg = mov_rcx_rax(cg)               // handle
+    cg = b4(cg, 72, 141, 85, 248)      // lea rdx, [rbp-0x08]
+    cg = b2(cg, 65, 184)               // mov r8d, 1
+    cg = w32(cg, 1)
+    cg = b4(cg, 76, 141, 77, 216)      // lea r9, [rbp-0x28]
+    cg = b5(cg, 72, 199, 68, 36, 0)    // mov qword [rsp], 0
+    cg = w32(cg, 0)
+    cg = sub_rsp(cg, 32)
+    cg = call_iat(cg, 2)
+    cg = add_rsp(cg, 32)
+    cg = xor_eax(cg)
+    return leave_ret(cg)
+}
+
+// dcc_strlen(rc1=ptr) -> rax
+fn emit_strlen(cg Cg) Cg {
+    cg = new_label(cg)
+    let lScan = label_id(cg)
+    cg = new_label(cg)
+    let lDone = label_id(cg)
+    cg = mov_rax_rcx(cg)               // rax = ptr
+    cg = set_label(cg, lScan)
+    cg = b2(cg, 138, 16)               // mov dl, [rax]
+    cg = b2(cg, 132, 210)              // test dl, dl
+    cg = jcc_label(cg, 132, lDone)     // je lDone
+    cg = b3(cg, 72, 255, 192)          // inc rax
+    cg = jmp_label(cg, lScan)
+    cg = set_label(cg, lDone)
+    cg = b3(cg, 72, 41, 200)           // sub rax, rcx
+    return b1(cg, 195)                 // ret
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Code generator
+// ---------------------------------------------------------------------------
+
+fn cg_fail(cg Cg, line i64, msg str) Cg {
+    if strings.equal(cg.err, "") {
+        cg.err = "dcc: line " + istr(line) + ": " + msg
+    }
+    return cg
+}
+
+fn find_func(cg Cg, name str) i64 {
+    for k in 0..cg.funcs.len() as i64 {
+        if strings.equal(cg.funcs[k].name, name) { return k }
+    }
+    return -1
+}
+
+fn FD_STDOUT() i64 { return 4294967285 }
+fn FD_STDERR() i64 { return 4294967284 }
+
+// type of an expression when it can be determined cheaply (-1 = unknown)
+fn expr_tid(cg Cg, ni i64) i64 {
+    if ni < 0 { return -1 }
+    let n = cg.nodes[ni]
+    if n.kind == NK.N_VAR as i64 {
+        if cg.vtypes.contains(n.name) { return cg.vtypes.get(n.name) }
+        return -1
+    }
+    if n.kind == NK.N_CAST as i64 { return n.ival }
+    if n.kind == NK.N_DEREF as i64 {
+        let pt = expr_tid(cg, n.a)
+        if pt >= 0 { return cg.tys[pt].pointee }
+        return -1
+    }
+    if n.kind == NK.N_ASSIGN as i64 { return expr_tid(cg, n.a) }
+    if n.kind == NK.N_INCDEC as i64 {
+        if cg.vtypes.contains(n.name) { return cg.vtypes.get(n.name) }
+    }
+    return -1
+}
+
+fn op_unsigned(cg Cg, l i64, r i64) bool {
+    let lt = expr_tid(cg, l)
+    if lt >= 0 && is_unsigned_kind(cg.tys[lt].kind) { return true }
+    let rt = expr_tid(cg, r)
+    if rt >= 0 && is_unsigned_kind(cg.tys[rt].kind) { return true }
+    return false
+}
+
+// rax = pointer -> rax = *pointer, width by pointee type
+fn load_through(cg Cg, tid i64) Cg {
+    let k = cg.tys[tid].kind
+    if k == TYK.TY_U32 as i64 { return b2(cg, 139, 0) }            // mov eax, [rax]
+    if k == TYK.TY_I32 as i64 { return b3(cg, 72, 99, 0) }         // movsxd rax, [rax]
+    if k == TYK.TY_U16 as i64 { return b3(cg, 15, 183, 0) }        // movzx eax, word [rax]
+    if k == TYK.TY_I16 as i64 { return b4(cg, 72, 15, 191, 0) }    // movsx rax, word [rax]
+    if k == TYK.TY_U8 as i64 || k == TYK.TY_BOOL as i64 { return b3(cg, 15, 182, 0) }  // movzx eax, [rax]
+    if k == TYK.TY_I8 as i64 { return b4(cg, 72, 15, 190, 0) }     // movsx rax, byte [rax]
+    return b3(cg, 72, 139, 0)                                      // mov rax, [rax]
+}
+
+// rcx = address, rax = value -> store by type width
+fn store_through(cg Cg, tid i64) Cg {
+    let k = cg.tys[tid].kind
+    if k == TYK.TY_U32 as i64 || k == TYK.TY_I32 as i64 { return b2(cg, 137, 1) }    // mov [rcx], eax
+    if k == TYK.TY_U16 as i64 || k == TYK.TY_I16 as i64 { return b3(cg, 102, 137, 1) } // mov [rcx], ax
+    if k == TYK.TY_U8 as i64 || k == TYK.TY_BOOL as i64 || k == TYK.TY_I8 as i64 { return b2(cg, 136, 1) } // mov [rcx], al
+    return b3(cg, 72, 137, 1)                                       // mov [rcx], rax
+}
+
+// truncate rax to the width of tid (C integer cast semantics)
+fn trunc_to(cg Cg, tid i64) Cg {
+    let k = cg.tys[tid].kind
+    if k == TYK.TY_I32 as i64 {
+        cg = b4(cg, 72, 193, 192, 32)   // shl rax, 32
+        return b4(cg, 72, 193, 248, 32) // sar rax, 32
+    }
+    if k == TYK.TY_U32 as i64 {
+        return b2(cg, 137, 192)         // mov eax, eax (zero-extend)
+    }
+    if k == TYK.TY_I16 as i64 {
+        cg = b4(cg, 72, 193, 192, 48)   // shl rax, 48
+        return b4(cg, 72, 193, 248, 48) // sar rax, 48
+    }
+    if k == TYK.TY_U16 as i64 {
+        return b3(cg, 15, 183, 192)     // movzx eax, ax
+    }
+    if k == TYK.TY_I8 as i64 {
+        return b4(cg, 72, 15, 190, 192) // movsx rax, al
+    }
+    if k == TYK.TY_U8 as i64 {
+        return b3(cg, 15, 182, 192)     // movzx eax, al
+    }
+    return cg
+}
+
+// address of an lvalue into rax
+fn gen_addr(cg Cg, ni i64, depth i64) Cg {
+    let n = cg.nodes[ni]
+    if n.kind == NK.N_VAR as i64 {
+        if cg.slots.contains(n.name) == false {
+            return cg_fail(cg, n.line, "unknown variable " + n.name)
+        }
+        return lea_slot(cg, 0, cg.slots.get(n.name))
+    }
+    if n.kind == NK.N_DEREF as i64 {
+        return gen_expr(cg, n.a, depth + 1)
+    }
+    if n.kind == NK.N_MEMBER as i64 {
+        return cg_fail(cg, n.line, "struct member addresses are not supported by dcc yet")
+    }
+    return cg_fail(cg, n.line, "cannot take the address of this expression")
+}
+
+fn add_string(cg Cg, bytes Vec<u8>) i64 {
+    cg.strs.push(bytes)
+    return (cg.strs.len() as i64) - 1
+}
+
+fn helper_call2(cg Cg, name str) Cg {
+    cg = sub_rsp(cg, 32)
+    cg = call_named(cg, name)
+    return add_rsp(cg, 32)
+}
+
+// moves rax (value) into rcx and loads the fd code into rdx
+fn set_arg2(cg Cg, fdcode i64) Cg {
+    cg = mov_rcx_rax(cg)
+    cg = b3(cg, 72, 199, 194)
+    cg = w32(cg, fdcode)
+    return cg
+}
+
+// expands printf/fprintf format strings into helper calls.
+// kids[argStart..] are the value arguments, consumed per conversion.
+fn emit_format(cg Cg, fmtIdx i64, kids Vec<i64>, argStart i64, fdcode i64, line i64) Cg {
+    let f = cg.strs[fmtIdx]
+    let n = f.len() as i64
+    let i = 0
+    let argPos = argStart
+    let frag = Vec<u8>()
+    while i < n {
+        let b = f[i] as i64
+        if b != 37 {
+            frag.push(f[i])
+            i += 1
+            continue
+        }
+        // conversion: skip flags/width/precision, then length modifiers (l,ll,h,z,j,t)
+        let j = i + 1
+        while j < n {
+            let c = f[j] as i64
+            let isFlag = c == 32 || c == 35 || c == 43 || c == 45 || c == 46 || c == 42 || (c >= 48 && c <= 57)
+            if isFlag == false { break }
+            j += 1
+        }
+        if j < n {
+            let c = f[j] as i64
+            if c == 108 || c == 104 || c == 122 || c == 106 || c == 116 || c == 76 {
+                j += 1
+                if j < n && f[j] as i64 == 108 { j += 1 }
+                if j < n && f[j] as i64 == 104 { j += 1 }
+            }
+        }
+        if j >= n { return cg_fail(cg, line, "bad printf format") }
+        let conv = f[j] as i64
+        if conv == 37 {
+            frag.push(37 as u8)
+            i = j + 1
+            continue
+        }
+        if conv == 102 || conv == 103 || conv == 101 || conv == 71 || conv == 70 || conv == 69 || conv == 97 {
+            return cg_fail(cg, line, "float printing is not supported by the dcc backend")
+        }
+        if conv == 100 || conv == 105 || conv == 117 || conv == 99 || conv == 115 || conv == 120 || conv == 88 || conv == 112 {
+            // flush pending literal fragment
+            if frag.len() as i64 > 0 {
+                let flen = frag.len() as i64
+                cg.strs.push(frag)
+                let fidx = (cg.strs.len() as i64) - 1
+                let fragNext = Vec<u8>()
+                frag = fragNext
+                cg = lea_str_rax(cg, fidx)
+                cg = mov_rcx_rax(cg)
+                cg = mov_rdx_imm32(cg, flen)
+                cg = b2(cg, 65, 184)
+                cg = w32(cg, fdcode)
+                cg = helper_call2(cg, "dcc_write3")
+            }
+            if conv == 112 {
+                // %p: emit a literal "0x" before the hex digits
+                let pfx = Vec<u8>()
+                pfx.push(48)
+                pfx.push(120)
+                cg.strs.push(pfx)
+                let fidx = (cg.strs.len() as i64) - 1
+                cg = lea_str_rax(cg, fidx)
+                cg = mov_rcx_rax(cg)
+                cg = mov_rdx_imm32(cg, 2)
+                cg = b2(cg, 65, 184)
+                cg = w32(cg, fdcode)
+                cg = helper_call2(cg, "dcc_write3")
+            }
+            if argPos >= kids.len() as i64 {
+                return cg_fail(cg, line, "printf format has more conversions than arguments")
+            }
+            let argni = kids[argPos]
+            argPos += 1
+            cg = gen_expr(cg, argni, 0)
+            if strings.equal(cg.err, "") == false { return cg }
+            cg = set_arg2(cg, fdcode)
+            if conv == 100 || conv == 105 {
+                cg = helper_call2(cg, "dcc_putint")
+            } else if conv == 117 {
+                cg = helper_call2(cg, "dcc_putuint")
+            } else if conv == 99 {
+                cg = helper_call2(cg, "dcc_putchar2")
+            } else if conv == 115 {
+                cg = helper_call2(cg, "dcc_puts_z")
+            } else {
+                cg = helper_call2(cg, "dcc_puthex")
+            }
+            i = j + 1
+            continue
+        }
+        return cg_fail(cg, line, "unsupported printf conversion")
+    }
+    if frag.len() as i64 > 0 {
+        let flen = frag.len() as i64
+        cg.strs.push(frag)
+        let fidx = (cg.strs.len() as i64) - 1
+        cg = lea_str_rax(cg, fidx)
+        cg = mov_rcx_rax(cg)
+        cg = mov_rdx_imm32(cg, flen)
+        cg = b2(cg, 65, 184)
+        cg = w32(cg, fdcode)
+        cg = helper_call2(cg, "dcc_write3")
+    }
+    cg = xor_eax(cg)
+    return cg
+}
+
+fn gen_call(cg Cg, ni i64, depth i64) Cg {
+    let n = cg.nodes[ni]
+    let argc = n.kids.len() as i64
+    // a user-defined function wins over a builtin
+    let fi = find_func(cg, n.name)
+    if fi >= 0 {
+        let f = cg.funcs[fi]
+        if f.params.len() as i64 != argc {
+            return cg_fail(cg, n.line, "wrong argument count calling " + n.name)
+        }
+        for i in 0..argc {
+            cg = gen_expr(cg, n.kids[i], depth + 1)
+            if strings.equal(cg.err, "") == false { return cg }
+            let aslot = cg.nslots + 64 + i
+            if aslot >= cg.maxslots { cg.maxslots = aslot + 1 }
+            cg = store_slot(cg, 0, aslot)
+        }
+        let nstack = argc - 4
+        if nstack < 0 { nstack = 0 }
+        let sp = align_up(32 + nstack * 8, 16)
+        cg = sub_rsp(cg, sp)
+        for i in 0..argc {
+            if i < 4 {
+                cg = load_slot(cg, i + 1, cg.nslots + 64 + i)
+            } else {
+                cg = load_slot(cg, 0, cg.nslots + 64 + i)
+                cg = b4(cg, 72, 137, 68, 36)   // mov [rsp+disp8], rax
+                cg = b1(cg, 32 + (i - 4) * 8)
+            }
+        }
+        cg = call_named(cg, n.name)
+        cg = add_rsp(cg, sp)
+        return cg
+    }
+    if strings.equal(n.name, "printf") || strings.equal(n.name, "fprintf") {
+        let fdcode = FD_STDOUT()
+        let fmtAt = 0
+        if strings.equal(n.name, "fprintf") {
+            if argc < 2 {
+                return cg_fail(cg, n.line, "fprintf needs a stream and a format")
+            }
+            let stream = cg.nodes[n.kids[0]]
+            if stream.kind != NK.N_NUM as i64 || (stream.ival != 1 && stream.ival != 2) {
+                return cg_fail(cg, n.line, "dcc only supports fprintf(stderr, ...) / fprintf(stdout, ...)")
+            }
+            if stream.ival == 2 { fdcode = FD_STDERR() }
+            fmtAt = 1
+        }
+        if argc < fmtAt + 1 {
+            return cg_fail(cg, n.line, "printf needs a format string")
+        }
+        let fmtNode = cg.nodes[n.kids[fmtAt]]
+        if fmtNode.kind != NK.N_STR as i64 {
+            return cg_fail(cg, n.line, n.name + " needs a string literal format")
+        }
+        return emit_format(cg, fmtNode.ival, n.kids, fmtAt + 1, fdcode, n.line)
+    }
+    if strings.equal(n.name, "puts") {
+        if argc != 1 {
+            return cg_fail(cg, n.line, "puts takes exactly one argument")
+        }
+        cg = gen_expr(cg, n.kids[0], depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = set_arg2(cg, FD_STDOUT())
+        return helper_call2(cg, "dcc_puts_z")
+    }
+    if strings.equal(n.name, "putchar") {
+        if argc != 1 {
+            return cg_fail(cg, n.line, "putchar takes exactly one argument")
+        }
+        cg = gen_expr(cg, n.kids[0], depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = set_arg2(cg, FD_STDOUT())
+        return helper_call2(cg, "dcc_putchar2")
+    }
+    if strings.equal(n.name, "print_int") {
+        if argc != 1 {
+            return cg_fail(cg, n.line, "print_int takes exactly one argument")
+        }
+        cg = gen_expr(cg, n.kids[0], depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = set_arg2(cg, FD_STDOUT())
+        return helper_call2(cg, "dcc_putint")
+    }
+    if strings.equal(n.name, "strlen") {
+        if argc != 1 {
+            return cg_fail(cg, n.line, "strlen takes exactly one argument")
+        }
+        cg = gen_expr(cg, n.kids[0], depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = mov_rcx_rax(cg)
+        return call_named(cg, "dcc_strlen")
+    }
+    if strings.equal(n.name, "exit") {
+        if argc != 1 {
+            return cg_fail(cg, n.line, "exit takes exactly one argument")
+        }
+        cg = gen_expr(cg, n.kids[0], depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = mov_rcx_rax(cg)
+        return call_iat(cg, 0)
+    }
+    if strings.equal(n.name, "fputs") {
+        if argc != 2 {
+            return cg_fail(cg, n.line, "fputs takes two arguments")
+        }
+        let stream = cg.nodes[n.kids[1]]
+        let fdcode = FD_STDOUT()
+        if stream.kind == NK.N_NUM as i64 && stream.ival == 2 { fdcode = FD_STDERR() }
+        cg = gen_expr(cg, n.kids[0], depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = set_arg2(cg, fdcode)
+        return helper_call2(cg, "dcc_puts_z")
+    }
+    return cg_fail(cg, n.line, "unknown function " + n.name)
+}
+
+// setcc codes: 148 eq, 149 ne, 156 lt, 157 ge, 158 le, 159 gt
+fn gen_expr(cg Cg, ni i64, depth i64) Cg {
+    if strings.equal(cg.err, "") == false { return cg }
+    if depth > 50 {
+        return cg_fail(cg, cg.nodes[ni].line, "expression nested too deeply")
+    }
+    let n = cg.nodes[ni]
+    let k = n.kind
+    if k == NK.N_NUM as i64 { return mov_rax_imm(cg, n.ival) }
+    if k == NK.N_STR as i64 { return lea_str_rax(cg, n.ival) }
+    if k == NK.N_FNUM as i64 {
+        return cg_fail(cg, n.line, "float values are not supported by the dcc backend")
+    }
+    if k == NK.N_VAR as i64 {
+        if cg.slots.contains(n.name) == false {
+            return cg_fail(cg, n.line, "unknown variable " + n.name)
+        }
+        return load_slot(cg, 0, cg.slots.get(n.name))
+    }
+    if k == NK.N_ADDR as i64 { return gen_addr(cg, n.a, depth) }
+    if k == NK.N_DEREF as i64 {
+        let pt = expr_tid(cg, n.a)
+        cg = gen_expr(cg, n.a, depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        if pt >= 0 {
+            return load_through(cg, pt)
+        }
+        return load_through(cg, TY_I64_ID())
+    }
+    if k == NK.N_CAST as i64 {
+        if n.ival < 0 || n.ival >= cg.tys.len() as i64 {
+            return cg_fail(cg, n.line, "internal: cast to unknown type id " + istr(n.ival))
+        }
+        let tk = cg.tys[n.ival].kind
+        if tk == TYK.TY_F64 as i64 {
+            return cg_fail(cg, n.line, "float casts are not supported by the dcc backend")
+        }
+        if tk == TYK.TY_STRUCT as i64 {
+            return cg_fail(cg, n.line, "struct casts are not supported by the dcc backend")
+        }
+        cg = gen_expr(cg, n.a, depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        return trunc_to(cg, n.ival)
+    }
+    if k == NK.N_MEMBER as i64 {
+        return cg_fail(cg, n.line, "struct member access is not supported by the dcc backend yet")
+    }
+    if k == NK.N_INDEX as i64 {
+        let bt = expr_tid(cg, n.a)
+        cg = gen_expr(cg, n.a, depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        let ts = cg.nslots + depth
+        if ts >= cg.maxslots { cg.maxslots = ts + 1 }
+        cg = store_slot(cg, 0, ts)
+        cg = gen_expr(cg, n.b, depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        // scale the index by the element size, then add the base
+        let elem = TY_I64_ID()
+        if bt >= 0 && cg.tys[bt].kind == TYK.TY_PTR as i64 && cg.tys[bt].pointee >= 0 {
+            elem = cg.tys[bt].pointee
+            if cg.tys[elem].size > 1 {
+                cg = b3(cg, 72, 107, 200)   // imul rax, imm8
+                cg = b1(cg, cg.tys[elem].size)
+            }
+        }
+        cg = load_slot(cg, 1, ts)
+        cg = add_rax_rcx(cg)
+        return load_through(cg, elem)
+    }
+    if k == NK.N_TERN as i64 {
+        cg = new_label(cg)
+        let lElse = label_id(cg)
+        cg = new_label(cg)
+        let lEnd = label_id(cg)
+        cg = gen_expr(cg, n.a, depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = test_rax(cg)
+        cg = jcc_label(cg, 132, lElse)
+        cg = gen_expr(cg, n.b, depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = jmp_label(cg, lEnd)
+        cg = set_label(cg, lElse)
+        cg = gen_expr(cg, n.c, depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = set_label(cg, lEnd)
+        return cg
+    }
+    if k == NK.N_ASSIGN as i64 {
+        // pointer store: *p = v (name is empty, a = value, b = target)
+        if strings.equal(n.name, "") {
+            let pt = expr_tid(cg, cg.nodes[n.b].a)
+            cg = gen_addr(cg, n.b, depth)
+            if strings.equal(cg.err, "") == false { return cg }
+            let ts = cg.nslots + depth
+            if ts >= cg.maxslots { cg.maxslots = ts + 1 }
+            cg = store_slot(cg, 0, ts)
+            cg = gen_expr(cg, n.a, depth + 1)
+            if strings.equal(cg.err, "") == false { return cg }
+            cg = load_slot(cg, 1, ts)
+            if pt >= 0 {
+                return store_through(cg, pt)
+            }
+            return store_through(cg, TY_I64_ID())
+        }
+        if cg.slots.contains(n.name) == false {
+            return cg_fail(cg, n.line, "unknown variable " + n.name)
+        }
+        let slot = cg.slots.get(n.name)
+        cg = gen_expr(cg, n.a, depth)
+        if strings.equal(cg.err, "") == false { return cg }
+        return store_slot(cg, 0, slot)
+    }
+    if k == NK.N_INCDEC as i64 {
+        if cg.slots.contains(n.name) == false {
+            return cg_fail(cg, n.line, "unknown variable " + n.name)
+        }
+        let slot = cg.slots.get(n.name)
+        cg = load_slot(cg, 0, slot)
+        if n.ival == IC.IC_POSTINC as i64 {
+            cg = mov_rcx_rax(cg)
+            cg = add_rax_one(cg)
+            cg = store_slot(cg, 0, slot)
+            return mov_rax_rcx(cg)
+        }
+        if n.ival == IC.IC_POSTDEC as i64 {
+            cg = mov_rcx_rax(cg)
+            cg = sub_rax_one(cg)
+            cg = store_slot(cg, 0, slot)
+            return mov_rax_rcx(cg)
+        }
+        if n.ival == IC.IC_PREINC as i64 {
+            cg = add_rax_one(cg)
+            return store_slot(cg, 0, slot)
+        }
+        cg = sub_rax_one(cg)
+        return store_slot(cg, 0, slot)
+    }
+    if k == NK.N_UN as i64 {
+        cg = gen_expr(cg, n.a, depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        if n.ival == UN.U_NEG as i64 { return neg_rax(cg) }
+        if n.ival == UN.U_BITNOT as i64 { return b3(cg, 72, 247, 208) }  // not rax
+        cg = test_rax(cg)
+        cg = setcc_al(cg, 148)
+        return movzx_eax_al(cg)
+    }
+    if k == NK.N_BIN as i64 {
+        let op = n.ival
+        // short-circuit operators
+        if op == OP.O_AND as i64 || op == OP.O_OR as i64 {
+            cg = new_label(cg)
+            let lShort = label_id(cg)
+            cg = new_label(cg)
+            let lEnd = label_id(cg)
+            cg = gen_expr(cg, n.a, depth + 1)
+            if strings.equal(cg.err, "") == false { return cg }
+            cg = test_rax(cg)
+            if op == OP.O_AND as i64 {
+                cg = jcc_label(cg, 132, lShort)
+            } else {
+                cg = jcc_label(cg, 133, lShort)
+            }
+            cg = gen_expr(cg, n.b, depth + 1)
+            if strings.equal(cg.err, "") == false { return cg }
+            cg = test_rax(cg)
+            if op == OP.O_AND as i64 {
+                cg = jcc_label(cg, 132, lShort)
+                cg = mov_rax_one(cg)
+                cg = jmp_label(cg, lEnd)
+                cg = set_label(cg, lShort)
+                cg = xor_eax(cg)
+            } else {
+                cg = jcc_label(cg, 133, lShort)
+                cg = xor_eax(cg)
+                cg = jmp_label(cg, lEnd)
+                cg = set_label(cg, lShort)
+                cg = mov_rax_one(cg)
+            }
+            cg = set_label(cg, lEnd)
+            return cg
+        }
+        // left -> temp slot, right -> rax, then rax=left rcx=right
+        cg = gen_expr(cg, n.a, depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        let ts = cg.nslots + depth
+        if ts >= cg.maxslots { cg.maxslots = ts + 1 }
+        cg = store_slot(cg, 0, ts)
+        cg = gen_expr(cg, n.b, depth + 1)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = mov_rcx_rax(cg)
+        cg = load_slot(cg, 0, ts)
+        // pointer +/- integer scales the integer by the pointee size
+        if op == OP.O_ADD as i64 || op == OP.O_SUB as i64 {
+            let lt = expr_tid(cg, n.a)
+            if lt >= 0 && cg.tys[lt].kind == TYK.TY_PTR as i64 {
+                let ptee = cg.tys[lt].pointee
+                if ptee >= 0 {
+                    let sz = cg.tys[ptee].size
+                    if sz > 1 {
+                        cg = b3(cg, 72, 107, 201)   // imul rcx, imm8
+                        cg = b1(cg, sz)
+                    }
+                }
+            }
+        }
+        if op == OP.O_ADD as i64 { return add_rax_rcx(cg) }
+        if op == OP.O_SUB as i64 { return sub_rax_rcx(cg) }
+        if op == OP.O_MUL as i64 { return imul_rax_rcx(cg) }
+        if op == OP.O_BAND as i64 {
+            return b3(cg, 72, 33, 200)              // and rax, rcx
+        }
+        if op == OP.O_BOR as i64 {
+            return b3(cg, 72, 9, 200)               // or rax, rcx
+        }
+        if op == OP.O_XOR as i64 {
+            return b3(cg, 72, 49, 200)              // xor rax, rcx
+        }
+        if op == OP.O_SHL as i64 {
+            return b3(cg, 72, 211, 224)             // sal rax, cl
+        }
+        if op == OP.O_SHR as i64 {
+            if op_unsigned(cg, n.a, n.b) {
+                return b3(cg, 72, 211, 232)         // shr rax, cl
+            }
+            return b3(cg, 72, 211, 248)             // sar rax, cl
+        }
+        if op == OP.O_DIV as i64 || op == OP.O_MOD as i64 {
+            if op_unsigned(cg, n.a, n.b) {
+                cg = b3(cg, 72, 247, 241)           // div rcx
+            } else {
+                cg = cqo(cg)
+                cg = idiv_rcx(cg)
+            }
+            if op == OP.O_DIV as i64 { return cg }
+            return mov_rax_rdx(cg)
+        }
+        cg = cmp_rax_rcx(cg)
+        if op == OP.O_EQ as i64 {
+            cg = setcc_al(cg, 148)
+            return movzx_eax_al(cg)
+        }
+        if op == OP.O_NE as i64 {
+            cg = setcc_al(cg, 149)
+            return movzx_eax_al(cg)
+        }
+        if op == OP.O_LT as i64 {
+            cg = setcc_al(cg, 156)
+            return movzx_eax_al(cg)
+        }
+        if op == OP.O_LE as i64 {
+            cg = setcc_al(cg, 158)
+            return movzx_eax_al(cg)
+        }
+        if op == OP.O_GT as i64 {
+            cg = setcc_al(cg, 159)
+            return movzx_eax_al(cg)
+        }
+        cg = setcc_al(cg, 157)
+        return movzx_eax_al(cg)
+    }
+    if k == NK.N_CALL as i64 { return gen_call(cg, ni, depth) }
+    return cg_fail(cg, n.line, "cannot use this statement as an expression")
+}
+
+fn gen_stmt(cg Cg, ni i64, depth i64) Cg {
+    if strings.equal(cg.err, "") == false { return cg }
+    let n = cg.nodes[ni]
+    let k = n.kind
+    if k == NK.N_EMPTY as i64 { return cg }
+    if k == NK.N_BLOCK as i64 {
+        for j in 0..n.kids.len() as i64 {
+            cg = gen_stmt(cg, n.kids[j], depth)
+            if strings.equal(cg.err, "") == false { return cg }
+        }
+        return cg
+    }
+    if k == NK.N_DECL as i64 {
+        if cg.slots.contains(n.name) {
+            return cg_fail(cg, n.line, "duplicate local " + n.name)
+        }
+        let tid = n.ival
+        if tid >= 0 {
+            let tk = cg.tys[tid].kind
+            if tk == TYK.TY_F64 as i64 {
+                return cg_fail(cg, n.line, "float variables are not supported by the dcc backend")
+            }
+            if tk == TYK.TY_STRUCT as i64 {
+                return cg_fail(cg, n.line, "struct values are not supported by the dcc backend")
+            }
+        }
+        let slot = cg.nslots
+        cg.nslots += 1
+        cg.slots.set(n.name, slot)
+        if tid >= 0 {
+            cg.vtypes.set(n.name, tid)
+        } else {
+            cg.vtypes.set(n.name, TY_I64_ID())
+        }
+        if slot >= cg.maxslots { cg.maxslots = slot + 1 }
+        if n.a >= 0 {
+            cg = gen_expr(cg, n.a, depth)
+            if strings.equal(cg.err, "") == false { return cg }
+        } else {
+            cg = xor_eax(cg)
+        }
+        return store_slot(cg, 0, slot)
+    }
+    if k == NK.N_EXPR as i64 { return gen_expr(cg, n.a, depth) }
+    if k == NK.N_RET as i64 {
+        if n.a >= 0 {
+            cg = gen_expr(cg, n.a, depth)
+            if strings.equal(cg.err, "") == false { return cg }
+        } else {
+            cg = xor_eax(cg)
+        }
+        return leave_ret(cg)
+    }
+    if k == NK.N_IF as i64 {
+        cg = new_label(cg)
+        let lElse = label_id(cg)
+        cg = new_label(cg)
+        let lEnd = label_id(cg)
+        cg = gen_expr(cg, n.a, depth)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = test_rax(cg)
+        cg = jcc_label(cg, 132, lElse)
+        cg = gen_stmt(cg, n.b, depth)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = jmp_label(cg, lEnd)
+        cg = set_label(cg, lElse)
+        if n.c >= 0 {
+            cg = gen_stmt(cg, n.c, depth)
+            if strings.equal(cg.err, "") == false { return cg }
+        }
+        cg = set_label(cg, lEnd)
+        return cg
+    }
+    if k == NK.N_WHILE as i64 {
+        cg = new_label(cg)
+        let lStart = label_id(cg)
+        cg = new_label(cg)
+        let lEnd = label_id(cg)
+        let saveB = cg.breakL
+        let saveC = cg.contL
+        cg.breakL = lEnd
+        cg.contL = lStart
+        cg = set_label(cg, lStart)
+        cg = gen_expr(cg, n.a, depth)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = test_rax(cg)
+        cg = jcc_label(cg, 132, lEnd)
+        cg = gen_stmt(cg, n.b, depth)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = jmp_label(cg, lStart)
+        cg = set_label(cg, lEnd)
+        cg.breakL = saveB
+        cg.contL = saveC
+        return cg
+    }
+    if k == NK.N_FOR as i64 {
+        cg = new_label(cg)
+        let lCond = label_id(cg)
+        cg = new_label(cg)
+        let lStep = label_id(cg)
+        cg = new_label(cg)
+        let lEnd = label_id(cg)
+        let saveB = cg.breakL
+        let saveC = cg.contL
+        cg.breakL = lEnd
+        cg.contL = lStep
+        if n.a >= 0 {
+            cg = gen_stmt(cg, n.a, depth)
+            if strings.equal(cg.err, "") == false { return cg }
+        }
+        cg = set_label(cg, lCond)
+        if n.b >= 0 {
+            cg = gen_expr(cg, n.b, depth)
+            if strings.equal(cg.err, "") == false { return cg }
+            cg = test_rax(cg)
+            cg = jcc_label(cg, 132, lEnd)
+        }
+        cg = gen_stmt(cg, n.kids[0], depth)
+        if strings.equal(cg.err, "") == false { return cg }
+        cg = set_label(cg, lStep)
+        if n.c >= 0 {
+            cg = gen_stmt(cg, n.c, depth)
+            if strings.equal(cg.err, "") == false { return cg }
+        }
+        cg = jmp_label(cg, lCond)
+        cg = set_label(cg, lEnd)
+        cg.breakL = saveB
+        cg.contL = saveC
+        return cg
+    }
+    if k == NK.N_BREAK as i64 {
+        if cg.breakL < 0 {
+            return cg_fail(cg, n.line, "break outside a loop")
+        }
+        return jmp_label(cg, cg.breakL)
+    }
+    if k == NK.N_CONT as i64 {
+        if cg.contL < 0 {
+            return cg_fail(cg, n.line, "continue outside a loop")
+        }
+        return jmp_label(cg, cg.contL)
+    }
+    return cg_fail(cg, n.line, "unsupported statement")
+}
+
+fn gen_function(cg Cg, fi i64) Cg {
+    let f = cg.funcs[fi]
+    let f2 = f
+    f2.addr = cg.code.len() as i64
+    cg.funcs[fi] = f2
+    cg.slots = Map<str, i64>()
+    cg.vtypes = Map<str, i64>()
+    cg.nslots = f.params.len() as i64
+    cg.maxslots = cg.nslots + 72
+    cg.breakL = -1
+    cg.contL = -1
+    cg = push_rbp(cg)
+    cg = mov_rbp_rsp(cg)
+    cg = b3(cg, 72, 129, 236)          // sub rsp, frame (patched below)
+    let framePos = cg.code.len() as i64
+    cg = w32(cg, 0)
+    for i in 0..f.params.len() as i64 {
+        cg.slots.set(f.params[i], i)
+        if i < f.ptypes.len() as i64 {
+            cg.vtypes.set(f.params[i], f.ptypes[i])
+        } else {
+            cg.vtypes.set(f.params[i], TY_I64_ID())
+        }
+        cg = store_slot(cg, i + 1, i)
+    }
+    cg = gen_stmt(cg, f.body, 0)
+    if strings.equal(cg.err, "") == false { return cg }
+    let frame = align_up(cg.maxslots * 8, 16)
+    cg = patch32(cg, framePos, frame)
+    cg = xor_eax(cg)
+    return leave_ret(cg)
+}
+
+// collects the names of every function called inside a node subtree
+fn collect_calls(nodes Vec<Node>, ni i64, names Vec<str>) Vec<str> {
+    if ni < 0 { return names }
+    let n = nodes[ni]
+    if n.kind == NK.N_CALL as i64 {
+        names.push(n.name)
+    }
+    names = collect_calls(nodes, n.a, names)
+    names = collect_calls(nodes, n.b, names)
+    names = collect_calls(nodes, n.c, names)
+    for j in 0..n.kids.len() as i64 {
+        names = collect_calls(nodes, n.kids[j], names)
+    }
+    return names
+}
+
+// functions reachable from main (dead prelude helpers stay dead)
+fn compute_emitset(p P) Map<str, bool> {
+    let set = Map<str, bool>()
+    let work = Vec<str>()
+    work.push("main")
+    set.set("main", true)
+    while work.len() as i64 > 0 {
+        let name = work.pop()
+        let fi = find_pfunc(p, name)
+        if fi < 0 { continue }
+        let body = p.funcs[fi].body
+        if body < 0 { continue }
+        let calls = Vec<str>()
+        calls = collect_calls(p.nodes, body, calls)
+        for k in 0..calls.len() as i64 {
+            let cname = calls[k]
+            if set.contains(cname) == false {
+                set.set(cname, true)
+                work.push(cname)
+            }
+        }
+    }
+    return set
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+fn pad_to(v Vec<u8>, target i64) Vec<u8> {
+    while v.len() as i64 < target { v.push(0) }
+    return v
+}
+
+fn vw16(v Vec<u8>, x i64) Vec<u8> {
+    v.push(byte_of(x, 0) as u8)
+    v.push(byte_of(x, 8) as u8)
+    return v
+}
+
+fn vw32(v Vec<u8>, x i64) Vec<u8> {
+    v.push(byte_of(x, 0) as u8)
+    v.push(byte_of(x, 8) as u8)
+    v.push(byte_of(x, 16) as u8)
+    v.push(byte_of(x, 24) as u8)
+    return v
+}
+
+fn vw64(v Vec<u8>, x i64) Vec<u8> {
+    v.push(byte_of(x, 0) as u8)
+    v.push(byte_of(x, 8) as u8)
+    v.push(byte_of(x, 16) as u8)
+    v.push(byte_of(x, 24) as u8)
+    v.push(byte_of(x, 32) as u8)
+    v.push(byte_of(x, 40) as u8)
+    v.push(byte_of(x, 48) as u8)
+    v.push(byte_of(x, 56) as u8)
+    return v
+}
+
+// section content: code | strings | IAT | hint/names | dll name | descriptors
+fn build_section(cg Cg) Cg {
+    let dataOff = align_up(cg.code.len() as i64, 8)
+    // string blob offsets
+    let blobOff = Vec<i64>()
+    let acc = 0
+    for i in 0..cg.strs.len() as i64 {
+        blobOff.push(acc)
+        acc = acc + cg.strs[i].len() as i64 + 1
+    }
+    let blobLen = acc
+    let iatOff = align_up(dataOff + blobLen, 8)
+    // hint/name entries begin after the IAT (3 entries + null = 32 bytes)
+    let hnNames = Vec<str>()
+    hnNames.push("ExitProcess")
+    hnNames.push("GetStdHandle")
+    hnNames.push("WriteFile")
+    let hnOff = Vec<i64>()
+    let cur = iatOff + 32
+    for i in 0..3 {
+        hnOff.push(cur)
+        cur = cur + 2 + strings.len(hnNames[i]) as i64 + 1
+        if cur % 2 == 1 { cur += 1 }
+    }
+    let dllOff = cur
+    let descOff = align_up(dllOff + 13, 4)
+    let iatRVA = 4096 + iatOff
+    // patch code relocations now that layout offsets are known;
+    // every rel32 displacement sits at pos and RIP equals pos + 4
+    if fs.exists("dccdbg") {
+        print("DBG codelen=" + istr(cg.code.len() as i64) + " dataOff=" + istr(dataOff) + " iatOff=" + istr(iatOff) + " iatRVA=" + istr(iatRVA))
+        let bf = cg.brfix
+        for k in 0..bf.len() as i64 {
+            print("DBG br pos=" + istr(bf[k].pos) + " label=" + istr(bf[k].label) + " labels[id]=" + istr(cg.labels[bf[k].label]))
+        }
+        let cf = cg.callfix
+        for k in 0..cf.len() as i64 {
+            print("DBG call pos=" + istr(cf[k].pos) + " name=" + cf[k].name + " addr=" + istr(cg.addr.get(cf[k].name)))
+        }
+        let sf = cg.strfix
+        for k in 0..sf.len() as i64 {
+            print("DBG str pos=" + istr(sf[k].pos) + " idx=" + istr(sf[k].idx))
+        }
+        let iff = cg.iatfix
+        for k in 0..iff.len() as i64 {
+            print("DBG iat pos=" + istr(iff[k].pos) + " idx=" + istr(iff[k].idx))
+        }
+    }
+    let bfixes = cg.brfix
+    for k in 0..bfixes.len() as i64 {
+        let target = cg.labels[bfixes[k].label]
+        cg = patch32(cg, bfixes[k].pos, target - (bfixes[k].pos + 4))
+    }
+    let cfixes = cg.callfix
+    for k in 0..cfixes.len() as i64 {
+        if cg.addr.contains(cfixes[k].name) == false {
+            return cg_fail(cg, 0, "internal: unresolved call target " + cfixes[k].name)
+        }
+        let target = cg.addr.get(cfixes[k].name)
+        cg = patch32(cg, cfixes[k].pos, target - (cfixes[k].pos + 4))
+    }
+    let sfixes = cg.strfix
+    for k in 0..sfixes.len() as i64 {
+        let rva = 4096 + dataOff + blobOff[sfixes[k].idx]
+        cg = patch32(cg, sfixes[k].pos, rva - (4096 + sfixes[k].pos + 4))
+    }
+    let ifixes = cg.iatfix
+    for k in 0..ifixes.len() as i64 {
+        let rva = iatRVA + ifixes[k].idx * 8
+        cg = patch32(cg, ifixes[k].pos, rva - (4096 + ifixes[k].pos + 4))
+    }
+    // assemble the section
+    let sec = cg.code
+    sec = pad_to(sec, dataOff)
+    for i in 0..cg.strs.len() as i64 {
+        for j in 0..cg.strs[i].len() as i64 {
+            sec.push(cg.strs[i][j])
+        }
+        sec.push(0)
+    }
+    sec = pad_to(sec, iatOff)
+    for i in 0..3 {
+        sec = vw64(sec, 4096 + hnOff[i])
+    }
+    sec = vw64(sec, 0)
+    for i in 0..3 {
+        sec = vw16(sec, 0)
+        let nm = hnNames[i]
+        for j in 0..strings.len(nm) as i64 {
+            sec.push(nm[j])
+        }
+        sec.push(0)
+        if sec.len() % 2 == 1 { sec.push(0) }
+    }
+    let dll = "kernel32.dll"
+    for j in 0..strings.len(dll) as i64 {
+        sec.push(dll[j])
+    }
+    sec.push(0)
+    sec = pad_to(sec, descOff)
+    sec = vw32(sec, 0)                    // OriginalFirstThunk
+    sec = vw32(sec, 0)                    // TimeDateStamp
+    sec = vw32(sec, 0)                    // ForwarderChain
+    sec = vw32(sec, 4096 + dllOff)        // Name
+    sec = vw32(sec, iatRVA)               // FirstThunk
+    sec = vw32(sec, 0)                    // null descriptor terminator
+    sec = vw32(sec, 0)
+    sec = vw32(sec, 0)
+    sec = vw32(sec, 0)
+    sec = vw32(sec, 0)
+    cg.code = sec
+    cg.iatfix.push(IFix(iatRVA, 4096 + descOff)) // carry layout info out (RVA)
+    return cg
+}
+
+fn build_pe(sec Vec<u8>, impRVA i64, iatRVA i64) Vec<u8> {
+    let pe = Vec<u8>()
+    let vs = sec.len() as i64
+    let rawSize = align_up(vs, 512)
+    let sizeImage = 4096 + align_up(vs, 4096)
+    // DOS header
+    pe.push(77)
+    pe.push(90)
+    pe = pad_to(pe, 60)
+    pe.push(128)
+    pe.push(0)
+    pe.push(0)
+    pe.push(0)
+    pe = pad_to(pe, 128)
+    // PE signature + COFF header
+    pe.push(80)
+    pe.push(69)
+    pe.push(0)
+    pe.push(0)
+    pe = vw16(pe, 34404)          // Machine IMAGE_FILE_MACHINE_AMD64
+    pe = vw16(pe, 1)              // NumberOfSections
+    pe = vw32(pe, 0)              // TimeDateStamp
+    pe = vw32(pe, 0)              // PointerToSymbolTable
+    pe = vw32(pe, 0)              // NumberOfSymbols
+    pe = vw16(pe, 240)            // SizeOfOptionalHeader
+    pe = vw16(pe, 34)             // Characteristics EXECUTABLE_IMAGE|LARGE_ADDRESS_AWARE
+    // Optional header (PE32+)
+    pe = vw16(pe, 523)            // Magic 0x20B
+    pe.push(1)                    // MajorLinkerVersion
+    pe.push(0)                    // MinorLinkerVersion
+    pe = vw32(pe, rawSize)        // SizeOfCode
+    pe = vw32(pe, 0)              // SizeOfInitializedData
+    pe = vw32(pe, 0)              // SizeOfUninitializedData
+    pe = vw32(pe, 4096)           // AddressOfEntryPoint (dcc_start leads the section)
+    pe = vw32(pe, 4096)           // BaseOfCode
+    pe = vw64(pe, 5368709120)     // ImageBase 0x140000000
+    pe = vw32(pe, 4096)           // SectionAlignment
+    pe = vw32(pe, 512)            // FileAlignment
+    pe = vw16(pe, 6)
+    pe = vw16(pe, 0)
+    pe = vw16(pe, 0)
+    pe = vw16(pe, 0)
+    pe = vw16(pe, 6)
+    pe = vw16(pe, 0)
+    pe = vw32(pe, 0)              // Win32VersionValue
+    pe = vw32(pe, sizeImage)
+    pe = vw32(pe, 512)            // SizeOfHeaders
+    pe = vw32(pe, 0)              // CheckSum
+    pe = vw16(pe, 3)              // Subsystem CONSOLE
+    pe = vw16(pe, 0)              // DllCharacteristics
+    pe = vw64(pe, 1048576)        // SizeOfStackReserve
+    pe = vw64(pe, 4096)           // SizeOfStackCommit
+    pe = vw64(pe, 1048576)        // SizeOfHeapReserve
+    pe = vw64(pe, 4096)           // SizeOfHeapCommit
+    pe = vw32(pe, 0)              // LoaderFlags
+    pe = vw32(pe, 16)             // NumberOfRvaAndSizes
+    for i in 0..16 {
+        if i == 1 {
+            pe = vw32(pe, impRVA)
+            pe = vw32(pe, 40)
+        } else if i == 12 {
+            pe = vw32(pe, iatRVA)
+            pe = vw32(pe, 32)
+        } else {
+            pe = vw32(pe, 0)
+            pe = vw32(pe, 0)
+        }
+    }
+    // section header (starts at 392, after 128+4+20+240 header bytes)
+    pe.push(46)
+    pe.push(100)
+    pe.push(99)
+    pe.push(99)                   // ".dcc"
+    pe = pad_to(pe, 400)          // zero-fill the rest of the name field
+    pe = vw32(pe, vs)             // VirtualSize @400
+    pe = vw32(pe, 4096)           // VirtualAddress @404
+    pe = vw32(pe, rawSize)        // SizeOfRawData @408
+    pe = vw32(pe, 512)            // PointerToRawData @412
+    pe = vw32(pe, 0)              // PointerToRelocations @416
+    pe = vw32(pe, 0)              // PointerToLinenums @420
+    pe = vw16(pe, 0)              // NumberOfRelocations @424
+    pe = vw16(pe, 0)              // NumberOfLinenumbers @426
+    pe = vw32(pe, 3758096448)     // Characteristics @428 CODE|EXECUTE|READ|WRITE
+    pe = pad_to(pe, 512)
+    for i in 0..vs {
+        pe.push(sec[i])
+    }
+    pe = pad_to(pe, 512 + rawSize)
+    return pe
+}
+
+fn find_func_p(p P, name str) i64 {
+    for k in 0..p.funcs.len() as i64 {
+        if strings.equal(p.funcs[k].name, name) { return k }
+    }
+    return -1
+}
+
+fn gen_program(p P) GenOut {
+    if strings.equal(p.err, "") == false {
+        return GenOut(Vec<u8>(), 0, 0, p.err)
+    }
+    if find_func_p(p, "main") < 0 {
+        return GenOut(Vec<u8>(), 0, 0, "dcc: no main() function")
+    }
+    let cg = Cg(
+        Vec<u8>(), p.nodes, p.funcs, p.strs,
+        Vec<SFix>(), Vec<IFix>(), Vec<CFix>(), Vec<BFix>(),
+        Vec<i64>(), 0,
+        Map<str, i64>(), 0, 0, -1, -1,
+        Map<str, i64>(),
+        p.tys, Map<str, i64>(), compute_emitset(p),
+        ""
+    )
+    // helper runtime + entry point, addresses recorded by name
+    cg.addr.set("dcc_start", 0)
+    cg = emit_start(cg)
+    let helperNames = Vec<str>()
+    helperNames.push("dcc_write3")
+    helperNames.push("dcc_puts_z")
+    helperNames.push("dcc_putint")
+    helperNames.push("dcc_putuint")
+    helperNames.push("dcc_puthex")
+    helperNames.push("dcc_putchar2")
+    helperNames.push("dcc_strlen")
+    for hi in 0..helperNames.len() as i64 {
+        let hname = helperNames[hi]
+        cg.addr.set(hname, cg.code.len() as i64)
+        if strings.equal(hname, "dcc_write3") { cg = emit_write3(cg) }
+        else if strings.equal(hname, "dcc_puts_z") { cg = emit_puts_z(cg) }
+        else if strings.equal(hname, "dcc_putint") { cg = emit_putint(cg) }
+        else if strings.equal(hname, "dcc_putuint") { cg = emit_putuint(cg) }
+        else if strings.equal(hname, "dcc_puthex") { cg = emit_puthex(cg) }
+        else if strings.equal(hname, "dcc_putchar2") { cg = emit_putchar2(cg) }
+        else { cg = emit_strlen(cg) }
+        if strings.equal(cg.err, "") == false {
+            return GenOut(Vec<u8>(), 0, 0, cg.err)
+        }
+    }
+    // user functions, limited to those reachable from main
+    for fi in 0..cg.funcs.len() as i64 {
+        if cg.funcs[fi].body < 0 { continue }
+        if cg.emitset.contains(cg.funcs[fi].name) == false { continue }
+        cg = gen_function(cg, fi)
+        if strings.equal(cg.err, "") == false {
+            return GenOut(Vec<u8>(), 0, 0, cg.err)
+        }
+    }
+    for fi in 0..cg.funcs.len() as i64 {
+        cg.addr.set(cg.funcs[fi].name, cg.funcs[fi].addr)
+    }
+    cg = build_section(cg)
+    if strings.equal(cg.err, "") == false {
+        return GenOut(Vec<u8>(), 0, 0, cg.err)
+    }
+    // layout info smuggled out through the last iatfix entry
+    let last = cg.iatfix[cg.iatfix.len() as i64 - 1]
+    let pe = build_pe(cg.code, last.idx, last.pos)
+    return GenOut(pe, pe.len() as i64, p.funcs.len() as i64, "")
+}
+
+// ---------------------------------------------------------------------------
+// cc driver: lets dcc act as the C backend for devc ("--cc dcc-cc.cmd").
+// devc calls the backend as:  cc --version | cc <flags> -c src.c -o obj.o
+//                          |  cc <flags> objs... -o program.exe
+// dcc "object files" are the preprocessed text of the TU, so the link step
+// simply recompiles everything into one PE image.
+// ---------------------------------------------------------------------------
+
+fn fresh_p(err str) P {
+    return P(Vec<Token>(), 0, -1, 1, -1, Vec<Node>(), Vec<Func>(), Vec<Vec<u8>>(), builtin_types(), Map<str, i64>(), Vec<str>(), Vec<i64>(), err)
+}
+
+// appends translation unit src into dst, renaming functions whose names
+// collide (devc static helpers) and shifting node/string/type indices
+fn merge_tu(dst P, src P, tuIdx i64) P {
+    let nodeBase = dst.nodes.len() as i64
+    let strBase = dst.strs.len() as i64
+    let tyBase = dst.tys.len() as i64
+    // only definition-vs-definition collisions (devc's static helpers) rename;
+    // a definition simply fills in a matching cross-TU prototype from a header
+    let ren = Map<str, str>()
+    for k in 0..src.funcs.len() as i64 {
+        if src.funcs[k].body < 0 { continue }
+        let nm = src.funcs[k].name
+        for m in 0..dst.funcs.len() as i64 {
+            if strings.equal(dst.funcs[m].name, nm) && dst.funcs[m].body >= 0 {
+                ren.set(nm, "tu" + istr(tuIdx) + "#" + nm)
+            }
+        }
+    }
+    for k in 0..src.tys.len() as i64 {
+        let t = src.tys[k]
+        let t2 = t
+        if t.pointee >= 0 { t2.pointee = t.pointee + tyBase }
+        dst.tys.push(t2)
+    }
+    for k in 0..src.strs.len() as i64 {
+        dst.strs.push(src.strs[k])
+    }
+    for k in 0..src.nodes.len() as i64 {
+        let nd = src.nodes[k]
+        let n2 = nd
+        if nd.a >= 0 { n2.a = nd.a + nodeBase }
+        if nd.b >= 0 { n2.b = nd.b + nodeBase }
+        if nd.c >= 0 { n2.c = nd.c + nodeBase }
+        let kids2 = Vec<i64>()
+        for j in 0..nd.kids.len() as i64 {
+            kids2.push(nd.kids[j] + nodeBase)
+        }
+        n2.kids = kids2
+        if nd.kind == NK.N_STR as i64 {
+            n2.ival = nd.ival + strBase
+        } else if (nd.kind == NK.N_CAST as i64 || nd.kind == NK.N_DECL as i64) && nd.ival >= 0 {
+            n2.ival = nd.ival + tyBase
+        }
+        if nd.kind == NK.N_CALL as i64 && ren.contains(nd.name) {
+            n2.name = ren.get(nd.name)
+        }
+        dst.nodes.push(n2)
+    }
+    for k in 0..src.funcs.len() as i64 {
+        let f = src.funcs[k]
+        let f2 = f
+        if ren.contains(f.name) {
+            f2.name = ren.get(f.name)
+        }
+        if f.body >= 0 {
+            f2.body = f.body + nodeBase
+            let existing = -1
+            for m in 0..dst.funcs.len() as i64 {
+                if strings.equal(dst.funcs[m].name, f2.name) { existing = m }
+            }
+            if existing >= 0 && dst.funcs[existing].body < 0 {
+                // replace the cross-TU prototype with the real definition
+                let repl = dst.funcs[existing]
+                repl.body = f2.body
+                repl.params = f.params
+                let ptR = Vec<i64>()
+                for m in 0..f.ptypes.len() as i64 {
+                    ptR.push(f.ptypes[m] + tyBase)
+                }
+                repl.ptypes = ptR
+                dst.funcs[existing] = repl
+                continue
+            }
+            if existing >= 0 { continue }
+        } else {
+            let known = false
+            for m in 0..dst.funcs.len() as i64 {
+                if strings.equal(dst.funcs[m].name, f2.name) { known = true }
+            }
+            if known { continue }
+        }
+        let pt2 = Vec<i64>()
+        for m in 0..f.ptypes.len() as i64 {
+            pt2.push(f.ptypes[m] + tyBase)
+        }
+        f2.ptypes = pt2
+        dst.funcs.push(f2)
+    }
+    return dst
+}
+
+fn cc_mode_main(args Vec<str>) i32 {
+    let modeC = false
+    let output = ""
+    let inputs = Vec<str>()
+    let sawVersion = false
+    let i = 1
+    while i < args.len() as i64 {
+        let a = args[i]
+        if strings.equal(a, "--version") { sawVersion = true; i += 1; continue }
+        if strings.equal(a, "-c") { modeC = true; i += 1; continue }
+        if strings.equal(a, "-o") {
+            if i + 1 >= args.len() as i64 {
+                print("dcc cc: -o needs a value")
+                return 1
+            }
+            output = args[i + 1]
+            i += 2
+            continue
+        }
+        if strings.startsWith(a, "-") { i += 1; continue }
+        inputs.push(a)
+        i += 1
+    }
+    if inputs.len() as i64 == 0 {
+        if sawVersion {
+            print("dcc 0.2 cc (pure DevLang backend, no clang/gcc)")
+            return 0
+        }
+        print("dcc cc: no input files")
+        return 1
+    }
+    if sawVersion {
+        print("dcc 0.2 cc (pure DevLang backend, no clang/gcc)")
+    }
+    let texts = Vec<str>()
+    for k in 0..inputs.len() as i64 {
+        let f = inputs[k]
+        let text = ""
+        if strings.endsWith(f, ".c") {
+            let pp = preprocess(f)
+            if strings.equal(pp.err, "") == false {
+                print(pp.err)
+                return 1
+            }
+            text = pp.out
+        } else {
+            if strings.endsWith(f, ".a") || strings.endsWith(f, ".lib") || strings.endsWith(f, ".s") || strings.endsWith(f, ".S") {
+                print("dcc cc: unsupported link input " + f + " (native archives need a real toolchain)")
+                return 1
+            }
+            if path_has_wildcards(f) {
+                print("dcc cc: invalid input path " + f)
+                return 1
+            }
+            if fs.exists(f) == false {
+                print("dcc cc: cannot open " + f)
+                return 1
+            }
+            text = fs.read_text(f)
+        }
+        texts.push(text)
+    }
+    if modeC {
+        // parse-check the TU, then store its preprocessed text as the object
+        let lo = lex(texts[0])
+        if strings.equal(lo.err, "") == false {
+            print(lo.err)
+            return 1
+        }
+        let p = parse(lo)
+        if strings.equal(p.err, "") == false {
+            print(p.err)
+            return 1
+        }
+        if strings.equal(output, "") {
+            print("dcc cc: -c needs -o")
+            return 1
+        }
+        if fs.write_text(output, texts[0]) == false {
+            print("dcc cc: failed to write " + output)
+            return 1
+        }
+        return 0
+    }
+    if strings.equal(output, "") {
+        print("dcc cc: link needs -o")
+        return 1
+    }
+    let merged = fresh_p("")
+    for k in 0..texts.len() as i64 {
+        let lo = lex(texts[k])
+        if strings.equal(lo.err, "") == false {
+            print(lo.err)
+            return 1
+        }
+        let p = parse(lo)
+        if strings.equal(p.err, "") == false {
+            print(p.err)
+            return 1
+        }
+        merged = merge_tu(merged, p, k)
+    }
+    let g = gen_program(merged)
+    if strings.equal(g.err, "") == false {
+        print(g.err)
+        return 1
+    }
+    if fs.write_bytes(output, g.pe) == false {
+        print("dcc cc: failed to write " + output)
+        return 1
+    }
+    return 0
+}
+
+// ---------------------------------------------------------------------------
+// CLI
+// ---------------------------------------------------------------------------
+
+fn main() i32 {
+    let args = cli.args()
+    if args.len() as i64 > 0 && strings.equal(args[0], "cc") {
+        return cc_mode_main(args)
+    }
+    if args.len() as i64 == 0 {
+        print("dcc - compile a small C file to a Windows x64 executable (no clang/gcc)")
+        print("usage: d run tools/dcc/main.dev -- INPUT.c [-o OUTPUT.exe]")
+        return 1
+    }
+    let input = ""
+    let output = ""
+    let i = 0
+    while i < args.len() as i64 {
+        let a = args[i]
+        if strings.equal(a, "-o") {
+            if i + 1 >= args.len() as i64 {
+                print("dcc: -o needs a value")
+                return 1
+            }
+            output = args[i + 1]
+            i += 2
+            continue
+        }
+        if strings.startsWith(a, "-") {
+            print("dcc: unknown option " + a)
+            return 1
+        }
+        input = a
+        i += 1
+    }
+    if strings.equal(input, "") {
+        print("dcc: no input file")
+        return 1
+    }
+    if fs.exists(input) == false {
+        print("dcc: cannot open " + input)
+        return 1
+    }
+    if strings.equal(output, "") {
+        output = input + ".exe"
+        if strings.endsWith(input, ".c") {
+            output = strings.substring(input, 0, strings.charLength(input) - 2) + ".exe"
+        }
+    }
+    let src = fs.read_text(input)
+    let lo = lex(src)
+    if strings.equal(lo.err, "") == false {
+        print(lo.err)
+        return 1
+    }
+    let p = parse(lo)
+    if strings.equal(p.err, "") == false {
+        print(p.err)
+        return 1
+    }
+    let g = gen_program(p)
+    if strings.equal(g.err, "") == false {
+        print(g.err)
+        return 1
+    }
+    if fs.write_bytes(output, g.pe) == false {
+        print("dcc: failed to write " + output)
+        return 1
+    }
+    print("dcc: wrote " + output + " (" + istr(g.size) + " bytes, " + istr(g.nfuncs) + " functions)")
+    return 0
+}
+return main()
