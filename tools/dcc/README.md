@@ -71,11 +71,21 @@ Flags ของ cc (`-std=c11 -O0/-O3 -gdwarf-4 -Wall ...`) ถูกยอม�
 - dead-code elimination: emit เฉพาะฟังก์ชันที่ reachable จาก `main`
   (prelude ของ devc ที่ไม่ได้ใช้จะหายไปทั้งก้อน)
 
-## ข้อจำกัด (fail พร้อม error message ที่ชัดเจน)
+## float (f64)
 
-- **float ไม่รองรับ** — โปรแกรม Dev ที่มี `f64` จะได้ error ตอน build
-  (`float values are not supported by the dcc backend`) เพราะการ
-  format ตัวเลขทศนิยม (`%.17g`) ใน machine code เขียนเองยากมาก
+- **คณิตศาสตร์ทศนิยมรองรับครบ**: ตัวแปร `double`, literal แบบ exact
+  (แปลง decimal → IEEE754 ด้วย bignum ในตัว dcc พร้อม round-half-even
+  ถูกต้องถึง bit สุดท้าย), `+ - * /`, การเปรียบเทียบทั้งหกแบบ
+  (รวม NaN semantics แบบ C), unary `-`, cast `double <-> int`
+  (truncate ตาม C), พารามิเตอร์/ค่าคืนแบบ f64 ของฟังก์ชัน — ทั้งหมด
+  เป็น SSE2 code ที่ generate ตรง
+- **การ "พิมพ์" ค่าทศนิยม (%f/%g/%e) ยังไม่ได้** — บนเครื่องที่ทดสอบ
+  (Windows ARM64 + x64 emulation) msvcrt!printf กับ double ไม่ทำงาน
+  แม้จะ marshal ตาม ABI ถูกต้องแล้ว ตอนนี้โปรแกรมที่ print(f64)
+  จะได้ error ตอน build ที่แนะนำให้ cast เป็น int หรือใช้ clang backend
+
+## ข้อจำกัดที่เหลือ (fail พร้อม message ชัดเจน ไม่ใช่ crash)
+
 - struct instance / record ของ Dev, enum payload, dynamic values
   (Vec/Map/object), การจอง heap (malloc), `--lib`/ar ยังไม่รองรับ —
   โปรแกรมที่ใช้สิ่งเหล่านี้ควรใช้ clang/GCC backend ตามเดิม

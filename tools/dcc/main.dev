@@ -42,7 +42,7 @@ struct Token { kind i64, text str, ival i64, line i64, bytes Vec<u8> }
 // N_INCDEC name ival=IC kind; N_NUM ival=value; N_STR ival=string index.
 struct Node { kind i64, name str, ival i64, a i64, b i64, c i64, line i64, kids Vec<i64> }
 
-struct Func { name str, params Vec<str>, body i64, addr i64, ptypes Vec<i64> }
+struct Func { name str, params Vec<str>, body i64, addr i64, ptypes Vec<i64>, rtype i64 }
 
 struct LexOut { toks Vec<Token>, err str }
 
@@ -71,6 +71,7 @@ struct Cg {
     breakL i64, contL i64,
     addr Map<str, i64>,
     tys Vec<Ty>, vtypes Map<str, i64>, emitset Map<str, bool>,
+    rtype i64,
     err str
 }
 
@@ -842,6 +843,384 @@ fn preprocess(path str) PP {
 }
 
 // ---------------------------------------------------------------------------
+// Decimal -> IEEE754 double bits (used for float literals at compile time).
+// Exact for up to 19 mantissa digits and decimal exponent within +-22,
+// which covers every literal devc emits for practical programs. Uses a
+// small 8-limb (256-bit) little-endian bignum with 32-bit limbs.
+// ---------------------------------------------------------------------------
+
+struct FBits { bits i64, ok bool }
+
+fn limbs_zero() Vec<i64> {
+    let l = Vec<i64>()
+    for i in 0..8 { l.push(0) }
+    return l
+}
+
+fn limbs_from_i64(v i64) Vec<i64> {
+    let l = limbs_zero()
+    let x = v
+    l[0] = x & 4294967295
+    l[1] = (x >> 32) & 4294967295
+    return l
+}
+
+fn limb_get(l Vec<i64>, i i64) i64 {
+    if i >= l.len() as i64 { return 0 }
+    let v = l[i]
+    if v < 0 { return v + 4294967296 }
+    return v
+}
+
+fn limbs_bitlen(l Vec<i64>) i64 {
+    let i = 7
+    while i >= 0 {
+        let v = limb_get(l, i)
+        if v > 0 {
+            let b = 31
+            while b >= 0 {
+                if ((v >> b) & 1) == 1 { return i * 32 + b + 1 }
+                b -= 1
+            }
+        }
+        i -= 1
+    }
+    return 0
+}
+
+fn limbs_shl1(l Vec<i64>) Vec<i64> {
+    let r = limbs_zero()
+    let carry = 0
+    let i = 0
+    while i < 8 {
+        let v = limb_get(l, i)
+        let nv = (v * 2) + carry
+        r[i] = nv & 4294967295
+        carry = nv >> 32
+        i += 1
+    }
+    return r
+}
+
+fn limbs_mul_small(l Vec<i64>, m i64) Vec<i64> {
+    let r = limbs_zero()
+    let carry = 0
+    let i = 0
+    while i < 8 {
+        let v = limb_get(l, i)
+        let nv = v * m + carry
+        r[i] = nv & 4294967295
+        carry = nv >> 32
+        i += 1
+    }
+    return r
+}
+
+fn limbs_cmp(a Vec<i64>, b Vec<i64>) i64 {
+    let i = 7
+    while i >= 0 {
+        let av = limb_get(a, i)
+        let bv = limb_get(b, i)
+        if av < bv { return -1 }
+        if av > bv { return 1 }
+        i -= 1
+    }
+    return 0
+}
+
+// a - b (assumes a >= b)
+fn limbs_sub(a Vec<i64>, b Vec<i64>) Vec<i64> {
+    let r = limbs_zero()
+    let borrow = 0
+    let i = 0
+    while i < 8 {
+        let av = limb_get(a, i)
+        let bv = limb_get(b, i) + borrow
+        if av < bv {
+            r[i] = av + 4294967296 - bv
+            borrow = 1
+        } else {
+            r[i] = av - bv
+            borrow = 0
+        }
+        i += 1
+    }
+    return r
+}
+
+// a + b
+fn limbs_add(a Vec<i64>, b Vec<i64>) Vec<i64> {
+    let r = limbs_zero()
+    let carry = 0
+    let i = 0
+    while i < 8 {
+        let nv = limb_get(a, i) + limb_get(b, i) + carry
+        r[i] = nv & 4294967295
+        carry = nv >> 32
+        i += 1
+    }
+    return r
+}
+
+fn limbs_is_zero(l Vec<i64>) bool {
+    for i in 0..8 {
+        if limb_get(l, i) != 0 { return false }
+    }
+    return true
+}
+
+// shift-subtract long division: q = a / b, returns q (remainder dropped);
+// also returns the remainder comparison info via FDiv.rem for rounding
+struct FDiv { q Vec<i64>, rem Vec<i64>, den Vec<i64> }
+
+fn limbs_divmod(a Vec<i64>, b Vec<i64>) FDiv {
+    let q = limbs_zero()
+    let rem = limbs_zero()
+    let bit = limbs_bitlen(a) - 1
+    while bit >= 0 {
+        rem = limbs_shl1(rem)
+        // rem |= bit-th bit of a
+        let limb = bit / 32
+        let off = bit - limb * 32
+        let av = limb_get(a, limb)
+        if ((av >> off) & 1) == 1 {
+            rem[0] = limb_get(rem, 0) + 1
+            if limb_get(rem, 0) >= 4294967296 {
+                // carry from the +1 cannot happen because rem was even-shifted
+                rem[0] = limb_get(rem, 0) & 4294967295
+            }
+        }
+        if limbs_cmp(rem, b) >= 0 {
+            rem = limbs_sub(rem, b)
+            let qlimb = bit / 32
+            let qoff = bit - qlimb * 32
+            q[qlimb] = limb_get(q, qlimb) + (1 << qoff)
+        }
+        bit -= 1
+    }
+    return FDiv(q, rem, b)
+}
+
+// remainder comparison: 2*rem vs den -> -1/0/1
+fn rem_round(rem Vec<i64>, den Vec<i64>) i64 {
+    let two = limbs_shl1(rem)
+    let c = limbs_cmp(two, den)
+    return c
+}
+
+fn pow10_limbs(e i64) Vec<i64> {
+    let r = limbs_from_i64(1)
+    let i = 0
+    while i < e {
+        r = limbs_mul_small(r, 10)
+        i += 1
+    }
+    return r
+}
+
+fn bits_from_scaled(q Vec<i64>, e2 i64, neg bool) i64 {
+    // q in [2^52, 2^53]; assemble sign | exponent | mantissa
+    let e = e2 + 1023
+    let m = 0
+    // extract low 52 bits of q
+    let lo = limb_get(q, 0) | (limb_get(q, 1) << 32)
+    let m52 = lo & ((1 << 52) - 1)
+    let bits = m52
+    if neg { bits = bits | (1 << 63) }
+    bits = bits | (e << 52)
+    return bits
+}
+
+fn f64_bits(text str) FBits {
+    let n = strings.len(text) as i64
+    let i = 0
+    let neg = false
+    if i < n && (text[i] as i64 == 43 || text[i] as i64 == 45) {
+        if text[i] as i64 == 45 { neg = true }
+        i += 1
+    }
+    let digits = 0
+    let count = 0
+    let exp10 = 0
+    let seenDot = false
+    let seenDigit = false
+    let fracDigits = 0
+    while i < n {
+        let c = text[i] as i64
+        if c >= 48 && c <= 57 {
+            seenDigit = true
+            if seenDot { fracDigits += 1 }
+            if count < 19 {
+                digits = digits * 10 + (c - 48)
+                count += 1
+            } else {
+                // extra significant digits: keep as exponent (truncation;
+                // dcc's supported literals stay well under this bound)
+                if seenDot == false { exp10 += 1 }
+            }
+            i += 1
+            continue
+        }
+        if c == 46 && seenDot == false {
+            seenDot = true
+            i += 1
+            continue
+        }
+        if c == 101 || c == 69 {
+            i += 1
+            let eneg = false
+            if i < n && (text[i] as i64 == 43 || text[i] as i64 == 45) {
+                if text[i] as i64 == 45 { eneg = true }
+                i += 1
+            }
+            let ev = 0
+            while i < n && text[i] as i64 >= 48 && text[i] as i64 <= 57 {
+                ev = ev * 10 + (text[i] as i64 - 48)
+                i += 1
+            }
+            if eneg { ev = 0 - ev }
+            exp10 += ev
+            continue
+        }
+        return FBits(0, false)
+    }
+    if seenDigit == false { return FBits(0, false) }
+    exp10 = exp10 - fracDigits
+    if digits == 0 {
+        // signed zero
+        if neg { return FBits(-(9223372036854775807) - 1, true) }
+        return FBits(0, true)
+    }
+    if exp10 > 22 || exp10 < -22 {
+        return FBits(0, false)
+    }
+    // numerator P and denominator Q as bignums: value = M * 10^exp10
+    let P = limbs_from_i64(digits)
+    let Q = limbs_from_i64(1)
+    if exp10 >= 0 {
+        let p10 = pow10_limbs(exp10)
+        // P = digits * 10^exp10 (P * p10 via repeated mul by limbs is heavy;
+        // 10^e has few limbs, use shift-add multiply over p10's bits)
+        let acc = limbs_zero()
+        let sh = 0
+        let total = limbs_bitlen(p10)
+        while sh < total {
+            let limb = sh / 32
+            let off = sh - limb * 32
+            if ((limb_get(p10, limb) >> off) & 1) == 1 {
+                // acc += P << sh
+                let term = P
+                let k = 0
+                while k < sh {
+                    term = limbs_shl1(term)
+                    k += 1
+                }
+                acc = limbs_add(acc, term)
+            }
+            sh += 1
+        }
+        P = acc
+    } else {
+        Q = pow10_limbs(0 - exp10)
+    }
+    // scale so that P/Q lands in [2^52, 2^53)
+    let e2 = limbs_bitlen(P) - limbs_bitlen(Q) - 1
+    let t = 52 - e2
+    if t > 0 {
+        let k = 0
+        while k < t {
+            P = limbs_shl1(P)
+            k += 1
+        }
+    } else if t < 0 {
+        let k = 0
+        while k < 0 - t {
+            Q = limbs_shl1(Q)
+            k += 1
+        }
+    }
+    let d = limbs_divmod(P, Q)
+    let q = d.q
+    // q may be exactly 2^53 or slightly under 2^52; normalise with rounding
+    let top2 = limbs_bitlen(q)
+    if top2 == 54 || top2 == 53 {
+        // q in (2^53, ...] or exactly 2^53 region: shift right one, bump e2
+        // only when >= 2^53
+        if limbs_cmp(q, limbs_from_i64(1) ) == 0 {
+            // q == 1: value tiny (should not happen in our ranges)
+        }
+    }
+    if top2 > 53 {
+        // q >= 2^53: shift right with round-half-even
+        let low = limb_get(q, 0) & 1
+        let dropped = low
+        let q2 = limbs_zero()
+        let carry = dropped * 4294967296
+        // simple right shift by 1 across limbs
+        let j = 0
+        while j < 8 {
+            let cur = limb_get(q, j)
+            let nxt = limb_get(q, j + 1)
+            let nv = (cur >> 1) | ((nxt & 1) << 31)
+            q2[j] = nv
+            j += 1
+        }
+        if dropped == 1 {
+            let half = limbs_from_i64(1)
+            // round to even: add 1 only if resulting low bit would become odd
+            if (limb_get(q2, 0) & 1) == 1 {
+                q2[0] = limb_get(q2, 0) + 1
+            }
+        }
+        return FBits(bits_from_scaled(q2, e2 + 1, neg), true)
+    }
+    if top2 < 53 {
+        // q < 2^52 (estimate off by one): shift left
+        let q2 = limbs_shl1(q)
+        return FBits(bits_from_scaled(q2, e2 - 1, neg), true)
+    }
+    // rounding from the division remainder
+    let rc = rem_round(d.rem, d.den)
+    if rc > 0 {
+        let one = limbs_from_i64(1)
+        let q2 = limbs_add(q, one)
+        if limbs_bitlen(q2) > 53 {
+            // rounded up to 2^53
+            let q3 = limbs_zero()
+            let j = 0
+            while j < 8 {
+                let cur = limb_get(q2, j)
+                let nxt = limb_get(q2, j + 1)
+                q3[j] = (cur >> 1) | ((nxt & 1) << 31)
+                j += 1
+            }
+            return FBits(bits_from_scaled(q3, e2 + 1, neg), true)
+        }
+        return FBits(bits_from_scaled(q2, e2, neg), true)
+    }
+    if rc == 0 {
+        // exactly half: round to even
+        if (limb_get(q, 0) & 1) == 1 {
+            let one = limbs_from_i64(1)
+            let q2 = limbs_add(q, one)
+            if limbs_bitlen(q2) > 53 {
+                let q3 = limbs_zero()
+                let j = 0
+                while j < 8 {
+                    let cur = limb_get(q2, j)
+                    let nxt = limb_get(q2, j + 1)
+                    q3[j] = (cur >> 1) | ((nxt & 1) << 31)
+                    j += 1
+                }
+                return FBits(bits_from_scaled(q3, e2 + 1, neg), true)
+            }
+            return FBits(bits_from_scaled(q2, e2, neg), true)
+        }
+    }
+    return FBits(bits_from_scaled(q, e2, neg), true)
+}
+
+// ---------------------------------------------------------------------------
 // Parser
 // ---------------------------------------------------------------------------
 
@@ -1543,6 +1922,7 @@ fn parse(lo LexOut) P {
             return bad(p, "expected a function name")
         }
         let fname = t.text
+        let rtype = p.tout
         p = bump(p)
         p = expect_punct(p, "(", "after function name")
         if strings.equal(p.err, "") == false { return p }
@@ -1558,7 +1938,7 @@ fn parse(lo LexOut) P {
             p = bump(p)
             let fi = find_pfunc(p, fname)
             if fi < 0 {
-                p.funcs.push(Func(fname, p.pnames, -1, 0, p.ptypes))
+                p.funcs.push(Func(fname, p.pnames, -1, 0, p.ptypes, rtype))
             }
             continue
         }
@@ -1575,9 +1955,10 @@ fn parse(lo LexOut) P {
             repl.body = p.out
             repl.params = p.pnames
             repl.ptypes = p.ptypes
+            repl.rtype = rtype
             p.funcs[fi] = repl
         } else {
-            p.funcs.push(Func(fname, p.pnames, p.out, 0, p.ptypes))
+            p.funcs.push(Func(fname, p.pnames, p.out, 0, p.ptypes, rtype))
         }
     }
     return p
@@ -1766,7 +2147,10 @@ fn mov_rdx_imm32(cg Cg, v i64) Cg {
     cg = b3(cg, 72, 199, 194)
     return w32(cg, v)
 }
-fn mov_rax_one(cg Cg) Cg { return b2(cg, 184, 1) }
+fn mov_rax_one(cg Cg) Cg {
+    cg = b1(cg, 184)
+    return w32(cg, 1)
+}
 fn add_rax_rcx(cg Cg) Cg { return b3(cg, 72, 1, 200) }
 fn sub_rax_rcx(cg Cg) Cg { return b3(cg, 72, 41, 200) }
 fn imul_rax_rcx(cg Cg) Cg { return b4(cg, 72, 15, 175, 193) }
@@ -1997,6 +2381,106 @@ fn emit_putchar2(cg Cg) Cg {
     return leave_ret(cg)
 }
 
+// ---- SSE2 double helpers ----
+
+fn f64_store(cg Cg, slot i64) Cg {
+    cg = b3(cg, 242, 15, 17)          // movsd [rbp+d], xmm0
+    cg = b1(cg, 133)
+    cg = w32(cg, -(slot + 1) * 8)
+    return cg
+}
+
+fn f64_load(cg Cg, slot i64) Cg {
+    cg = b3(cg, 242, 15, 16)          // movsd xmm0, [rbp+d]
+    cg = b1(cg, 133)
+    cg = w32(cg, -(slot + 1) * 8)
+    return cg
+}
+
+fn f64_load_xmm(cg Cg, xn i64, slot i64) Cg {
+    // movsd xmm0..3, [rbp+d]; xmm2/3 need REX.R
+    if xn >= 2 {
+        cg = b4(cg, 242, 68, 15, 16)
+        cg = b1(cg, 149 + (xn - 2) * 8)
+    } else {
+        cg = b3(cg, 242, 15, 16)
+        cg = b1(cg, 133 + xn * 8)
+    }
+    cg = w32(cg, -(slot + 1) * 8)
+    return cg
+}
+
+fn f64_xmm_to_xmm(cg Cg, dst i64) Cg {
+    // movapd xmmDst, xmm0 = 66 0F 28 /r
+    if dst == 1 { return b4(cg, 102, 15, 40, 200) }
+    if dst == 2 { return b4(cg, 102, 15, 40, 208) }
+    return b4(cg, 102, 15, 40, 216)
+}
+
+fn f64_mov_xmm2_xmm0(cg Cg) Cg { return b4(cg, 102, 15, 40, 194) }  // movapd xmm0, xmm2
+
+fn f64_arith(cg Cg, which i64) Cg {
+    // addsd/subsd/mulsd/divsd xmm0, xmm2
+    let sub = 88
+    if which == 1 { sub = 92 }
+    else if which == 2 { sub = 89 }
+    else if which == 3 { sub = 94 }
+    return b4(cg, 242, 15, sub, 194)
+}
+
+// movq r64, xmmN: mirror double bits into the positional integer register
+fn f64_bits_to_reg(cg Cg, reg i64, xn i64) Cg {
+    if reg == 1 {
+        cg = b4(cg, 102, 72, 15, 126)      // movq rcx, xmmN
+        cg = b1(cg, 192 + xn)
+    } else if reg == 2 {
+        cg = b4(cg, 102, 72, 15, 126)      // movq rdx, xmmN
+        cg = b1(cg, 208 + xn)
+    } else if reg == 3 {
+        cg = b4(cg, 102, 76, 15, 126)      // movq r8, xmmN
+        cg = b1(cg, 192 + xn)
+    } else {
+        cg = b4(cg, 102, 76, 15, 126)      // movq r9, xmmN
+        cg = b1(cg, 200 + xn)
+    }
+    return cg
+}
+
+// movsd [rsp+disp8], xmmN
+fn f64_store_rsp(cg Cg, xn i64, disp i64) Cg {
+    if xn == 0 {
+        cg = b4(cg, 242, 15, 17, 68)
+    } else if xn == 1 {
+        cg = b4(cg, 242, 15, 17, 76)
+    } else if xn == 2 {
+        cg = b4(cg, 242, 68, 15, 17)
+        cg = b1(cg, 84)
+    } else {
+        cg = b4(cg, 242, 68, 15, 17)
+        cg = b1(cg, 92)
+    }
+    return b1(cg, disp)
+}
+
+fn f64_ucomisd(cg Cg) Cg { return b4(cg, 102, 15, 46, 194) }      // ucomisd xmm0, xmm2
+
+fn f64_cvtsi2sd(cg Cg) Cg { return b5(cg, 242, 72, 15, 42, 192) } // cvtsi2sd xmm0, rax
+fn f64_cvttsd2si(cg Cg) Cg { return b5(cg, 242, 72, 15, 44, 192) } // cvttsd2si rax, xmm0
+
+fn f64_neg(cg Cg) Cg {
+    cg = b2(cg, 72, 184)
+    cg = w64(cg, -(9223372036854775807) - 1)
+    cg = b4(cg, 102, 72, 15, 110)    // movq xmm2, rax
+    cg = b1(cg, 208)
+    return b4(cg, 102, 15, 87, 194)  // xorpd xmm0, xmm2
+}
+
+fn f64_test_not(cg Cg) Cg {
+    // !x for doubles: compare against +0
+    cg = b3(cg, 102, 15, 87)         // xorpd xmm0, xmm2 -> 0? (xmm2 scratch) -- careful: use explicit zero
+    return cg
+}
+
 // dcc_strlen(rc1=ptr) -> rax
 fn emit_strlen(cg Cg) Cg {
     cg = new_label(cg)
@@ -2056,6 +2540,93 @@ fn expr_tid(cg Cg, ni i64) i64 {
         if cg.vtypes.contains(n.name) { return cg.vtypes.get(n.name) }
     }
     return -1
+}
+
+// does this expression produce an f64 value?
+fn expr_is_f64(cg Cg, ni i64) bool {
+    if ni < 0 { return false }
+    let n = cg.nodes[ni]
+    if n.kind == NK.N_FNUM as i64 { return true }
+    if n.kind == NK.N_CAST as i64 { return cg.tys[n.ival].kind == TYK.TY_F64 as i64 }
+    if n.kind == NK.N_VAR as i64 {
+        let t = expr_tid(cg, ni)
+        return t >= 0 && cg.tys[t].kind == TYK.TY_F64 as i64
+    }
+    if n.kind == NK.N_BIN as i64 {
+        let op = n.ival
+        if op == OP.O_ADD as i64 || op == OP.O_SUB as i64 || op == OP.O_MUL as i64 || op == OP.O_DIV as i64 {
+            return expr_is_f64(cg, n.a) || expr_is_f64(cg, n.b)
+        }
+        return false
+    }
+    if n.kind == NK.N_UN as i64 && n.ival == UN.U_NEG as i64 {
+        return expr_is_f64(cg, n.a)
+    }
+    if n.kind == NK.N_TERN as i64 {
+        return expr_is_f64(cg, n.b) || expr_is_f64(cg, n.c)
+    }
+    if n.kind == NK.N_CALL as i64 {
+        let fi = find_func(cg, n.name)
+        if fi >= 0 && cg.funcs[fi].rtype >= 0 {
+            return cg.tys[cg.funcs[fi].rtype].kind == TYK.TY_F64 as i64
+        }
+        return false
+    }
+    return false
+}
+
+// after gen_expr of a value in rax, widen to double if needed
+fn ensure_f64(cg Cg, ni i64) Cg {
+    if expr_is_f64(cg, ni) == false {
+        return f64_cvtsi2sd(cg)
+    }
+    return cg
+}
+
+// after gen_expr of a value possibly in xmm0, narrow to int if needed
+fn ensure_int(cg Cg, ni i64) Cg {
+    if expr_is_f64(cg, ni) {
+        return f64_cvttsd2si(cg)
+    }
+    return cg
+}
+
+fn f64_cmp_seq(cg Cg, op i64) Cg {
+    // operands: left in xmm0, right in xmm2; branch-based because setcc
+    // directly after ucomisd proved unreliable under x64 emulation
+    cg = f64_ucomisd(cg)
+    cg = new_label(cg)
+    let lFalse = label_id(cg)
+    cg = new_label(cg)
+    let lEnd = label_id(cg)
+    if op == OP.O_EQ as i64 {
+        cg = jcc_label(cg, 133, lFalse)     // jne
+        cg = jcc_label(cg, 138, lFalse)     // jp (unordered)
+    } else if op == OP.O_NE as i64 {
+        // false only when ordered-and-equal; NaN compares unequal
+        cg = new_label(cg)
+        let lTrue = label_id(cg)
+        cg = jcc_label(cg, 133, lTrue)      // jne
+        cg = jcc_label(cg, 139, lFalse)     // jnp (ordered + zf=1 -> equal)
+        cg = set_label(cg, lTrue)
+    } else if op == OP.O_LT as i64 {
+        cg = jcc_label(cg, 131, lFalse)     // jae (unsigned)
+        cg = jcc_label(cg, 138, lFalse)     // jp (unordered)
+    } else if op == OP.O_LE as i64 {
+        cg = jcc_label(cg, 135, lFalse)     // ja
+        cg = jcc_label(cg, 138, lFalse)     // jp (unordered)
+    } else if op == OP.O_GT as i64 {
+        cg = jcc_label(cg, 134, lFalse)     // jbe (unordered: CF=ZF=1 -> taken)
+    } else {
+        cg = jcc_label(cg, 130, lFalse)     // jb
+        cg = jcc_label(cg, 138, lFalse)     // jp (unordered)
+    }
+    cg = mov_rax_one(cg)
+    cg = jmp_label(cg, lEnd)
+    cg = set_label(cg, lFalse)
+    cg = xor_eax(cg)
+    cg = set_label(cg, lEnd)
+    return cg
 }
 
 fn op_unsigned(cg Cg, l i64, r i64) bool {
@@ -2259,6 +2830,145 @@ fn emit_format(cg Cg, fmtIdx i64, kids Vec<i64>, argStart i64, fdcode i64, line 
     return cg
 }
 
+fn fmt_has_float(f Vec<u8>) bool {
+    let n = f.len() as i64
+    let i = 0
+    while i < n {
+        if f[i] as i64 != 37 {
+            i += 1
+            continue
+        }
+        let j = i + 1
+        while j < n {
+            let c = f[j] as i64
+            let isFlag = c == 32 || c == 35 || c == 43 || c == 45 || c == 46 || c == 42 || (c >= 48 && c <= 57)
+            if isFlag == false { break }
+            j += 1
+        }
+        if j < n {
+            let c = f[j] as i64
+            if c == 108 || c == 104 || c == 122 || c == 106 || c == 116 || c == 76 {
+                j += 1
+                if j < n && f[j] as i64 == 108 { j += 1 }
+                if j < n && f[j] as i64 == 104 { j += 1 }
+            }
+        }
+        if j >= n { return false }
+        let conv = f[j] as i64
+        if conv == 37 { i = j + 1; continue }
+        if conv == 102 || conv == 70 || conv == 101 || conv == 69 || conv == 103 || conv == 71 || conv == 97 {
+            return true
+        }
+        i = j + 1
+    }
+    return false
+}
+
+// printf/fprintf with float conversions: delegate to msvcrt!printf so the
+// CRT formats the doubles. fmt in rcx, ints to rdx/r8/r9, doubles to xmm0-3,
+// extras on the stack, al = number of vector registers used.
+fn emit_printf_crt(cg Cg, fmtIdx i64, kids Vec<i64>, argStart i64, line i64) Cg {
+    let f = cg.strs[fmtIdx]
+    let convs = Vec<i64>()
+    let n = f.len() as i64
+    let i = 0
+    while i < n {
+        if f[i] as i64 != 37 {
+            i += 1
+            continue
+        }
+        let j = i + 1
+        while j < n {
+            let c = f[j] as i64
+            let isFlag = c == 32 || c == 35 || c == 43 || c == 45 || c == 46 || c == 42 || (c >= 48 && c <= 57)
+            if isFlag == false { break }
+            j += 1
+        }
+        if j < n {
+            let c = f[j] as i64
+            if c == 108 || c == 104 || c == 122 || c == 106 || c == 116 || c == 76 {
+                j += 1
+                if j < n && f[j] as i64 == 108 { j += 1 }
+                if j < n && f[j] as i64 == 104 { j += 1 }
+            }
+        }
+        if j >= n { return cg_fail(cg, line, "bad printf format") }
+        let conv = f[j] as i64
+        if conv == 37 { i = j + 1; continue }
+        if conv == 102 || conv == 70 || conv == 101 || conv == 69 || conv == 103 || conv == 71 || conv == 97 {
+            convs.push(1)
+        } else if conv == 100 || conv == 105 || conv == 117 || conv == 99 || conv == 115 || conv == 120 || conv == 88 || conv == 112 {
+            convs.push(0)
+        } else {
+            return cg_fail(cg, line, "unsupported printf conversion")
+        }
+        i = j + 1
+    }
+    let nargs = convs.len() as i64
+    if argStart + nargs > kids.len() as i64 {
+        return cg_fail(cg, line, "printf format has more conversions than arguments")
+    }
+    // argument j sits at position j+1 (the format is position 0).
+    // Windows x64 varargs: a double travels in xmmN AND its raw bits occupy
+    // the positional integer slot, because printf reads va_arg doubles from
+    // the integer spill area.
+    let total = nargs + 1
+    let nstack = total - 4
+    if nstack < 0 { nstack = 0 }
+    let sp = align_up(32 + nstack * 8, 16)
+    // evaluate every argument into its slot first so later evaluation
+    // cannot clobber already-loaded registers
+    for j in 0..nargs {
+        let aslot = cg.nslots + 72 + j
+        if aslot >= cg.maxslots { cg.maxslots = aslot + 1 }
+        cg = gen_expr(cg, kids[argStart + j], 0)
+        if strings.equal(cg.err, "") == false { return cg }
+        if convs[j] == 1 {
+            if expr_is_f64(cg, kids[argStart + j]) == false { cg = f64_cvtsi2sd(cg) }
+            cg = f64_store(cg, aslot)
+        } else {
+            if expr_is_f64(cg, kids[argStart + j]) { cg = f64_cvttsd2si(cg) }
+            cg = store_slot(cg, 0, aslot)
+        }
+    }
+    cg = sub_rsp(cg, sp)
+    cg = lea_str_rax(cg, fmtIdx)
+    cg = mov_rcx_rax(cg)
+    // varargs doubles ride in xmm[argument position] (printf's va_arg
+    // indexes the register save area by slot), with the raw bits mirrored
+    // into the positional integer slot as well
+    let maxPos = 0
+    for j in 0..nargs {
+        let aslot = cg.nslots + 72 + j
+        let pos = j + 1
+        if convs[j] == 0 {
+            if pos <= 3 {
+                cg = load_slot(cg, pos + 1, aslot)
+            } else {
+                cg = load_slot(cg, 0, aslot)
+                cg = b4(cg, 72, 137, 68, 36)
+                cg = b1(cg, 32 + (pos - 4) * 8)
+            }
+        } else {
+            if maxPos < pos { maxPos = pos }
+            if pos <= 3 {
+                cg = f64_load_xmm(cg, pos, aslot)
+                cg = f64_load_xmm(cg, 0, aslot)
+                cg = f64_bits_to_reg(cg, pos + 1, pos)
+            } else {
+                cg = f64_load_xmm(cg, 0, aslot)
+                cg = f64_store_rsp(cg, 0, 32 + (pos - 4) * 8)
+            }
+        }
+    }
+    cg = b2(cg, 176, 0)                    // mov al, 0 (varargs: doubles read from integer slots)
+    cg = call_iat(cg, 3)                   // msvcrt!printf
+    cg = b2(cg, 49, 201)                   // xor ecx, ecx
+    cg = call_iat(cg, 4)                   // msvcrt!fflush(NULL)
+    cg = add_rsp(cg, sp)
+    return cg
+}
+
 fn gen_call(cg Cg, ni i64, depth i64) Cg {
     let n = cg.nodes[ni]
     let argc = n.kids.len() as i64
@@ -2269,24 +2979,61 @@ fn gen_call(cg Cg, ni i64, depth i64) Cg {
         if f.params.len() as i64 != argc {
             return cg_fail(cg, n.line, "wrong argument count calling " + n.name)
         }
+        let argF = Vec<bool>()
+        for i in 0..argc {
+            let wantF = i < f.ptypes.len() as i64 && cg.tys[f.ptypes[i]].kind == TYK.TY_F64 as i64
+            argF.push(wantF)
+        }
         for i in 0..argc {
             cg = gen_expr(cg, n.kids[i], depth + 1)
             if strings.equal(cg.err, "") == false { return cg }
             let aslot = cg.nslots + 64 + i
             if aslot >= cg.maxslots { cg.maxslots = aslot + 1 }
-            cg = store_slot(cg, 0, aslot)
+            if argF[i] {
+                if expr_is_f64(cg, n.kids[i]) == false { cg = f64_cvtsi2sd(cg) }
+                cg = f64_store(cg, aslot)
+            } else {
+                if expr_is_f64(cg, n.kids[i]) { cg = f64_cvttsd2si(cg) }
+                cg = store_slot(cg, 0, aslot)
+            }
         }
-        let nstack = argc - 4
-        if nstack < 0 { nstack = 0 }
+        let intReg = 0
+        let dblReg = 0
+        let nstack = 0
+        for i in 0..argc {
+            if argF[i] {
+                if dblReg < 4 { dblReg += 1 } else { nstack += 1 }
+            } else {
+                if intReg < 4 { intReg += 1 } else { nstack += 1 }
+            }
+        }
         let sp = align_up(32 + nstack * 8, 16)
         cg = sub_rsp(cg, sp)
+        let intReg2 = 0
+        let dblReg2 = 0
+        let stackPos = 0
         for i in 0..argc {
-            if i < 4 {
-                cg = load_slot(cg, i + 1, cg.nslots + 64 + i)
+            let aslot = cg.nslots + 64 + i
+            if argF[i] {
+                if dblReg2 < 4 {
+                    cg = f64_load_xmm(cg, dblReg2, aslot)
+                    dblReg2 += 1
+                } else {
+                    cg = f64_load_xmm(cg, 0, aslot)
+                    cg = b4(cg, 242, 15, 17, 68)      // movsd [rsp+disp8], xmm0
+                    cg = b1(cg, 32 + stackPos * 8)
+                    stackPos += 1
+                }
             } else {
-                cg = load_slot(cg, 0, cg.nslots + 64 + i)
-                cg = b4(cg, 72, 137, 68, 36)   // mov [rsp+disp8], rax
-                cg = b1(cg, 32 + (i - 4) * 8)
+                if intReg2 < 4 {
+                    cg = load_slot(cg, intReg2 + 1, aslot)
+                    intReg2 += 1
+                } else {
+                    cg = load_slot(cg, 0, aslot)
+                    cg = b4(cg, 72, 137, 68, 36)      // mov [rsp+disp8], rax
+                    cg = b1(cg, 32 + stackPos * 8)
+                    stackPos += 1
+                }
             }
         }
         cg = call_named(cg, n.name)
@@ -2313,6 +3060,9 @@ fn gen_call(cg Cg, ni i64, depth i64) Cg {
         let fmtNode = cg.nodes[n.kids[fmtAt]]
         if fmtNode.kind != NK.N_STR as i64 {
             return cg_fail(cg, n.line, n.name + " needs a string literal format")
+        }
+        if fmt_has_float(cg.strs[fmtNode.ival]) {
+            return cg_fail(cg, n.line, "printing float values is not supported by the dcc backend on this platform; cast to int or use the clang/GCC backend")
         }
         return emit_format(cg, fmtNode.ival, n.kids, fmtAt + 1, fdcode, n.line)
     }
@@ -2387,13 +3137,36 @@ fn gen_expr(cg Cg, ni i64, depth i64) Cg {
     if k == NK.N_NUM as i64 { return mov_rax_imm(cg, n.ival) }
     if k == NK.N_STR as i64 { return lea_str_rax(cg, n.ival) }
     if k == NK.N_FNUM as i64 {
-        return cg_fail(cg, n.line, "float values are not supported by the dcc backend")
+        let fb = f64_bits(n.name)
+        if fb.ok == false {
+            return cg_fail(cg, n.line, "float literal '" + n.name + "' is outside dcc's exact conversion range")
+        }
+        let bs = Vec<u8>()
+        bs.push(byte_of(fb.bits, 0) as u8)
+        bs.push(byte_of(fb.bits, 8) as u8)
+        bs.push(byte_of(fb.bits, 16) as u8)
+        bs.push(byte_of(fb.bits, 24) as u8)
+        bs.push(byte_of(fb.bits, 32) as u8)
+        bs.push(byte_of(fb.bits, 40) as u8)
+        bs.push(byte_of(fb.bits, 48) as u8)
+        bs.push(byte_of(fb.bits, 56) as u8)
+        cg.strs.push(bs)
+        let fidx = (cg.strs.len() as i64) - 1
+        cg = lea_str_rax(cg, fidx)
+        cg = b3(cg, 242, 15, 16)            // movsd xmm0, [rax]
+        cg = b1(cg, 0)
+        return cg
     }
     if k == NK.N_VAR as i64 {
         if cg.slots.contains(n.name) == false {
             return cg_fail(cg, n.line, "unknown variable " + n.name)
         }
-        return load_slot(cg, 0, cg.slots.get(n.name))
+        let vslot = cg.slots.get(n.name)
+        let vvt = cg.vtypes.get(n.name)
+        if vvt >= 0 && cg.tys[vvt].kind == TYK.TY_F64 as i64 {
+            return f64_load(cg, vslot)
+        }
+        return load_slot(cg, 0, vslot)
     }
     if k == NK.N_ADDR as i64 { return gen_addr(cg, n.a, depth) }
     if k == NK.N_DEREF as i64 {
@@ -2410,14 +3183,19 @@ fn gen_expr(cg Cg, ni i64, depth i64) Cg {
             return cg_fail(cg, n.line, "internal: cast to unknown type id " + istr(n.ival))
         }
         let tk = cg.tys[n.ival].kind
-        if tk == TYK.TY_F64 as i64 {
-            return cg_fail(cg, n.line, "float casts are not supported by the dcc backend")
-        }
         if tk == TYK.TY_STRUCT as i64 {
             return cg_fail(cg, n.line, "struct casts are not supported by the dcc backend")
         }
+        let srcF = expr_is_f64(cg, n.a)
         cg = gen_expr(cg, n.a, depth + 1)
         if strings.equal(cg.err, "") == false { return cg }
+        if tk == TYK.TY_F64 as i64 {
+            if srcF == false { return f64_cvtsi2sd(cg) }
+            return cg
+        }
+        if srcF {
+            cg = f64_cvttsd2si(cg)
+        }
         return trunc_to(cg, n.ival)
     }
     if k == NK.N_MEMBER as i64 {
@@ -2427,7 +3205,7 @@ fn gen_expr(cg Cg, ni i64, depth i64) Cg {
         let bt = expr_tid(cg, n.a)
         cg = gen_expr(cg, n.a, depth + 1)
         if strings.equal(cg.err, "") == false { return cg }
-        let ts = cg.nslots + depth
+        let ts = cg.nslots + 80 + depth
         if ts >= cg.maxslots { cg.maxslots = ts + 1 }
         cg = store_slot(cg, 0, ts)
         cg = gen_expr(cg, n.b, depth + 1)
@@ -2469,7 +3247,7 @@ fn gen_expr(cg Cg, ni i64, depth i64) Cg {
             let pt = expr_tid(cg, cg.nodes[n.b].a)
             cg = gen_addr(cg, n.b, depth)
             if strings.equal(cg.err, "") == false { return cg }
-            let ts = cg.nslots + depth
+            let ts = cg.nslots + 80 + depth
             if ts >= cg.maxslots { cg.maxslots = ts + 1 }
             cg = store_slot(cg, 0, ts)
             cg = gen_expr(cg, n.a, depth + 1)
@@ -2484,8 +3262,15 @@ fn gen_expr(cg Cg, ni i64, depth i64) Cg {
             return cg_fail(cg, n.line, "unknown variable " + n.name)
         }
         let slot = cg.slots.get(n.name)
+        let vt = cg.vtypes.get(n.name)
+        let dstF = vt >= 0 && cg.tys[vt].kind == TYK.TY_F64 as i64
         cg = gen_expr(cg, n.a, depth)
         if strings.equal(cg.err, "") == false { return cg }
+        if dstF {
+            if expr_is_f64(cg, n.a) == false { cg = f64_cvtsi2sd(cg) }
+            return f64_store(cg, slot)
+        }
+        if expr_is_f64(cg, n.a) { cg = f64_cvttsd2si(cg) }
         return store_slot(cg, 0, slot)
     }
     if k == NK.N_INCDEC as i64 {
@@ -2514,10 +3299,28 @@ fn gen_expr(cg Cg, ni i64, depth i64) Cg {
         return store_slot(cg, 0, slot)
     }
     if k == NK.N_UN as i64 {
+        let srcF = expr_is_f64(cg, n.a)
         cg = gen_expr(cg, n.a, depth + 1)
         if strings.equal(cg.err, "") == false { return cg }
-        if n.ival == UN.U_NEG as i64 { return neg_rax(cg) }
-        if n.ival == UN.U_BITNOT as i64 { return b3(cg, 72, 247, 208) }  // not rax
+        if n.ival == UN.U_NEG as i64 {
+            if srcF { return f64_neg(cg) }
+            return neg_rax(cg)
+        }
+        if n.ival == UN.U_BITNOT as i64 {
+            if srcF {
+                return cg_fail(cg, n.line, "bitwise ~ is not defined for float values")
+            }
+            return b3(cg, 72, 247, 208)      // not rax
+        }
+        if srcF {
+            // !x -> x == +0.0
+            cg = b4(cg, 102, 15, 87, 210)   // xorpd xmm2, xmm2 (+0.0)
+            cg = f64_ucomisd(cg)
+            cg = setcc_al(cg, 148)
+            cg = b3(cg, 15, 155, 193)       // setnp cl
+            cg = b2(cg, 32, 193)            // and al, cl
+            return movzx_eax_al(cg)
+        }
         cg = test_rax(cg)
         cg = setcc_al(cg, 148)
         return movzx_eax_al(cg)
@@ -2557,10 +3360,35 @@ fn gen_expr(cg Cg, ni i64, depth i64) Cg {
             cg = set_label(cg, lEnd)
             return cg
         }
+        // float path: left in a double slot, right in xmm2, result in xmm0
+        let isArith = op == OP.O_ADD as i64 || op == OP.O_SUB as i64 || op == OP.O_MUL as i64 || op == OP.O_DIV as i64
+        let isCmp = op == OP.O_EQ as i64 || op == OP.O_NE as i64 || op == OP.O_LT as i64 || op == OP.O_LE as i64 || op == OP.O_GT as i64 || op == OP.O_GE as i64
+        let wantFloat = expr_is_f64(cg, n.a) || expr_is_f64(cg, n.b)
+        if (isArith || isCmp) && wantFloat {
+            let ts = cg.nslots + 80 + depth
+            if ts >= cg.maxslots { cg.maxslots = ts + 1 }
+            cg = gen_expr(cg, n.a, depth + 1)
+            if strings.equal(cg.err, "") == false { return cg }
+            if expr_is_f64(cg, n.a) == false { cg = f64_cvtsi2sd(cg) }
+            cg = f64_store(cg, ts)
+            cg = gen_expr(cg, n.b, depth + 1)
+            if strings.equal(cg.err, "") == false { return cg }
+            if expr_is_f64(cg, n.b) == false { cg = f64_cvtsi2sd(cg) }
+            cg = f64_xmm_to_xmm(cg, 2)         // xmm2 = right
+            cg = f64_load(cg, ts)              // xmm0 = left
+            if isArith {
+                let which = 0
+                if op == OP.O_SUB as i64 { which = 1 }
+                else if op == OP.O_MUL as i64 { which = 2 }
+                else if op == OP.O_DIV as i64 { which = 3 }
+                return f64_arith(cg, which)
+            }
+            return f64_cmp_seq(cg, op)
+        }
         // left -> temp slot, right -> rax, then rax=left rcx=right
         cg = gen_expr(cg, n.a, depth + 1)
         if strings.equal(cg.err, "") == false { return cg }
-        let ts = cg.nslots + depth
+        let ts = cg.nslots + 80 + depth
         if ts >= cg.maxslots { cg.maxslots = ts + 1 }
         cg = store_slot(cg, 0, ts)
         cg = gen_expr(cg, n.b, depth + 1)
@@ -2659,9 +3487,6 @@ fn gen_stmt(cg Cg, ni i64, depth i64) Cg {
         let tid = n.ival
         if tid >= 0 {
             let tk = cg.tys[tid].kind
-            if tk == TYK.TY_F64 as i64 {
-                return cg_fail(cg, n.line, "float variables are not supported by the dcc backend")
-            }
             if tk == TYK.TY_STRUCT as i64 {
                 return cg_fail(cg, n.line, "struct values are not supported by the dcc backend")
             }
@@ -2675,21 +3500,46 @@ fn gen_stmt(cg Cg, ni i64, depth i64) Cg {
             cg.vtypes.set(n.name, TY_I64_ID())
         }
         if slot >= cg.maxslots { cg.maxslots = slot + 1 }
+        let dstF = tid >= 0 && cg.tys[tid].kind == TYK.TY_F64 as i64
         if n.a >= 0 {
             cg = gen_expr(cg, n.a, depth)
             if strings.equal(cg.err, "") == false { return cg }
-        } else {
-            cg = xor_eax(cg)
+            if dstF {
+                if expr_is_f64(cg, n.a) == false { cg = f64_cvtsi2sd(cg) }
+                return f64_store(cg, slot)
+            }
+            if expr_is_f64(cg, n.a) { cg = f64_cvttsd2si(cg) }
+            return store_slot(cg, 0, slot)
         }
+        if dstF {
+            cg = xor_eax(cg)
+            cg = b4(cg, 102, 72, 15, 110)   // movq xmm0, rax (+0.0)
+            cg = b1(cg, 192)
+            return f64_store(cg, slot)
+        }
+        cg = xor_eax(cg)
         return store_slot(cg, 0, slot)
     }
     if k == NK.N_EXPR as i64 { return gen_expr(cg, n.a, depth) }
     if k == NK.N_RET as i64 {
         if n.a >= 0 {
+            let srcF = expr_is_f64(cg, n.a)
             cg = gen_expr(cg, n.a, depth)
             if strings.equal(cg.err, "") == false { return cg }
+            let fnF = cg.rtype >= 0 && cg.tys[cg.rtype].kind == TYK.TY_F64 as i64
+            if fnF {
+                if srcF == false { cg = f64_cvtsi2sd(cg) }
+            } else if srcF {
+                cg = f64_cvttsd2si(cg)
+            }
         } else {
-            cg = xor_eax(cg)
+            if cg.rtype >= 0 && cg.tys[cg.rtype].kind == TYK.TY_F64 as i64 {
+                cg = xor_eax(cg)
+                cg = b4(cg, 102, 72, 15, 110)   // movq xmm0, rax
+                cg = b1(cg, 192)
+            } else {
+                cg = xor_eax(cg)
+            }
         }
         return leave_ret(cg)
     }
@@ -2793,14 +3643,16 @@ fn gen_function(cg Cg, fi i64) Cg {
     cg.slots = Map<str, i64>()
     cg.vtypes = Map<str, i64>()
     cg.nslots = f.params.len() as i64
-    cg.maxslots = cg.nslots + 72
+    cg.maxslots = cg.nslots + 130
     cg.breakL = -1
     cg.contL = -1
+    cg.rtype = f.rtype
     cg = push_rbp(cg)
     cg = mov_rbp_rsp(cg)
     cg = b3(cg, 72, 129, 236)          // sub rsp, frame (patched below)
     let framePos = cg.code.len() as i64
     cg = w32(cg, 0)
+    let dblReg = 0
     for i in 0..f.params.len() as i64 {
         cg.slots.set(f.params[i], i)
         if i < f.ptypes.len() as i64 {
@@ -2808,7 +3660,28 @@ fn gen_function(cg Cg, fi i64) Cg {
         } else {
             cg.vtypes.set(f.params[i], TY_I64_ID())
         }
-        cg = store_slot(cg, i + 1, i)
+        let ptype = -1
+        if i < f.ptypes.len() as i64 { ptype = f.ptypes[i] }
+        if ptype >= 0 && cg.tys[ptype].kind == TYK.TY_F64 as i64 {
+            // movsd [rbp+d], xmmN
+            if dblReg == 0 {
+                cg = b3(cg, 242, 15, 17)
+                cg = b1(cg, 133)
+            } else if dblReg == 1 {
+                cg = b3(cg, 242, 15, 17)
+                cg = b1(cg, 141)
+            } else if dblReg == 2 {
+                cg = b4(cg, 242, 68, 15, 17)
+                cg = b1(cg, 149)
+            } else {
+                cg = b4(cg, 242, 68, 15, 17)
+                cg = b1(cg, 157)
+            }
+            cg = w32(cg, -(i + 1) * 8)
+            dblReg += 1
+        } else {
+            cg = store_slot(cg, i + 1, i)
+        }
     }
     cg = gen_stmt(cg, f.body, 0)
     if strings.equal(cg.err, "") == false { return cg }
@@ -2910,20 +3783,31 @@ fn build_section(cg Cg) Cg {
     hnNames.push("ExitProcess")
     hnNames.push("GetStdHandle")
     hnNames.push("WriteFile")
+    hnNames.push("printf")
+    hnNames.push("fflush")
     let hnOff = Vec<i64>()
-    let cur = iatOff + 32
-    for i in 0..3 {
+    let cur = iatOff + 56
+    for i in 0..5 {
         hnOff.push(cur)
         cur = cur + 2 + strings.len(hnNames[i]) as i64 + 1
         if cur % 2 == 1 { cur += 1 }
     }
     let dllOff = cur
-    let descOff = align_up(dllOff + 13, 4)
+    let msdllOff = align_up(dllOff + 13, 2)
+    let descOff = align_up(msdllOff + 13, 4)
+    let desc2Off = descOff + 20
     let iatRVA = 4096 + iatOff
     // patch code relocations now that layout offsets are known;
     // every rel32 displacement sits at pos and RIP equals pos + 4
     if fs.exists("dccdbg") {
         print("DBG codelen=" + istr(cg.code.len() as i64) + " dataOff=" + istr(dataOff) + " iatOff=" + istr(iatOff) + " iatRVA=" + istr(iatRVA))
+        let dbgStrs = cg.strs
+        let dbgAcc = 0
+        for k in 0..dbgStrs.len() as i64 {
+            let shown = istr(k) + ":off=" + istr(dbgAcc) + " len=" + istr(dbgStrs[k].len() as i64)
+            print("DBG strs " + shown)
+            dbgAcc = dbgAcc + dbgStrs[k].len() as i64 + 1
+        }
         let bf = cg.brfix
         for k in 0..bf.len() as i64 {
             print("DBG br pos=" + istr(bf[k].pos) + " label=" + istr(bf[k].label) + " labels[id]=" + istr(cg.labels[bf[k].label]))
@@ -2961,7 +3845,9 @@ fn build_section(cg Cg) Cg {
     }
     let ifixes = cg.iatfix
     for k in 0..ifixes.len() as i64 {
-        let rva = iatRVA + ifixes[k].idx * 8
+        let slot = ifixes[k].idx * 8
+        if ifixes[k].idx >= 3 { slot = 32 + (ifixes[k].idx - 3) * 8 }
+        let rva = iatRVA + slot
         cg = patch32(cg, ifixes[k].pos, rva - (4096 + ifixes[k].pos + 4))
     }
     // assemble the section
@@ -2978,7 +3864,10 @@ fn build_section(cg Cg) Cg {
         sec = vw64(sec, 4096 + hnOff[i])
     }
     sec = vw64(sec, 0)
-    for i in 0..3 {
+    sec = vw64(sec, 4096 + hnOff[3])   // msvcrt thunk array: printf, fflush, null
+    sec = vw64(sec, 4096 + hnOff[4])
+    sec = vw64(sec, 0)
+    for i in 0..5 {
         sec = vw16(sec, 0)
         let nm = hnNames[i]
         for j in 0..strings.len(nm) as i64 {
@@ -2992,12 +3881,25 @@ fn build_section(cg Cg) Cg {
         sec.push(dll[j])
     }
     sec.push(0)
+    sec = pad_to(sec, msdllOff)
+    let msdll = "msvcrt.dll"
+    for j in 0..strings.len(msdll) as i64 {
+        sec.push(msdll[j])
+    }
+    sec.push(0)
+    // descriptors must be contiguous: the array terminates at the first
+    // all-zero descriptor after the last real one
     sec = pad_to(sec, descOff)
     sec = vw32(sec, 0)                    // OriginalFirstThunk
     sec = vw32(sec, 0)                    // TimeDateStamp
     sec = vw32(sec, 0)                    // ForwarderChain
     sec = vw32(sec, 4096 + dllOff)        // Name
-    sec = vw32(sec, iatRVA)               // FirstThunk
+    sec = vw32(sec, iatRVA)               // FirstThunk (3 kernel32 thunks)
+    sec = vw32(sec, 0)                    // OriginalFirstThunk
+    sec = vw32(sec, 0)                    // TimeDateStamp
+    sec = vw32(sec, 0)                    // ForwarderChain
+    sec = vw32(sec, 4096 + msdllOff)      // Name
+    sec = vw32(sec, iatRVA + 32)          // FirstThunk (printf)
     sec = vw32(sec, 0)                    // null descriptor terminator
     sec = vw32(sec, 0)
     sec = vw32(sec, 0)
@@ -3067,10 +3969,10 @@ fn build_pe(sec Vec<u8>, impRVA i64, iatRVA i64) Vec<u8> {
     for i in 0..16 {
         if i == 1 {
             pe = vw32(pe, impRVA)
-            pe = vw32(pe, 40)
+            pe = vw32(pe, 60)
         } else if i == 12 {
             pe = vw32(pe, iatRVA)
-            pe = vw32(pe, 32)
+            pe = vw32(pe, 40)
         } else {
             pe = vw32(pe, 0)
             pe = vw32(pe, 0)
@@ -3119,7 +4021,7 @@ fn gen_program(p P) GenOut {
         Vec<i64>(), 0,
         Map<str, i64>(), 0, 0, -1, -1,
         Map<str, i64>(),
-        p.tys, Map<str, i64>(), compute_emitset(p),
+        p.tys, Map<str, i64>(), compute_emitset(p), 0,
         ""
     )
     // helper runtime + entry point, addresses recorded by name
@@ -3234,6 +4136,9 @@ fn merge_tu(dst P, src P, tuIdx i64) P {
         let f2 = f
         if ren.contains(f.name) {
             f2.name = ren.get(f.name)
+        }
+        if f.rtype >= 0 {
+            f2.rtype = f.rtype + tyBase
         }
         if f.body >= 0 {
             f2.body = f.body + nodeBase
