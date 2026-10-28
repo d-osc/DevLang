@@ -1,0 +1,2 @@
+fn square(n i64) i64 { return n * n }
+fn cube(n i64) i64 { return square(n) * n }

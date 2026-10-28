@@ -1,0 +1,13 @@
+use "mathlib.dev" as math
+
+fn main() i64 {
+    print(math.square(7))
+    print(math.cube(3))
+    let total = 0
+    for i in 1..10 {
+        total += math.square(i)
+    }
+    print(total)
+    return 0
+}
+main()
